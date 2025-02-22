@@ -6,6 +6,8 @@ import {
   ImageBackground,
   Pressable,
   Image,
+  Linking,
+  Modal,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -13,6 +15,8 @@ import { RootStackParamList } from "../../../../App";
 import { MainButton } from "../../../components/ui/button";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { lightTheme } from "../../../theme/theme";
+import Terms from "../terms/Terms";
+import Privacy from "../privacy/Privacy";
 
 type WelcomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -22,6 +26,8 @@ type WelcomeScreenNavigationProp = NativeStackNavigationProp<
 const Welcome: React.FC = () => {
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   const facts = [
     {
@@ -59,11 +65,11 @@ const Welcome: React.FC = () => {
   }, []);
 
   const handleTermsPress = () => {
-    console.log("Terms & Conditions pressed");
+    setShowTerms(true);
   };
 
   const handlePrivacyPress = () => {
-    console.log("Privacy Policy pressed");
+    setShowPrivacy(true);
   };
 
   return (
@@ -162,6 +168,32 @@ const Welcome: React.FC = () => {
           </View>
         </View>
       </View>
+
+      <Modal
+        visible={showTerms}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowTerms(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Terms onClose={() => setShowTerms(false)} />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showPrivacy}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPrivacy(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Privacy onClose={() => setShowPrivacy(false)} />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -300,5 +332,18 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     marginBottom: -10,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    height: "80%",
+    backgroundColor: lightTheme.background,
+    borderRadius: 20,
+    overflow: "hidden",
   },
 });

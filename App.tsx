@@ -23,6 +23,8 @@ import SignUp from "./src/screens/onboarding/userAuth/signup";
 import ForgotPassword from "./src/screens/onboarding/userAuth/forgotPassword";
 import AppNav from "./src/navigation/appNav";
 import { Asset } from "expo-asset";
+import Terms from './src/screens/onboarding/terms/Terms';
+import Privacy from './src/screens/onboarding/privacy/Privacy';
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -30,6 +32,8 @@ export type RootStackParamList = {
   SignUp: undefined;
   ForgotPassword: undefined;
   AppNav: undefined;
+  Terms: undefined;
+  Privacy: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -262,6 +266,22 @@ const App: React.FC = () => {
                 name="ForgotPassword"
                 component={ForgotPassword}
                 options={screenOptions}
+              />
+              <Stack.Screen 
+                name="Terms" 
+                component={Terms}
+                options={{
+                  title: 'Terms & Conditions',
+                  headerShown: true,
+                }}
+              />
+              <Stack.Screen 
+                name="Privacy" 
+                component={Privacy}
+                options={{
+                  title: 'Privacy Policy',
+                  headerShown: true,
+                }}
               />
             </>
           )}
