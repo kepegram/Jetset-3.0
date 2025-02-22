@@ -38,6 +38,12 @@
         "resourceClass": "m-medium"
       },
       "distribution": "store"
+    },
+    "development": {
+      "distribution": "internal",
+      "android": {
+        "gradleCommand": ":app:assembleDebug"
+      }
     }
   },
   "submit": {

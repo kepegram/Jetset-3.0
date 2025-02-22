@@ -11,7 +11,6 @@
       "resizeMode": "contain",
       "backgroundColor": "#3BACE3"
     },
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "usesAppleSignIn": true,
@@ -28,8 +27,13 @@
       }
     },
     "android": {
+      "newArchEnabled": false,
       "package": "com.pegram.jetset",
       "googleServicesFile": "./google-services.json",
+      "buildToolsVersion": "35.0.0",
+      "compileSdkVersion": 34,
+      "targetSdkVersion": 34,
+      "minSdkVersion": 24,
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/icons/adaptive-icon.png",
         "monochromeImage": "./src/assets/icons/adaptive-icon.png",
