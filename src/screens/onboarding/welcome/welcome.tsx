@@ -6,8 +6,8 @@ import {
   ImageBackground,
   Pressable,
   Image,
-  Linking,
   Modal,
+  Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -174,6 +174,7 @@ const Welcome: React.FC = () => {
         animationType="slide"
         transparent={true}
         onRequestClose={() => setShowTerms(false)}
+        statusBarTranslucent={true}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -187,6 +188,7 @@ const Welcome: React.FC = () => {
         animationType="slide"
         transparent={true}
         onRequestClose={() => setShowPrivacy(false)}
+        statusBarTranslucent={true}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -335,15 +337,48 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    justifyContent: "flex-end",
   },
   modalContent: {
-    width: "90%",
-    height: "80%",
+    width: "100%",
+    height: Dimensions.get("window").height * 0.94,
     backgroundColor: lightTheme.background,
-    borderRadius: 20,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
     overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+});
+
+// Export the modal styles so they can be reused
+export const modalStyles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    width: "100%",
+    height: Dimensions.get("window").height * 0.94,
+    backgroundColor: lightTheme.background,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 5,
   },
 });

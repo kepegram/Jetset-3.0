@@ -91,6 +91,7 @@ const CurrentTripDetails: React.FC = () => {
         <Image
           source={{
             uri: photoRef || tripDetails?.photoRef
+              // @ts-ignore
               ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef || tripDetails?.photoRef}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
               : "https://via.placeholder.com/800",
           }}
@@ -211,7 +212,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   scrollContent: {
-    paddingBottom: 100,
     marginTop: height * 0.45,
   },
   contentContainer: {

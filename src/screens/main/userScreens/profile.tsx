@@ -7,6 +7,7 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Linking,
 } from "react-native";
 import React, { useCallback, useState } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -20,6 +21,8 @@ import { useTheme } from "../../../context/themeContext";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { modalStyles } from "../../../screens/onboarding/welcome/welcome";
+import Privacy from "../../../screens/onboarding/privacy/Privacy";
 
 // Navigation prop type for type safety when navigating
 type ProfileScreenNavigationProp = NativeStackNavigationProp<
@@ -34,6 +37,7 @@ const Profile: React.FC = () => {
   const { currentTheme, setTheme } = useTheme();
   const [userName, setUserName] = useState<string | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   const user = getAuth().currentUser;
   const navigation = useNavigation<ProfileScreenNavigationProp>();
@@ -171,6 +175,11 @@ const Profile: React.FC = () => {
     setIsModalVisible(true);
   };
 
+  // Update the privacy press handler
+  const handlePrivacyPress = () => {
+    setShowPrivacy(true);
+  };
+
   return (
     <View
       style={[styles.container, { backgroundColor: currentTheme.background }]}
@@ -259,6 +268,21 @@ const Profile: React.FC = () => {
             </Pressable>
           </View>
         </Pressable>
+      </Modal>
+
+      {/* Add the Privacy Modal */}
+      <Modal
+        visible={showPrivacy}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPrivacy(false)}
+        statusBarTranslucent={true}
+      >
+        <View style={modalStyles.modalContainer}>
+          <View style={modalStyles.modalContent}>
+            <Privacy onClose={() => setShowPrivacy(false)} />
+          </View>
+        </View>
       </Modal>
 
       <View style={styles.profileContainer}>
@@ -408,7 +432,7 @@ const Profile: React.FC = () => {
                   : "transparent",
               },
             ]}
-            onPress={() => console.log("Security & Privacy pressed")}
+            onPress={handlePrivacyPress}
           >
             <View style={styles.optionContent}>
               <Ionicons
