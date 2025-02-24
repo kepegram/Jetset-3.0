@@ -1,109 +1,121 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getAuth, User } from "firebase/auth";
 import { FIREBASE_DB } from "../../firebase.config";
 
-// Define the shape of our profile context
+// Enhanced interface to include more user data
 interface ProfileContextType {
-  profilePicture: string; // URL of user's profile picture
-  setProfilePicture: (uri: string) => void; // Function to update profile picture
-  displayName: string; // User's display name
-  setDisplayName: (name: string) => void; // Function to update display name
-  isLoading: boolean; // Add loading state
+  profilePicture: string;
+  setProfilePicture: (uri: string) => void;
+  displayName: string;
+  setDisplayName: (name: string) => Promise<void>; // Make async
+  isLoading: boolean;
+  email: string | null; // Add email
+  authProvider: string | null; // Add auth provider info
+  refreshUserData: () => Promise<void>; // Add refresh function
 }
 
-// Create the context with undefined default value
 export const ProfileContext = createContext<ProfileContextType | undefined>(
   undefined
 );
 
-// ProfileProvider component that manages profile state and provides it to children
 export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  // Initialize state with default profile picture and empty display name
   const [profilePicture, setProfilePictureState] = useState<string>(
     "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Default_pfp.svg/2048px-Default_pfp.svg.png"
   );
   const [displayName, setDisplayNameState] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true); // Add loading state
+  const [isLoading, setIsLoading] = useState(true);
+  const [email, setEmail] = useState<string | null>(null);
+  const [authProvider, setAuthProvider] = useState<string | null>(null);
+
+  const loadProfileData = async () => {
+    try {
+      setIsLoading(true);
+      const user = getAuth().currentUser;
+
+      if (user) {
+        // Get auth provider
+        const provider = user.providerData[0]?.providerId || "unknown";
+        setAuthProvider(provider);
+        setEmail(user.email);
+
+        // Load from Firestore first
+        const userDocRef = doc(FIREBASE_DB, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          // Prefer Firestore data over Google data
+          if (data.username) {
+            setDisplayNameState(data.username);
+            await AsyncStorage.setItem("displayName", data.username);
+          }
+          if (data.profilePicture) {
+            setProfilePictureState(data.profilePicture);
+            await AsyncStorage.setItem("profilePicture", data.profilePicture);
+          }
+        } else {
+          // If no Firestore document exists, create one with Google data
+          if (provider === "google.com") {
+            await setDoc(userDocRef, {
+              username: user.displayName || "User",
+              email: user.email,
+              profilePicture: user.photoURL,
+              createdAt: new Date().toISOString(),
+              authProvider: "google",
+            });
+            
+            if (user.displayName) {
+              setDisplayNameState(user.displayName);
+              await AsyncStorage.setItem("displayName", user.displayName);
+            }
+            if (user.photoURL) {
+              setProfilePictureState(user.photoURL);
+              await AsyncStorage.setItem("profilePicture", user.photoURL);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load profile data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Load profile data from multiple sources (Firebase Auth, Firestore)
-    const loadProfileData = async () => {
-      try {
-        setIsLoading(true);
-        const user = getAuth().currentUser;
-
-        // First try to load from AsyncStorage for immediate display
-        const cachedProfilePicture = await AsyncStorage.getItem(
-          "profilePicture"
-        );
-        const cachedDisplayName = await AsyncStorage.getItem("displayName");
-
-        if (cachedProfilePicture) {
-          setProfilePictureState(cachedProfilePicture);
-        }
-        if (cachedDisplayName) {
-          setDisplayNameState(cachedDisplayName);
-        }
-
-        if (user) {
-          // Load from Firestore
-          const userDocRef = doc(FIREBASE_DB, "users", user.uid);
-          const userDoc = await getDoc(userDocRef);
-
-          // Update from Google profile if available
-          if (user.photoURL) {
-            setProfilePictureState(user.photoURL);
-            await AsyncStorage.setItem("profilePicture", user.photoURL);
-          }
-          if (user.displayName) {
-            setDisplayNameState(user.displayName);
-            await AsyncStorage.setItem("displayName", user.displayName);
-          }
-
-          // Update from Firestore if available
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            if (data?.profilePicture) {
-              setProfilePictureState(data.profilePicture);
-              await AsyncStorage.setItem("profilePicture", data.profilePicture);
-            }
-            if (data?.username) {
-              setDisplayNameState(data.username);
-              await AsyncStorage.setItem("displayName", data.username);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load profile data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadProfileData();
   }, []);
 
-  // Handler to update profile picture - saves to AsyncStorage and updates state
   const setProfilePicture = async (uri: string) => {
     try {
-      await AsyncStorage.setItem("profilePicture", uri);
-      setProfilePictureState(uri);
+      const user = getAuth().currentUser;
+      if (user) {
+        const userDocRef = doc(FIREBASE_DB, "users", user.uid);
+        await setDoc(userDocRef, { profilePicture: uri }, { merge: true });
+        await AsyncStorage.setItem("profilePicture", uri);
+        setProfilePictureState(uri);
+      }
     } catch (error) {
       console.error("Failed to set profile picture:", error);
     }
   };
 
-  // Handler to update display name - saves to AsyncStorage and updates state
   const setDisplayName = async (name: string) => {
     try {
-      await AsyncStorage.setItem("displayName", name);
-      setDisplayNameState(name);
+      const user = getAuth().currentUser;
+      if (user) {
+        const userDocRef = doc(FIREBASE_DB, "users", user.uid);
+        await setDoc(userDocRef, { username: name }, { merge: true });
+        await AsyncStorage.setItem("displayName", name);
+        setDisplayNameState(name);
+      }
     } catch (error) {
       console.error("Failed to set display name:", error);
+      throw error; // Propagate error to handle in UI
     }
   };
 
@@ -115,6 +127,9 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({
         displayName,
         setDisplayName,
         isLoading,
+        email,
+        authProvider,
+        refreshUserData: loadProfileData,
       }}
     >
       {children}
@@ -122,8 +137,6 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
-// Custom hook for accessing profile context
-// Throws error if used outside of ProfileProvider
 export const useProfile = () => {
   const context = useContext(ProfileContext);
   if (!context) {

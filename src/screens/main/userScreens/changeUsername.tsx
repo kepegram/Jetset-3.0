@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, View, TextInput, SafeAreaView } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  SafeAreaView,
+  Alert,
+} from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../navigation/appNav";
 import { useNavigation } from "@react-navigation/native";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth, updateProfile } from "firebase/auth";
 import { FIREBASE_DB } from "../../../../firebase.config";
 import { CustomButton, AltButton } from "../../../components/ui/button";
 import { useTheme } from "../../../context/themeContext";
@@ -19,6 +26,7 @@ const ChangeUsername: React.FC = () => {
   const { currentTheme } = useTheme();
   const navigation = useNavigation<ChangeUsernameScreenNavigationProp>();
   const [userName, setUserName] = useState<string | null>("");
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Fetch current username on component mount
   useEffect(() => {
@@ -29,7 +37,7 @@ const ChangeUsername: React.FC = () => {
           const userDoc = await getDoc(doc(FIREBASE_DB, "users", user.uid));
           if (userDoc.exists()) {
             const data = userDoc.data();
-            setUserName(data?.name || "");
+            setUserName(data?.username || data?.name || "");
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
@@ -42,19 +50,29 @@ const ChangeUsername: React.FC = () => {
 
   // Handle saving the new username
   const handleSave = async () => {
+    if (!userName?.trim()) {
+      Alert.alert("Error", "Please enter a valid username");
+      return;
+    }
+
     const user = getAuth().currentUser;
     if (user) {
       try {
-        // Update username in Firestore
-        await setDoc(
-          doc(FIREBASE_DB, "users", user.uid),
-          { name: userName },
-          { merge: true }
-        );
-        console.log("Username updated successfully.");
-        navigation.navigate("Edit");
+        // Update both Firestore and Auth display name
+        await Promise.all([
+          setDoc(
+            doc(FIREBASE_DB, "users", user.uid),
+            { username: userName },
+            { merge: true }
+          ),
+          updateProfile(user, { displayName: userName }),
+        ]);
+
+        Alert.alert("Success", "Username updated successfully!");
+        navigation.goBack();
       } catch (error) {
-        console.error("Error saving username:", error);
+        console.error("Error updating username:", error);
+        Alert.alert("Error", "Failed to update username. Please try again.");
       }
     }
   };
@@ -69,6 +87,19 @@ const ChangeUsername: React.FC = () => {
       style={[styles.container, { backgroundColor: currentTheme.background }]}
     >
       <View style={styles.contentContainer}>
+        {showConfirmation && (
+          <View style={styles.confirmationContainer}>
+            <Text
+              style={[
+                styles.confirmationText,
+                { color: currentTheme.textPrimary },
+              ]}
+            >
+              Username updated successfully!
+            </Text>
+          </View>
+        )}
+
         {/* Username input form */}
         <View style={styles.formContainer}>
           <Text
@@ -148,5 +179,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: "auto",
     gap: 12,
+  },
+  confirmationContainer: {
+    backgroundColor: "#4CAF50",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  confirmationText: {
+    textAlign: "center",
+    fontSize: 16,
+    fontFamily: "outfit-medium",
   },
 });

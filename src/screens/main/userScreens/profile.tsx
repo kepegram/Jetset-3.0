@@ -186,7 +186,7 @@ const Profile: React.FC = () => {
     >
       {/* Add Modal component */}
       <Modal
-        animationType="fade"
+        animationType="slide"
         transparent={true}
         visible={isModalVisible}
         onRequestClose={() => setIsModalVisible(false)}
@@ -201,8 +201,19 @@ const Profile: React.FC = () => {
               { backgroundColor: currentTheme.background },
             ]}
           >
-            {/* Add the large profile picture */}
-            <View style={styles.modalImageContainer}>
+            <View style={styles.modalHeader}>
+              <Text
+                style={[styles.modalTitle, { color: currentTheme.textPrimary }]}
+              >
+                Profile Picture
+              </Text>
+              <Pressable onPress={() => setIsModalVisible(false)}>
+                <Ionicons name="close" size={24} color={currentTheme.icon} />
+              </Pressable>
+            </View>
+
+            {/* Profile picture container */}
+            <View style={styles.modalImageWrapper}>
               <View
                 style={[
                   styles.modalImageContainer,
@@ -224,48 +235,58 @@ const Profile: React.FC = () => {
               </View>
             </View>
 
-            <Pressable
-              style={[
-                styles.modalOption,
-                {
-                  borderBottomWidth: 1,
-                  borderBottomColor: currentTheme.secondary,
-                },
-              ]}
-              onPress={() => {
-                setIsModalVisible(false);
-                handlePickImage();
-              }}
-            >
-              <MaterialIcons name="edit" size={24} color={currentTheme.icon} />
-              <Text
-                style={[
-                  styles.modalOptionText,
-                  { color: currentTheme.textPrimary },
+            <View style={styles.modalActions}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  {
+                    backgroundColor: pressed
+                      ? currentTheme.alternate + "90"
+                      : currentTheme.alternate,
+                  },
                 ]}
+                onPress={() => {
+                  setIsModalVisible(false);
+                  handlePickImage();
+                }}
               >
-                Change Profile Picture
-              </Text>
-            </Pressable>
+                <MaterialIcons name="edit" size={20} color="#FFF" />
+                <Text style={styles.modalButtonText}>
+                  Change Profile Picture
+                </Text>
+              </Pressable>
 
-            <Pressable
-              style={styles.modalOption}
-              onPress={() => {
-                setIsModalVisible(false);
-                handleRemoveProfilePicture();
-              }}
-            >
-              <MaterialIcons
-                name="delete-outline"
-                size={24}
-                color={currentTheme.error}
-              />
-              <Text
-                style={[styles.modalOptionText, { color: currentTheme.error }]}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  styles.modalButtonDanger,
+                  {
+                    backgroundColor: pressed
+                      ? currentTheme.error + "90"
+                      : "transparent",
+                    borderColor: currentTheme.error,
+                  },
+                ]}
+                onPress={() => {
+                  setIsModalVisible(false);
+                  handleRemoveProfilePicture();
+                }}
               >
-                Remove Profile Picture
-              </Text>
-            </Pressable>
+                <MaterialIcons
+                  name="delete-outline"
+                  size={20}
+                  color={currentTheme.error}
+                />
+                <Text
+                  style={[
+                    styles.modalButtonText,
+                    { color: currentTheme.error },
+                  ]}
+                >
+                  Remove Profile Picture
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </Pressable>
       </Modal>
@@ -582,40 +603,74 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
   modalView: {
-    width: "80%",
-    borderRadius: 15,
+    width: "90%",
+    borderRadius: 20,
     padding: 0,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
     overflow: "hidden",
   },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0, 0, 0, 0.1)",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    fontFamily: "outfit-bold",
+  },
+  modalImageWrapper: {
+    padding: 20,
+    alignItems: "center",
+  },
   modalImageContainer: {
-    width: "100%",
-    aspectRatio: 1,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    overflow: "hidden",
+    borderWidth: 3,
+    borderColor: "rgba(0, 0, 0, 0.1)",
   },
   modalProfilePicture: {
     width: "100%",
     height: "100%",
   },
-  modalOption: {
+  modalActions: {
+    padding: 20,
+    gap: 12,
+  },
+  modalButton: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 20,
+    justifyContent: "center",
+    padding: 14,
+    borderRadius: 12,
+    gap: 10,
   },
-  modalOptionText: {
+  modalButtonDanger: {
+    borderWidth: 1,
+  },
+  modalButtonText: {
+    color: "#FFF",
     fontSize: 16,
-    marginLeft: 15,
+    fontWeight: "500",
     fontFamily: "outfit-medium",
   },
 });

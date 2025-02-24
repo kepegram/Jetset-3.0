@@ -23,8 +23,10 @@ import SignUp from "./src/screens/onboarding/userAuth/signup";
 import ForgotPassword from "./src/screens/onboarding/userAuth/forgotPassword";
 import AppNav from "./src/navigation/appNav";
 import { Asset } from "expo-asset";
-import Terms from './src/screens/onboarding/terms/Terms';
-import Privacy from './src/screens/onboarding/privacy/Privacy';
+import Terms from "./src/screens/onboarding/terms/Terms";
+import Privacy from "./src/screens/onboarding/privacy/Privacy";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { FIREBASE_DB } from "./firebase.config";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -54,7 +56,9 @@ const App: React.FC = () => {
   const textAnim = new Animated.Value(0);
   const { currentTheme } = useTheme();
   const [request, response, promptAsync] = Google.useAuthRequest({
+    // @ts-ignore
     iosClientId: process.env.EXPO_PUBLIC_IOS_CLIENT_ID,
+    // @ts-ignore
     androidClientId: process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID,
   });
 
@@ -67,14 +71,26 @@ const App: React.FC = () => {
       if (id_token) {
         const credential = GoogleAuthProvider.credential(id_token);
         signInWithCredential(FIREBASE_AUTH, credential)
-          .then((userCredential) => {
+          .then(async (userCredential) => {
             const user = userCredential.user;
+            // Save user data to Firestore
+            const userRef = doc(FIREBASE_DB, "users", user.uid);
+            const userDoc = await getDoc(userRef);
+
+            if (!userDoc.exists()) {
+              // Only create new document if it doesn't exist
+              await setDoc(userRef, {
+                username: user.displayName || "User",
+                email: user.email,
+                createdAt: new Date().toISOString(),
+                authProvider: "google",
+                photoURL: user.photoURL || null,
+              });
+            }
           })
           .catch((error) => {
             console.error("Error signing in with Google: ", error);
           });
-      } else {
-        console.error("No ID token found");
       }
     }
   }, [response]);
@@ -267,19 +283,19 @@ const App: React.FC = () => {
                 component={ForgotPassword}
                 options={screenOptions}
               />
-              <Stack.Screen 
-                name="Terms" 
+              <Stack.Screen
+                name="Terms"
                 component={Terms}
                 options={{
-                  title: 'Terms & Conditions',
+                  title: "Terms & Conditions",
                   headerShown: true,
                 }}
               />
-              <Stack.Screen 
-                name="Privacy" 
+              <Stack.Screen
+                name="Privacy"
                 component={Privacy}
                 options={{
-                  title: 'Privacy Policy',
+                  title: "Privacy Policy",
                   headerShown: true,
                 }}
               />

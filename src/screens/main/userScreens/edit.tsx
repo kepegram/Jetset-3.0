@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Pressable, StyleSheet, Text, View, SafeAreaView } from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../navigation/appNav";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { doc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { FIREBASE_DB } from "../../../../firebase.config";
@@ -19,26 +19,37 @@ const Edit: React.FC = () => {
   const { currentTheme } = useTheme();
   const navigation = useNavigation<EditScreenNavigationProp>();
   const [userName, setUserName] = useState<string | null>("");
+  const [isThirdPartyAuth, setIsThirdPartyAuth] = useState(false);
 
-  // Fetch user data on component mount
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const user = getAuth().currentUser;
-      if (user) {
-        try {
-          const userDoc = await getDoc(doc(FIREBASE_DB, "users", user.uid));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            setUserName(data?.name || "");
+  // Replace the useEffect with useFocusEffect
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUserData = async () => {
+        const user = getAuth().currentUser;
+        if (user) {
+          try {
+            // Check if user is authenticated with Google or Apple
+            const isOAuthUser = user.providerData.some(
+              (provider) =>
+                provider.providerId === "google.com" ||
+                provider.providerId === "apple.com"
+            );
+            setIsThirdPartyAuth(isOAuthUser);
+
+            const userDoc = await getDoc(doc(FIREBASE_DB, "users", user.uid));
+            if (userDoc.exists()) {
+              const data = userDoc.data();
+              setUserName(data?.name || data?.username || "");
+            }
+          } catch (error) {
+            console.error("Error fetching user data:", error);
           }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
         }
-      }
-    };
+      };
 
-    fetchUserData();
-  }, []);
+      fetchUserData();
+    }, [])
+  );
 
   return (
     <SafeAreaView
@@ -97,49 +108,51 @@ const Edit: React.FC = () => {
             />
           </Pressable>
 
-          {/* Password Option */}
-          <Pressable
-            style={({ pressed }) => [
-              styles.securityOption,
-              {
-                backgroundColor: pressed
-                  ? currentTheme.inactive + "20"
-                  : "transparent",
-              },
-            ]}
-            onPress={() => navigation.navigate("ChangePassword")}
-          >
-            <View style={styles.optionContent}>
-              <Ionicons
-                name="lock-closed-outline"
+          {/* Password Option - only show for email/password users */}
+          {!isThirdPartyAuth && (
+            <Pressable
+              style={({ pressed }) => [
+                styles.securityOption,
+                {
+                  backgroundColor: pressed
+                    ? currentTheme.inactive + "20"
+                    : "transparent",
+                },
+              ]}
+              onPress={() => navigation.navigate("ChangePassword")}
+            >
+              <View style={styles.optionContent}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={24}
+                  color={currentTheme.icon}
+                />
+                <View style={styles.optionTextContainer}>
+                  <Text
+                    style={[
+                      styles.optionLabel,
+                      { color: currentTheme.textPrimary },
+                    ]}
+                  >
+                    Password
+                  </Text>
+                  <Text
+                    style={[
+                      styles.optionValue,
+                      { color: currentTheme.textSecondary },
+                    ]}
+                  >
+                    ******
+                  </Text>
+                </View>
+              </View>
+              <MaterialIcons
+                name="chevron-right"
                 size={24}
                 color={currentTheme.icon}
               />
-              <View style={styles.optionTextContainer}>
-                <Text
-                  style={[
-                    styles.optionLabel,
-                    { color: currentTheme.textPrimary },
-                  ]}
-                >
-                  Password
-                </Text>
-                <Text
-                  style={[
-                    styles.optionValue,
-                    { color: currentTheme.textSecondary },
-                  ]}
-                >
-                  ******
-                </Text>
-              </View>
-            </View>
-            <MaterialIcons
-              name="chevron-right"
-              size={24}
-              color={currentTheme.icon}
-            />
-          </Pressable>
+            </Pressable>
+          )}
         </View>
 
         {/* Delete Account Button */}

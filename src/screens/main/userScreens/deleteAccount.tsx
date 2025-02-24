@@ -8,6 +8,7 @@ import {
   Alert,
   TextInput,
   SafeAreaView,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
@@ -22,15 +23,22 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
   GoogleAuthProvider,
+  signInWithCredential,
 } from "firebase/auth";
 import { useTheme } from "../../../context/themeContext";
+import * as Google from "expo-auth-session/providers/google";
 
 const DeleteAccount: React.FC = () => {
   const { currentTheme } = useTheme();
+  // Get current user at component level
+  const currentUser = FIREBASE_AUTH.currentUser;
   // State for tracking user's deletion reason and credentials
   const [selectedReason, setSelectedReason] = useState<string>("");
   const [otherReason, setOtherReason] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Predefined list of reasons for account deletion
   const reasons = [
@@ -41,50 +49,53 @@ const DeleteAccount: React.FC = () => {
     "Other",
   ];
 
-  // Handle the account deletion process
   const handleDeleteAccount = async () => {
-    // Get the final reason (either selected or custom)
+    setError(null);
+    setLoading(true);
+
     const reasonToSubmit =
       selectedReason === "Other" ? otherReason : selectedReason;
 
     if (!reasonToSubmit) {
-      Alert.alert(
-        "Error",
-        "Please select a reason or fill in the 'Other' reason."
-      );
+      setError("Please select a reason or fill in the 'Other' reason.");
+      setLoading(false);
       return;
     }
 
     const user = FIREBASE_AUTH.currentUser;
     if (!user) {
-      Alert.alert("Error", "No user is logged in.");
+      setError("No user is logged in.");
+      setLoading(false);
       return;
     }
 
     try {
-      let credential;
+      let isAuthenticated = false;
 
-      // Handle different authentication methods (Google vs Email)
+      // For Google auth, skip reauthentication
       if (
         user.providerData.some(
           (provider) => provider.providerId === "google.com"
         )
       ) {
-        const googleCredential = GoogleAuthProvider.credential(
-          user.refreshToken
-        );
-        credential = googleCredential;
+        isAuthenticated = true; // Skip reauthentication for Google users
       } else {
+        // Only email/password users need to reauthenticate
         if (!password) {
-          Alert.alert("Error", "Please enter your password.");
+          setError("Please enter your password.");
+          setLoading(false);
           return;
         }
-        const email = user.email;
-        credential = EmailAuthProvider.credential(email!, password);
+        const credential = EmailAuthProvider.credential(user.email!, password);
+        await reauthenticateWithCredential(user, credential);
+        isAuthenticated = true;
       }
 
-      // Re-authenticate user before deletion
-      await reauthenticateWithCredential(user, credential);
+      if (!isAuthenticated) {
+        setError("Authentication failed. Please try again.");
+        setLoading(false);
+        return;
+      }
 
       // Show final confirmation dialog
       Alert.alert(
@@ -94,66 +105,32 @@ const DeleteAccount: React.FC = () => {
           { text: "Cancel", style: "cancel" },
           {
             text: "Yes, Delete",
+            style: "destructive",
             onPress: async () => {
               try {
-                const userId = user?.uid;
-
-                // Helper function to recursively delete subcollections
-                const deleteSubcollections = async (docRef: any) => {
-                  const subcollectionNames = [
-                    "subcollection1",
-                    "subcollection2",
-                    "activeTrips",
-                    "completedTrips",
-                    "savedTrips",
-                    "notifications",
-                    "preferences",
-                  ];
-                  for (const name of subcollectionNames) {
-                    const subcollectionRef = collection(docRef, name);
-                    const subcollectionDocs = await getDocs(subcollectionRef);
-                    for (const doc of subcollectionDocs.docs) {
-                      await deleteSubcollections(doc.ref);
-                      await deleteDoc(doc.ref);
-                    }
-                  }
-                };
-
-                // Delete from activeUsers collection
-                const activeUserDocRef = doc(
-                  FIREBASE_DB,
-                  "activeUsers",
-                  userId!
-                );
-                await deleteDoc(activeUserDocRef);
+                const userId = user.uid;
 
                 // Delete user data from Firestore
-                const userDocRef = doc(FIREBASE_DB, "users", userId!);
-                await deleteSubcollections(userDocRef);
-                await deleteDoc(userDocRef);
+                await deleteDoc(doc(FIREBASE_DB, "users", userId));
 
                 // Log deletion reason
-                const deletionDocRef = doc(
-                  FIREBASE_DB,
-                  "accountDeletions",
-                  userId!
-                );
-                await setDoc(deletionDocRef, {
+                await setDoc(doc(FIREBASE_DB, "accountDeletions", userId), {
                   reason: reasonToSubmit,
                   deletedAt: new Date().toISOString(),
+                  email: user.email,
+                  authProvider: user.providerData[0]?.providerId || "unknown",
                 });
 
                 // Delete the user account
                 await user.delete();
                 Alert.alert(
                   "Account Deleted",
-                  "Your account and all associated data have been deleted."
+                  "Your account has been successfully deleted."
                 );
               } catch (error) {
                 console.error("Error deleting account:", error);
-                Alert.alert(
-                  "Error",
-                  "There was an issue deleting your account."
+                setError(
+                  "There was an error deleting your account. Please try again."
                 );
               }
             },
@@ -161,18 +138,14 @@ const DeleteAccount: React.FC = () => {
         ]
       );
     } catch (error) {
-      console.error("Reauthentication error:", error);
-      Alert.alert(
-        "Error",
-        "Re-authentication failed. Please ensure your credentials are correct."
+      console.error("Account deletion error:", error);
+      setError(
+        "Authentication failed. Please ensure your credentials are correct."
       );
+    } finally {
+      setLoading(false);
     }
   };
-
-  // Check if user is signed in with Google
-  const isGoogleSignIn = FIREBASE_AUTH.currentUser?.providerData.some(
-    (provider) => provider.providerId === "google.com"
-  );
 
   return (
     <SafeAreaView
@@ -248,23 +221,40 @@ const DeleteAccount: React.FC = () => {
           />
         )}
 
-        {!isGoogleSignIn && (
-          <TextInput
-            style={[
-              styles.textInput,
-              {
-                color: currentTheme.textPrimary,
-                borderColor: currentTheme.inactive,
-                backgroundColor: currentTheme.accentBackground,
-                marginTop: 20,
-              },
-            ]}
-            placeholder="Enter password to confirm"
-            placeholderTextColor={currentTheme.secondary}
-            value={password}
-            onChangeText={(text) => setPassword(text)}
-            secureTextEntry
-          />
+        {!currentUser?.providerData.some(
+          (provider: { providerId: string }) =>
+            provider.providerId === "google.com"
+        ) && (
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={[
+                styles.textInput,
+                {
+                  color: currentTheme.textPrimary,
+                  borderColor: currentTheme.inactive,
+                  backgroundColor: currentTheme.accentBackground,
+                  marginTop: 20,
+                  paddingRight: 50,
+                },
+              ]}
+              placeholder="Enter password to confirm"
+              placeholderTextColor={currentTheme.secondary}
+              value={password}
+              onChangeText={(text) => setPassword(text)}
+              secureTextEntry={!passwordVisible}
+            />
+            <Pressable
+              style={styles.eyeIcon}
+              onPress={() => setPasswordVisible(!passwordVisible)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons
+                name={passwordVisible ? "eye-off" : "eye"}
+                size={24}
+                color={currentTheme.secondary}
+              />
+            </Pressable>
+          </View>
         )}
 
         <Pressable
@@ -279,6 +269,18 @@ const DeleteAccount: React.FC = () => {
           <Text style={styles.deleteButtonText}>Delete Account</Text>
         </Pressable>
       </ScrollView>
+
+      {error && (
+        <Text style={[styles.errorText, { color: currentTheme.error }]}>
+          {error}
+        </Text>
+      )}
+
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={currentTheme.alternate} />
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -337,5 +339,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "outfit-bold",
     color: "#FF3B30",
+  },
+  passwordContainer: {
+    position: "relative",
+    width: "100%",
+  },
+  eyeIcon: {
+    position: "absolute",
+    right: 16,
+    top: 32,
+    padding: 4,
+  },
+  errorText: {
+    textAlign: "center",
+    marginTop: 8,
+    fontSize: 14,
+    fontFamily: "outfit",
+  },
+  loadingContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.3)",
   },
 });

@@ -36,6 +36,7 @@ const ChangePassword: React.FC = () => {
   const [newPassword, setNewPassword] = useState<string>("");
   const [oldPasswordHidden, setOldPasswordHidden] = useState<boolean>(true);
   const [newPasswordHidden, setNewPasswordHidden] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigation = useNavigation<ChangePasswordScreenNavigationProp>();
 
   // Fetch user email on component mount
@@ -60,25 +61,61 @@ const ChangePassword: React.FC = () => {
 
   // Handle password update
   const handleSave = async () => {
+    // Reset error message
+    setErrorMessage(null);
+
+    // Validation checks
+    if (!password) {
+      setErrorMessage("Please enter your current password");
+      return;
+    }
+
+    if (!newPassword) {
+      setErrorMessage("New password cannot be empty");
+      return;
+    }
+
+    if (newPassword === password) {
+      setErrorMessage(
+        "New password must be different from your current password"
+      );
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setErrorMessage("New password must be at least 6 characters long");
+      return;
+    }
+
     const user = getAuth().currentUser;
-    if (user && email && password) {
+    if (user && email) {
       try {
         // Re-authenticate user with current password
         const credential = EmailAuthProvider.credential(email, password);
         await reauthenticateWithCredential(user, credential);
-        console.log("User reauthenticated successfully.");
 
-        // Update to new password if provided
-        if (newPassword) {
-          await updatePassword(user, newPassword);
-          console.log("Password updated successfully.");
-        }
+        // Update to new password
+        await updatePassword(user, newPassword);
 
-        navigation.navigate("Profile");
+        // Show success alert
         alert("Password updated successfully!");
-      } catch (error) {
+        navigation.navigate("Profile");
+      } catch (error: any) {
         console.error("Error updating password:", error);
-        alert(error);
+        // Handle specific Firebase error codes
+        if (error.code === "auth/wrong-password") {
+          setErrorMessage("Current password is incorrect");
+        } else if (error.code === "auth/too-many-requests") {
+          setErrorMessage(
+            "Too many unsuccessful attempts. Please try again later"
+          );
+        } else if (error.code === "auth/requires-recent-login") {
+          setErrorMessage(
+            "For security reasons, please log out and log back in before changing your password"
+          );
+        } else {
+          setErrorMessage("Failed to update password. Please try again");
+        }
       }
     }
   };
@@ -118,15 +155,16 @@ const ChangePassword: React.FC = () => {
               secureTextEntry={oldPasswordHidden}
               onChangeText={setPassword}
             />
-            {/* Toggle password visibility button */}
+            {/* Updated eye icon style to match signup.tsx */}
             <Pressable
-              style={styles.eyeButton}
+              style={styles.eyeIcon}
               onPress={() => setOldPasswordHidden(!oldPasswordHidden)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Ionicons
-                name={oldPasswordHidden ? "eye-off-outline" : "eye-outline"}
+                name={oldPasswordHidden ? "eye" : "eye-off"}
                 size={24}
-                color={currentTheme.inactive}
+                color={currentTheme.secondary}
               />
             </Pressable>
           </View>
@@ -155,17 +193,26 @@ const ChangePassword: React.FC = () => {
               secureTextEntry={newPasswordHidden}
               onChangeText={setNewPassword}
             />
+            {/* Updated eye icon style to match signup.tsx */}
             <Pressable
-              style={styles.eyeButton}
+              style={styles.eyeIcon}
               onPress={() => setNewPasswordHidden(!newPasswordHidden)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Ionicons
-                name={newPasswordHidden ? "eye-off-outline" : "eye-outline"}
+                name={newPasswordHidden ? "eye" : "eye-off"}
                 size={24}
-                color={currentTheme.inactive}
+                color={currentTheme.secondary}
               />
             </Pressable>
           </View>
+
+          {/* Error message placed below both password inputs */}
+          {errorMessage && (
+            <Text style={[styles.errorText, { color: currentTheme.error }]}>
+              {errorMessage}
+            </Text>
+          )}
         </View>
 
         {/* Action buttons */}
@@ -213,14 +260,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "outfit",
   },
-  eyeButton: {
-    padding: 8,
-    marginLeft: 8,
+  eyeIcon: {
+    position: "absolute",
+    right: 16,
+    padding: 4,
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: "auto",
     gap: 12,
+  },
+  errorText: {
+    fontSize: 14,
+    marginBottom: 16,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: "rgba(255, 0, 0, 0.1)",
+    fontFamily: "outfit",
   },
 });

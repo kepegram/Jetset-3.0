@@ -247,18 +247,19 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
             </Text>
           )}
 
-          <View style={styles.createAccountContainer}>
-            <Text style={[styles.createAccountText, { color: "black" }]}>
+          <Pressable
+            testID="signup-link-button"
+            onPress={handleSignUpNavigation}
+            disabled={loading}
+            style={[styles.loginLink, { opacity: loading ? 0.7 : 1 }]}
+          >
+            <Text testID="signup-link-text" style={styles.loginText}>
               New to Jetset?{" "}
-              <Text
-                style={[styles.signUpLink, { color: "#3BACE3" }]}
-                testID="signup-link-text"
-                onPress={handleSignUpNavigation}
-              >
+              <Text style={{ fontWeight: "bold", color: "#3BACE3" }}>
                 Sign up here
               </Text>
             </Text>
-          </View>
+          </Pressable>
         </View>
 
         <View style={styles.dividerContainer}>
@@ -426,5 +427,13 @@ const styles = StyleSheet.create({
   socialButtonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  loginLink: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  loginText: {
+    fontSize: 16,
+    fontWeight: "500",
   },
 });
