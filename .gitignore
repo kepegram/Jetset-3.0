@@ -39,6 +39,7 @@ yarn-error.*
 
 # personal
 .env
+eas.json
 firebase.config.ts
 AI-Model.tsx
 google-services.json
