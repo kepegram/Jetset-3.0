@@ -4,6 +4,7 @@ export const GetPhotoRef = async (placeName: string) => {
       "?query=" +
       placeName +
       "&key=" +
+      // @ts-ignore
       process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY
   );
 

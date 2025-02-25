@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
+  Alert,
 } from "react-native";
 import React, { useState, useContext, useCallback, useRef } from "react";
 import { useFocusEffect } from "@react-navigation/native";
@@ -90,6 +91,8 @@ const Home: React.FC = () => {
     completed: 0,
     total: 3,
   });
+  const [isFirstLogin, setIsFirstLogin] = useState<boolean>(false);
+  const [tapCount, setTapCount] = useState<number>(0);
   const navigation = useNavigation<NavigationProp>();
   const googlePlacesRef = useRef<any>(null);
 
@@ -113,6 +116,7 @@ const Home: React.FC = () => {
         `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(
           placeName
         )}&inputtype=textquery&fields=photos&key=${
+          // @ts-ignore
           process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY
         }`
       );
@@ -241,11 +245,37 @@ const Home: React.FC = () => {
     }
   };
 
-  // Modify useFocusEffect to only load existing trips
+  // Modify useFocusEffect to check if it's the first login
   useFocusEffect(
     useCallback(() => {
-      loadExistingTrips(); // New function to load trips from Firebase
-    }, [])
+      const checkFirstLogin = async () => {
+        try {
+          // For testing: Uncomment to clear storage between tests
+          // await AsyncStorage.clear();
+
+          const hasLoggedIn = await AsyncStorage.getItem("hasLoggedInBefore");
+          console.log("hasLoggedInBefore value:", hasLoggedIn);
+
+          if (!hasLoggedIn) {
+            console.log("This is a first login!");
+            setIsFirstLogin(true);
+            // Set the flag that the user has logged in
+            await AsyncStorage.setItem("hasLoggedInBefore", "true");
+          } else {
+            console.log("This is NOT a first login");
+            setIsFirstLogin(false);
+          }
+        } catch (error) {
+          console.error("Error checking first login:", error);
+          setIsFirstLogin(false);
+        }
+
+        // Load trips regardless of login state
+        loadExistingTrips();
+      };
+
+      checkFirstLogin();
+    }, []) // Remove isFirstLogin from dependencies to prevent infinite loop
   );
 
   // Add this new function to load existing trips
@@ -256,12 +286,23 @@ const Home: React.FC = () => {
         throw new Error("User not authenticated");
       }
 
+      console.log("Loading trips for user:", user.uid);
+      console.log("First login status:", isFirstLogin);
+
+      // Check if user has manually refreshed trips before
+      const hasRefreshed = await AsyncStorage.getItem("hasRefreshedTrips");
+      console.log("Has user refreshed trips before:", hasRefreshed);
+
       const userTripsCollection = collection(
         FIREBASE_DB,
         `users/${user.uid}/suggestedTrips`
       );
 
+      // Check if user has suggested trips
       const userTripsSnapshot = await getDocs(userTripsCollection);
+      console.log("User has existing trips:", !userTripsSnapshot.empty);
+
+      // If user has their own trips, use them
       if (!userTripsSnapshot.empty) {
         const trips: RecommendedTrip[] = [];
         userTripsSnapshot.forEach((doc) => {
@@ -274,13 +315,67 @@ const Home: React.FC = () => {
           error: null,
           lastFetched: new Date(),
         });
-      } else {
-        setRecommendedTripsState((prev) => ({
-          ...prev,
-          status: "idle",
-          error: null,
-        }));
+        return;
       }
+
+      // If the user doesn't have any trips yet, load from defaultTrips
+      console.log("Looking for default trips to load...");
+      const defaultTripsCollection = collection(FIREBASE_DB, "defaultTrips");
+      const defaultTripsSnapshot = await getDocs(defaultTripsCollection);
+      console.log("Number of default trips found:", defaultTripsSnapshot.size);
+
+      if (!defaultTripsSnapshot.empty) {
+        const defaultTrips: RecommendedTrip[] = [];
+        // Only get up to 3 default trips
+        defaultTripsSnapshot.docs.slice(0, 3).forEach((doc) => {
+          const tripData = doc.data();
+          defaultTrips.push(tripData as RecommendedTrip);
+        });
+
+        if (defaultTrips.length > 0) {
+          console.log("Copying default trips to user collection...");
+          // Save default trips to user collection
+          const batch = writeBatch(FIREBASE_DB);
+
+          defaultTrips.forEach((trip) => {
+            const newTripRef = doc(userTripsCollection);
+            // Create a new trip in the user's collection based on the default trip
+            batch.set(newTripRef, {
+              ...trip,
+              id: `trip-${Date.now()}-${Math.random()
+                .toString(36)
+                .substr(2, 9)}`,
+            });
+          });
+
+          await batch.commit();
+
+          // Now load the trips again to get the user's newly created trips
+          const updatedUserTripsSnapshot = await getDocs(userTripsCollection);
+          const userTrips: RecommendedTrip[] = [];
+          updatedUserTripsSnapshot.forEach((doc) => {
+            const tripData = doc.data();
+            userTrips.push(tripData as RecommendedTrip);
+          });
+
+          setRecommendedTripsState({
+            trips: userTrips,
+            status: "success",
+            error: null,
+            lastFetched: new Date(),
+          });
+          console.log("Successfully loaded default trips for new user");
+          return;
+        }
+      }
+
+      // If we reach here, there were no user trips or default trips
+      console.log("No trips found (user or default)");
+      setRecommendedTripsState((prev) => ({
+        ...prev,
+        status: "idle",
+        error: null,
+      }));
     } catch (error) {
       console.error("Error loading trips:", error);
       setRecommendedTripsState((prev) => ({
@@ -345,6 +440,8 @@ const Home: React.FC = () => {
           error: null,
           lastFetched: new Date(),
         });
+        // Mark that the user has manually refreshed their trips
+        await AsyncStorage.setItem("hasRefreshedTrips", "true");
         await AsyncStorage.setItem("lastFetchTime", new Date().toISOString());
       } else {
         throw new Error("No valid trips could be generated. Please try again.");
@@ -385,6 +482,33 @@ const Home: React.FC = () => {
     </View>
   );
 
+  // Hidden function to reset storage for testing
+  const resetStorageForTesting = async () => {
+    setTapCount((prev) => prev + 1);
+
+    if (tapCount >= 7) {
+      // Reset tap count
+      setTapCount(0);
+
+      try {
+        // Clear AsyncStorage
+        await AsyncStorage.clear();
+        console.log("🧹 AsyncStorage cleared for testing!");
+        // Force reload
+        loadExistingTrips();
+
+        // Show confirmation
+        Alert.alert(
+          "Storage Reset",
+          "AsyncStorage has been cleared for testing. The app will treat this as a new login.",
+          [{ text: "OK" }]
+        );
+      } catch (error) {
+        console.error("Error resetting storage:", error);
+      }
+    }
+  };
+
   return (
     <View testID="home-screen" style={{ flex: 1 }}>
       <ScrollView
@@ -406,7 +530,11 @@ const Home: React.FC = () => {
             />
           </View>
           <View testID="home-header-content" style={styles.headerContent}>
-            <Text testID="home-greeting" style={styles.greetingText}>
+            <Text
+              testID="home-greeting"
+              style={styles.greetingText}
+              onPress={resetStorageForTesting}
+            >
               {getGreeting()}
             </Text>
             <Text testID="home-subgreeting" style={styles.subGreetingText}>
@@ -456,6 +584,7 @@ const Home: React.FC = () => {
                 }
               }}
               query={{
+                // @ts-ignore
                 key: process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY,
                 language: "en",
               }}
@@ -678,6 +807,7 @@ const Home: React.FC = () => {
                           <Image
                             testID={`trip-image-${trip.id}`}
                             source={{
+                              // @ts-ignore
                               uri: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${trip.photoRef}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`,
                             }}
                             style={styles.tripImage}
