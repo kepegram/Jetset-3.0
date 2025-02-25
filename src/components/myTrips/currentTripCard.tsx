@@ -129,16 +129,24 @@ const CurrentTripCard: React.FC<CurrentTripCardProps> = ({ userTrips }) => {
               ...parsedCurrentTrip,
               travelPlan: parsedCurrentPlan?.travelPlan || {},
             }),
-            photoRef: parsedCurrentTrip?.photoRef || parsedCurrentTrip?.locationInfo?.photoRef || "",
+            photoRef:
+              parsedCurrentTrip?.photoRef ||
+              parsedCurrentTrip?.locationInfo?.photoRef ||
+              "",
           });
         }}
         style={styles.cardContainer}
       >
         <Image
           source={
-            parsedCurrentTrip?.photoRef || parsedCurrentTrip?.locationInfo?.photoRef
+            parsedCurrentTrip?.photoRef ||
+            parsedCurrentTrip?.locationInfo?.photoRef
               ? {
-                  uri: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${parsedCurrentTrip?.photoRef || parsedCurrentTrip?.locationInfo?.photoRef}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`,
+                  uri: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${
+                    parsedCurrentTrip?.photoRef ||
+                    parsedCurrentTrip?.locationInfo?.photoRef
+                    // @ts-ignore
+                  }&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`,
                 }
               : require("../../assets/app-imgs/placeholder.jpeg")
           }
@@ -184,6 +192,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+    backgroundColor: "#fff",
   },
   image: {
     width: "100%",
@@ -223,29 +232,29 @@ const styles = StyleSheet.create({
     height: 240,
   },
   noTripContent: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 12,
   },
   noTripText: {
     fontSize: 18,
-    color: '#fff',
-    fontWeight: '600',
-    textAlign: 'center',
+    color: "#fff",
+    fontWeight: "600",
+    textAlign: "center",
     textShadowColor: "rgba(0, 0, 0, 0.75)",
     textShadowOffset: { width: -1, height: 1 },
     textShadowRadius: 10,
   },
   createTripButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
     marginTop: 8,
   },
   createTripText: {
-    color: '#000',
+    color: "#000",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

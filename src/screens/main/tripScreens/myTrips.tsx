@@ -226,70 +226,20 @@ const MyTrips: React.FC = () => {
               <StartNewTripCard navigation={navigation} />
             ) : (
               <View style={styles.tripsContainer}>
-                <View style={styles.sectionHeaderContainer}>
-                  <Text
-                    style={[
-                      styles.sectionTitle,
-                      { color: currentTheme.textPrimary },
-                    ]}
-                  >
-                    Current Trip
-                  </Text>
-                </View>
-                {hasCurrentTrip ? (
-                  <CurrentTripsCard userTrips={userTrips} />
-                ) : (
-                  <Animated.View
-                    style={[
-                      styles.container,
-                      { transform: [{ scale: scaleAnim }] },
-                    ]}
-                  >
-                    <Pressable
-                      onPressIn={handlePressIn}
-                      onPressOut={handlePressOut}
-                      onPress={() => navigation.navigate("WhereTo")}
-                      style={[styles.cardContainer]}
-                    >
-                      <Image
-                        source={require("../../../assets/app-imgs/placeholder.jpeg")}
-                        style={styles.noTripImage}
-                      />
-                      <LinearGradient
-                        colors={["transparent", "rgba(0,0,0,0.9)"]}
-                        style={styles.gradient}
+                {hasCurrentTrip && (
+                  <>
+                    <View style={styles.sectionHeaderContainer}>
+                      <Text
+                        style={[
+                          styles.sectionTitle,
+                          { color: currentTheme.textPrimary },
+                        ]}
                       >
-                        <View style={styles.contentContainer}>
-                          <View style={styles.noTripContent}>
-                            <MaterialIcons
-                              name="flight"
-                              size={32}
-                              color="#fff"
-                            />
-                            <Text style={styles.noTripText}>
-                              No current trips. Time to plan your next
-                              adventure!
-                            </Text>
-                            <View style={styles.createTripButtonContainer}>
-                              <View style={styles.createTripButton}>
-                                <MaterialIcons
-                                  name="add-circle"
-                                  size={24}
-                                  color="#000"
-                                />
-                                <Text style={styles.createTripText}>
-                                  Start New Trip
-                                </Text>
-                              </View>
-                              <Text style={styles.tapToStartText}>
-                                Tap to begin planning
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                      </LinearGradient>
-                    </Pressable>
-                  </Animated.View>
+                        Current Trip
+                      </Text>
+                    </View>
+                    <CurrentTripsCard userTrips={userTrips} />
+                  </>
                 )}
 
                 <View style={styles.sectionHeaderContainer}>

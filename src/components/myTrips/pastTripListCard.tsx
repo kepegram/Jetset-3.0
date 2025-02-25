@@ -94,6 +94,7 @@ const PastTripListCard: React.FC<PastTripListCardProps> = ({ trip }) => {
                 tripData.photoRef || tripData.locationInfo?.photoRef
                   ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${
                       tripData.photoRef || tripData.locationInfo?.photoRef
+                      // @ts-ignore
                     }&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
                   : "https://via.placeholder.com/100",
             }}
@@ -149,11 +150,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderRadius: 16,
     overflow: "hidden",
+    marginBottom: 10,
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
+    backgroundColor: "#fff",
     padding: 12,
     alignItems: "center",
     gap: 15,

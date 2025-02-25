@@ -1,85 +1,152 @@
-import { StyleSheet, View, Pressable, Text } from "react-native";
-import React from "react";
+import { StyleSheet, View, Pressable, Text, Animated } from "react-native";
+import React, { useRef, useEffect } from "react";
 import { useTheme } from "../../../context/themeContext";
 import { Ionicons } from "@expo/vector-icons";
 
 const AppTheme: React.FC = () => {
   // Get theme context values
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, currentTheme } = useTheme();
   const isDarkTheme = theme === "dark";
+
+  // Animation values
+  const lightScaleAnim = useRef(
+    new Animated.Value(theme === "light" ? 1 : 0.95)
+  ).current;
+  const darkScaleAnim = useRef(
+    new Animated.Value(theme === "dark" ? 1 : 0.95)
+  ).current;
+
+  // Run animation when theme changes
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(lightScaleAnim, {
+        toValue: theme === "light" ? 1 : 0.95,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      Animated.spring(darkScaleAnim, {
+        toValue: theme === "dark" ? 1 : 0.95,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [theme]);
 
   return (
     <View
-      style={[
-        styles.container,
-        { backgroundColor: isDarkTheme ? "#121212" : "#fff" },
-      ]}
+      style={[styles.container, { backgroundColor: currentTheme.background }]}
     >
       <View style={styles.themeContainer}>
-        <Text style={[styles.title, { color: isDarkTheme ? "#fff" : "#000" }]}>
+        <Text style={[styles.title, { color: currentTheme.textPrimary }]}>
           Choose Your Theme
         </Text>
 
         <View style={styles.optionsContainer}>
-          <Pressable
-            style={[
-              styles.themeOption,
-              !isDarkTheme && styles.activeThemeOption,
-              { borderColor: isDarkTheme ? "#666" : "#387694" },
-            ]}
-            onPress={() => setTheme("light")}
-          >
-            <Ionicons
-              name="sunny"
-              size={32}
-              color={isDarkTheme ? "#666" : "#387694"}
-            />
-            <Text
+          <Animated.View style={{ transform: [{ scale: lightScaleAnim }] }}>
+            <Pressable
               style={[
-                styles.optionText,
-                { color: isDarkTheme ? "#fff" : "#000" },
+                styles.themeOption,
+                !isDarkTheme && styles.activeThemeOption,
+                {
+                  borderColor: isDarkTheme
+                    ? currentTheme.secondary
+                    : currentTheme.alternate,
+                  backgroundColor: !isDarkTheme
+                    ? `${currentTheme.alternate}15`
+                    : "transparent",
+                },
               ]}
+              onPress={() => setTheme("light")}
+              android_ripple={{ color: `${currentTheme.alternate}30` }}
             >
-              Light Mode
-            </Text>
-            <View
-              style={[styles.checkmark, !isDarkTheme && styles.activeCheckmark]}
-            >
-              {!isDarkTheme && (
-                <Ionicons name="checkmark" size={16} color="#fff" />
-              )}
-            </View>
-          </Pressable>
+              <View style={styles.iconContainer}>
+                <Ionicons
+                  name="sunny"
+                  size={32}
+                  color={
+                    isDarkTheme
+                      ? currentTheme.secondary
+                      : currentTheme.alternate
+                  }
+                />
+              </View>
+              <Text
+                style={[styles.optionText, { color: currentTheme.textPrimary }]}
+              >
+                Light Mode
+              </Text>
+              <View
+                style={[
+                  styles.checkmark,
+                  !isDarkTheme && [
+                    styles.activeCheckmark,
+                    {
+                      backgroundColor: currentTheme.alternate,
+                      borderColor: currentTheme.alternate,
+                    },
+                  ],
+                ]}
+              >
+                {!isDarkTheme && (
+                  <Ionicons name="checkmark" size={16} color="#fff" />
+                )}
+              </View>
+            </Pressable>
+          </Animated.View>
 
-          <Pressable
-            style={[
-              styles.themeOption,
-              isDarkTheme && styles.activeThemeOption,
-              { borderColor: isDarkTheme ? "#387694" : "#666" },
-            ]}
-            onPress={() => setTheme("dark")}
-          >
-            <Ionicons
-              name="moon"
-              size={32}
-              color={isDarkTheme ? "#387694" : "#666"}
-            />
-            <Text
+          <Animated.View style={{ transform: [{ scale: darkScaleAnim }] }}>
+            <Pressable
               style={[
-                styles.optionText,
-                { color: isDarkTheme ? "#fff" : "#000" },
+                styles.themeOption,
+                isDarkTheme && styles.activeThemeOption,
+                {
+                  borderColor: isDarkTheme
+                    ? currentTheme.alternate
+                    : currentTheme.secondary,
+                  backgroundColor: isDarkTheme
+                    ? `${currentTheme.alternate}15`
+                    : "transparent",
+                },
               ]}
+              onPress={() => setTheme("dark")}
+              android_ripple={{ color: `${currentTheme.alternate}30` }}
             >
-              Dark Mode
-            </Text>
-            <View
-              style={[styles.checkmark, isDarkTheme && styles.activeCheckmark]}
-            >
-              {isDarkTheme && (
-                <Ionicons name="checkmark" size={16} color="#fff" />
-              )}
-            </View>
-          </Pressable>
+              <View style={styles.iconContainer}>
+                <Ionicons
+                  name="moon"
+                  size={32}
+                  color={
+                    isDarkTheme
+                      ? currentTheme.alternate
+                      : currentTheme.secondary
+                  }
+                />
+              </View>
+              <Text
+                style={[styles.optionText, { color: currentTheme.textPrimary }]}
+              >
+                Dark Mode
+              </Text>
+              <View
+                style={[
+                  styles.checkmark,
+                  isDarkTheme && [
+                    styles.activeCheckmark,
+                    {
+                      backgroundColor: currentTheme.alternate,
+                      borderColor: currentTheme.alternate,
+                    },
+                  ],
+                ]}
+              >
+                {isDarkTheme && (
+                  <Ionicons name="checkmark" size={16} color="#fff" />
+                )}
+              </View>
+            </Pressable>
+          </Animated.View>
         </View>
       </View>
     </View>
@@ -97,32 +164,46 @@ const styles = StyleSheet.create({
   themeContainer: {
     width: "90%",
     maxWidth: 400,
-    padding: 20,
+    padding: 24,
+    borderRadius: 16,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontFamily: "outfit-bold",
-    marginBottom: 30,
+    marginBottom: 36,
     textAlign: "center",
   },
   optionsContainer: {
-    gap: 20,
+    gap: 24,
   },
   themeOption: {
     flexDirection: "row",
     alignItems: "center",
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 2,
-    backgroundColor: "transparent",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
   },
   activeThemeOption: {
-    backgroundColor: "rgba(56, 118, 148, 0.1)",
+    elevation: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
   },
   optionText: {
     fontSize: 18,
-    fontFamily: "outfit",
-    marginLeft: 15,
+    fontFamily: "outfit-medium",
+    marginLeft: 16,
     flex: 1,
   },
   checkmark: {
@@ -135,7 +216,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   activeCheckmark: {
-    backgroundColor: "#387694",
-    borderColor: "#387694",
+    borderColor: "transparent",
   },
 });

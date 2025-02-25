@@ -101,7 +101,10 @@ const UpcomingTripsCard: React.FC<UpcomingTripsCardProps> = ({ userTrips }) => {
               ...UpcomingTrip,
               travelPlan: UpcomingPlan?.travelPlan || {},
             }),
-            photoRef: UpcomingTrip?.photoRef || UpcomingTrip?.locationInfo?.photoRef || "",
+            photoRef:
+              UpcomingTrip?.photoRef ||
+              UpcomingTrip?.locationInfo?.photoRef ||
+              "",
             docId: upcomingTripData?.id,
           });
         }}
@@ -109,9 +112,14 @@ const UpcomingTripsCard: React.FC<UpcomingTripsCardProps> = ({ userTrips }) => {
       >
         <Image
           source={{
-            uri: UpcomingTrip?.photoRef || UpcomingTrip?.locationInfo?.photoRef
-              ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${UpcomingTrip?.photoRef || UpcomingTrip?.locationInfo?.photoRef}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
-              : "https://via.placeholder.com/400",
+            uri:
+              UpcomingTrip?.photoRef || UpcomingTrip?.locationInfo?.photoRef
+                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${
+                    UpcomingTrip?.photoRef ||
+                    UpcomingTrip?.locationInfo?.photoRef
+                    // @ts-ignore
+                  }&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
+                : "https://via.placeholder.com/400",
           }}
           style={styles.image}
         />

@@ -287,6 +287,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     marginTop: height * 0.45,
+    paddingBottom: 400,
   },
   contentContainer: {
     padding: 24,
