@@ -246,20 +246,6 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
               {errorMessage}
             </Text>
           )}
-
-          <Pressable
-            testID="signup-link-button"
-            onPress={handleSignUpNavigation}
-            disabled={loading}
-            style={[styles.loginLink, { opacity: loading ? 0.7 : 1 }]}
-          >
-            <Text testID="signup-link-text" style={styles.loginText}>
-              New to Jetset?{" "}
-              <Text style={{ fontWeight: "bold", color: "#3BACE3" }}>
-                Sign up here
-              </Text>
-            </Text>
-          </Pressable>
         </View>
 
         <View style={styles.dividerContainer}>
@@ -305,6 +291,19 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
             />
           )}
         </View>
+        <Pressable
+          testID="signup-link-button"
+          onPress={handleSignUpNavigation}
+          disabled={loading}
+          style={[styles.loginLink, { opacity: loading ? 0.7 : 1 }]}
+        >
+          <Text testID="signup-link-text" style={styles.loginText}>
+            New to Jetset?{" "}
+            <Text style={{ fontWeight: "bold", color: "#3BACE3" }}>
+              Sign up here
+            </Text>
+          </Text>
+        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
@@ -421,16 +420,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   socialIcon: {
-    width: 24,
-    height: 24,
+    width: 16,
+    height: 16,
   },
   socialButtonText: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: "600",
   },
   loginLink: {
     alignItems: "center",
-    marginBottom: 32,
+    marginTop: 20,
   },
   loginText: {
     fontSize: 16,

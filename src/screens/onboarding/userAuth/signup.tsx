@@ -417,6 +417,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontWeight: "500",
+    color: "red",
   },
   dividerContainer: {
     flexDirection: "row",
@@ -443,7 +444,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   socialButton: {
-    height: 52,
+    height: 54,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "black",
@@ -453,13 +454,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   socialIcon: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
   },
   socialButtonText: {
-    fontSize: 16,
+    fontSize: 19,
     fontWeight: "600",
-    letterSpacing: 0.3,
   },
   loginLink: {
     alignItems: "center",
