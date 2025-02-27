@@ -9,21 +9,58 @@ import {
   Dimensions,
   Pressable,
   StatusBar,
+  Modal,
+  Animated,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useTheme } from "../../../../context/themeContext";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../../navigation/appNav";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { doc, deleteDoc } from "firebase/firestore";
+import { doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../../firebase.config";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import moment from "moment";
 import HotelList from "../../../../components/tripDetails/hotelList";
 import PlannedTrip from "../../../../components/tripDetails/plannedTrip";
 import { MainButton } from "../../../../components/ui/button";
 
 const { width, height } = Dimensions.get("window");
+
+// Import travel options from WhosGoing
+export interface TravelOption {
+  value: number;
+  label: string;
+  description: string;
+  icon: string;
+}
+
+export const travelOptions: TravelOption[] = [
+  {
+    value: 1,
+    label: "Solo",
+    description: "Adventure at your own pace",
+    icon: "person-outline",
+  },
+  {
+    value: 2,
+    label: "Couple",
+    description: "Perfect for two",
+    icon: "people-outline",
+  },
+  {
+    value: 3,
+    label: "Small Group",
+    description: "3-4 travelers",
+    icon: "people",
+  },
+  {
+    value: 4,
+    label: "Large Group",
+    description: "5+ travelers",
+    icon: "people-circle-outline",
+  },
+];
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -45,6 +82,15 @@ const TripDetails: React.FC = () => {
   const [tripDetails, setTripDetails] = useState<any>(null);
   const user = FIREBASE_AUTH.currentUser;
 
+  // State for edit modal
+  const [whoModalVisible, setWhoModalVisible] = useState(false);
+  const [whoIsGoing, setWhoIsGoing] = useState<number>(1);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Add animation values
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const modalTranslateY = useRef(new Animated.Value(height)).current;
+
   useEffect(() => {
     navigation.setOptions({
       headerShown: true,
@@ -63,6 +109,14 @@ const TripDetails: React.FC = () => {
     try {
       const parsedTrip = JSON.parse(trip);
       setTripDetails(parsedTrip);
+
+      // Set who is going based on the trip data
+      const whoOption = travelOptions.find(
+        (opt) => opt.label === parsedTrip?.whoIsGoing
+      );
+      if (whoOption) {
+        setWhoIsGoing(whoOption.value);
+      }
     } catch (error) {
       console.error("Error parsing trip details:", error);
     }
@@ -92,6 +146,90 @@ const TripDetails: React.FC = () => {
     }
   };
 
+  // Handle option select for who's going
+  const handleOptionSelect = (value: number) => {
+    setWhoIsGoing(value);
+  };
+
+  // Animation functions
+  const showModal = () => {
+    setWhoModalVisible(true);
+    Animated.parallel([
+      Animated.timing(overlayOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(modalTranslateY, {
+        toValue: 0,
+        damping: 20,
+        mass: 0.8,
+        stiffness: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const hideModal = () => {
+    Animated.parallel([
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(modalTranslateY, {
+        toValue: height,
+        damping: 20,
+        mass: 0.8,
+        stiffness: 100,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setWhoModalVisible(false);
+    });
+  };
+
+  // Save updated who's going to Firestore
+  const saveWhoChanges = async () => {
+    if (!user) return;
+
+    setIsUpdating(true);
+    try {
+      const tripDocRef = doc(
+        FIREBASE_DB,
+        `users/${user.uid}/userTrips/${docId}`
+      );
+
+      // Get the selected option
+      const selectedOption = travelOptions.find(
+        (opt) => opt.value === whoIsGoing
+      );
+      if (!selectedOption) return;
+
+      // Update trip details in state
+      const updatedTripDetails = {
+        ...tripDetails,
+        whoIsGoing: selectedOption.label,
+      };
+
+      // Update Firestore
+      await updateDoc(tripDocRef, {
+        whoIsGoing: selectedOption.label,
+      });
+
+      setTripDetails(updatedTripDetails);
+      hideModal();
+    } catch (error) {
+      console.error("Error updating travel companions:", error);
+      Alert.alert(
+        "Error",
+        "Failed to update travel companions. Please try again."
+      );
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   if (!tripDetails) {
     return (
       <View
@@ -113,25 +251,26 @@ const TripDetails: React.FC = () => {
       style={[styles.container, { backgroundColor: currentTheme.background }]}
     >
       <StatusBar barStyle="light-content" />
-      <View style={styles.imageContainer}>
-        <Image
-          source={{
-            uri:
-              photoRef || tripDetails?.photoRef
-                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${
-                    photoRef || tripDetails?.photoRef
-                    // @ts-ignore
-                  }&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
-                : "https://via.placeholder.com/800",
-          }}
-          style={styles.image}
-        />
-      </View>
-
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.imageContainer}>
+          <Image
+            source={{
+              uri:
+                photoRef || tripDetails?.photoRef
+                  ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${
+                      photoRef || tripDetails?.photoRef
+                      // @ts-ignore
+                    }&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
+                  : "https://via.placeholder.com/800",
+            }}
+            style={styles.image}
+          />
+        </View>
+
         <View
           style={[
             styles.contentContainer,
@@ -180,11 +319,12 @@ const TripDetails: React.FC = () => {
                 {moment(tripDetails?.endDate).format("MMM DD")}
               </Text>
             </View>
-            <View
+            <Pressable
               style={[
                 styles.tripMetaItem,
                 { backgroundColor: `${currentTheme.alternate}20` },
               ]}
+              onPress={showModal}
             >
               <Ionicons
                 name="people-outline"
@@ -199,7 +339,13 @@ const TripDetails: React.FC = () => {
               >
                 {tripDetails?.whoIsGoing || "Unknown"}
               </Text>
-            </View>
+              <Ionicons
+                name="pencil-outline"
+                size={16}
+                color={currentTheme.alternate}
+                style={{ marginLeft: 8 }}
+              />
+            </Pressable>
           </View>
 
           <View
@@ -256,6 +402,145 @@ const TripDetails: React.FC = () => {
           <PlannedTrip details={tripDetails?.travelPlan} />
         </View>
       </ScrollView>
+
+      {/* Who's Going Edit Modal */}
+      <Modal
+        animationType="none"
+        transparent={true}
+        visible={whoModalVisible}
+        onRequestClose={hideModal}
+      >
+        <Animated.View
+          style={[
+            styles.modalOverlay,
+            {
+              opacity: overlayOpacity,
+            },
+          ]}
+        >
+          <Pressable style={styles.modalOverlayPressable} onPress={hideModal} />
+          <Animated.View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: currentTheme.background,
+                transform: [{ translateY: modalTranslateY }],
+              },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <Text
+                style={[styles.modalTitle, { color: currentTheme.textPrimary }]}
+              >
+                Edit Travel Companions
+              </Text>
+              <Pressable onPress={hideModal}>
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={currentTheme.textSecondary}
+                />
+              </Pressable>
+            </View>
+
+            <View style={styles.optionsContainer}>
+              {travelOptions.map((option) => (
+                <Pressable
+                  key={option.value}
+                  onPress={() => handleOptionSelect(option.value)}
+                  style={({ pressed }) => [
+                    styles.optionCard,
+                    {
+                      backgroundColor: currentTheme.background,
+                      borderColor:
+                        whoIsGoing === option.value
+                          ? currentTheme.alternate
+                          : currentTheme.secondary,
+                      transform: [
+                        {
+                          scale: pressed ? 0.98 : 1,
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  <View style={styles.optionContent}>
+                    <View
+                      style={[
+                        styles.iconContainer,
+                        {
+                          backgroundColor:
+                            whoIsGoing === option.value
+                              ? currentTheme.alternate
+                              : currentTheme.background,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={option.icon as any}
+                        size={24}
+                        color={
+                          whoIsGoing === option.value
+                            ? "white"
+                            : currentTheme.textSecondary
+                        }
+                      />
+                    </View>
+                    <View style={styles.optionTextContainer}>
+                      <Text
+                        style={[
+                          styles.optionTitle,
+                          {
+                            color: currentTheme.textPrimary,
+                            fontWeight:
+                              whoIsGoing === option.value ? "600" : "400",
+                          },
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.optionDescription,
+                          { color: currentTheme.textSecondary },
+                        ]}
+                      >
+                        {option.description}
+                      </Text>
+                    </View>
+                    {whoIsGoing === option.value && (
+                      <MaterialIcons
+                        name="check-circle"
+                        size={24}
+                        color={currentTheme.alternate}
+                        style={styles.checkIcon}
+                      />
+                    )}
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+
+            <View style={styles.modalButtonContainer}>
+              <MainButton
+                buttonText="Cancel"
+                onPress={hideModal}
+                width="48%"
+                backgroundColor={currentTheme.secondary}
+                style={{ borderRadius: 12 }}
+              />
+              <MainButton
+                buttonText="Save Changes"
+                onPress={saveWhoChanges}
+                width="48%"
+                backgroundColor={currentTheme.alternate}
+                style={{ borderRadius: 12 }}
+                disabled={isUpdating}
+              />
+            </View>
+          </Animated.View>
+        </Animated.View>
+      </Modal>
     </View>
   );
 };
@@ -274,26 +559,26 @@ const styles = StyleSheet.create({
     fontFamily: "outfit-medium",
     fontSize: 18,
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   imageContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
     height: height * 0.5,
+    width: "100%",
   },
   image: {
     width: "100%",
     height: "100%",
-  },
-  scrollContent: {
-    marginTop: height * 0.45,
-    paddingBottom: 400,
   },
   contentContainer: {
     padding: 24,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     marginTop: -30,
+    flex: 1,
   },
   headerContainer: {
     marginBottom: 20,
@@ -317,7 +602,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
     borderRadius: 12,
   },
   tripMetaText: {
@@ -381,6 +666,163 @@ const styles = StyleSheet.create({
     width: 44,
     alignItems: "center",
     justifyContent: "center",
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalOverlayPressable: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: height * 0.9,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontFamily: "outfit-bold",
+  },
+  modalButtonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+  },
+  // Calendar styles
+  calendarContainer: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  dateRangeSummaryCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+    marginBottom: 16,
+  },
+  dateRangeDisplay: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  dateBlock: {
+    alignItems: "center",
+    width: 80,
+  },
+  dateLabel: {
+    fontSize: 12,
+    fontFamily: "outfit-medium",
+    color: "#707070",
+    marginBottom: 4,
+  },
+  dateValue: {
+    fontSize: 20,
+    fontFamily: "outfit-bold",
+    color: "#000000",
+  },
+  yearValue: {
+    fontSize: 14,
+    fontFamily: "outfit",
+    color: "#707070",
+    marginTop: 2,
+  },
+  dateRangeDivider: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#D0D0D0",
+  },
+  nightsContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignItems: "center",
+    marginHorizontal: 8,
+  },
+  nightsCount: {
+    fontSize: 16,
+    fontFamily: "outfit-bold",
+  },
+  nightsLabel: {
+    fontSize: 10,
+    fontFamily: "outfit",
+  },
+  // Who's going styles
+  optionsContainer: {
+    gap: 16,
+    marginBottom: 16,
+  },
+  optionCard: {
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  optionContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  optionTextContainer: {
+    flex: 1,
+  },
+  optionTitle: {
+    fontSize: 18,
+    fontFamily: "outfit-bold",
+    marginBottom: 4,
+  },
+  optionDescription: {
+    fontSize: 14,
+    fontFamily: "outfit",
+    opacity: 0.8,
+  },
+  checkIcon: {
+    marginLeft: 12,
   },
 });
 

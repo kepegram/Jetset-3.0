@@ -82,6 +82,13 @@ const CurrentTripDetails: React.FC = () => {
     );
   }
 
+  // Ensure travelPlan exists with default values
+  const travelPlanWithDefaults = {
+    itinerary: tripDetails?.travelPlan?.itinerary || [],
+    budget: tripDetails?.travelPlan?.budget || "Not specified",
+    destination: tripDetails?.travelPlan?.destination || "Unknown Location",
+  };
+
   return (
     <View
       style={[styles.container, { backgroundColor: currentTheme.background }]}
@@ -90,10 +97,13 @@ const CurrentTripDetails: React.FC = () => {
       <View style={styles.imageContainer}>
         <Image
           source={{
-            uri: photoRef || tripDetails?.photoRef
-              // @ts-ignore
-              ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef || tripDetails?.photoRef}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
-              : "https://via.placeholder.com/800",
+            uri:
+              photoRef || tripDetails?.photoRef
+                ? // @ts-ignore
+                  `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${
+                    photoRef || tripDetails?.photoRef
+                  }&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
+                : "https://via.placeholder.com/800",
           }}
           style={styles.image}
         />
@@ -169,7 +179,7 @@ const CurrentTripDetails: React.FC = () => {
             </View>
           </View>
 
-          <PlannedTrip details={tripDetails?.travelPlan} />
+          <PlannedTrip details={travelPlanWithDefaults} />
         </View>
       </ScrollView>
     </View>

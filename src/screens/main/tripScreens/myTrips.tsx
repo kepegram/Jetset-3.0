@@ -5,8 +5,6 @@ import { RootStackParamList } from "../../../navigation/appNav";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { collection, getDocs, query } from "firebase/firestore";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
-import { doc, getDoc } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
 import {
   Pressable,
   Text,
@@ -14,7 +12,6 @@ import {
   FlatList,
   StyleSheet,
   ScrollView,
-  Image,
   Animated,
 } from "react-native";
 import { Fontisto } from "@expo/vector-icons";
@@ -22,12 +19,9 @@ import StartNewTripCard from "../../../components/myTrips/startNewTripCard";
 import CurrentTripsCard from "../../../components/myTrips/currentTripCard";
 import UpcomingTripsCard from "../../../components/myTrips/upcomingTripsCard";
 import PastTripListCard from "../../../components/myTrips/pastTripListCard";
-import { useProfile } from "../../../context/profileContext";
 import moment from "moment";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import SkeletonCard from "../../../components/common/SkeletonCard";
-import { LinearGradient } from "expo-linear-gradient";
-import { MaterialIcons } from "@expo/vector-icons";
 
 type MyTripsScreenNavigationProp =
   NativeStackNavigationProp<RootStackParamList>;

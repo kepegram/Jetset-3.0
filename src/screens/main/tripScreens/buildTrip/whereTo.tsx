@@ -6,7 +6,13 @@ import {
   SafeAreaView,
   Animated,
 } from "react-native";
-import React, { useContext, useCallback, useState, useRef } from "react";
+import React, {
+  useContext,
+  useCallback,
+  useState,
+  useRef,
+  useEffect,
+} from "react";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../../../navigation/appNav";
@@ -55,6 +61,9 @@ const WhereTo: React.FC = () => {
     useContext(CreateTripContext) || {};
   const [photoRef, setPhotoRef] = useState<string | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const googlePlacesRef = useRef<any>(null);
+  const [destinationSelected, setDestinationSelected] =
+    useState<boolean>(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -74,6 +83,26 @@ const WhereTo: React.FC = () => {
       }).start();
     }, [navigation])
   );
+
+  // Check for pre-selected destination when screen is focused
+  useEffect(() => {
+    // If there's a pre-selected destination in tripData, set it in the search input
+    if (tripData.preSelectedDestination && googlePlacesRef.current) {
+      // Set the text in the GooglePlacesAutocomplete
+      googlePlacesRef.current.setAddressText(tripData.preSelectedDestination);
+
+      // If we have location info, mark destination as selected
+      if (tripData.locationInfo && tripData.locationInfo.name) {
+        setDestinationSelected(true);
+      }
+
+      // Clear the preSelectedDestination to avoid setting it again on re-renders
+      setTripData({
+        ...tripData,
+        preSelectedDestination: undefined,
+      });
+    }
+  }, [tripData.preSelectedDestination, googlePlacesRef.current]);
 
   // Handle selection of a place from Google Places Autocomplete
   const handlePlaceSelect = async (
@@ -99,6 +128,9 @@ const WhereTo: React.FC = () => {
       locationInfo,
     });
 
+    // Mark that a destination has been selected
+    setDestinationSelected(true);
+
     // Store photo reference in AsyncStorage if available
     if (photoReference) {
       try {
@@ -108,7 +140,10 @@ const WhereTo: React.FC = () => {
         console.error("Error saving photo reference:", error);
       }
     }
+  };
 
+  // Handle continue button press
+  const handleContinue = () => {
     // Navigate to date selection screen
     navigation.navigate("ChooseDate");
   };
@@ -174,6 +209,7 @@ const WhereTo: React.FC = () => {
 
         <View style={styles.searchContainer}>
           <GooglePlacesAutocomplete
+            ref={googlePlacesRef}
             placeholder="Search destinations..."
             textInputProps={{
               placeholderTextColor: currentTheme.textSecondary,
@@ -182,6 +218,7 @@ const WhereTo: React.FC = () => {
             fetchDetails={true}
             onPress={handlePlaceSelect}
             query={{
+              // @ts-ignore - Environment variable access
               key: process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY,
               language: "en",
             }}
@@ -225,6 +262,27 @@ const WhereTo: React.FC = () => {
             }}
           />
         </View>
+
+        {/* Continue Button */}
+        {destinationSelected && (
+          <View style={styles.continueButtonContainer}>
+            <Pressable
+              style={[
+                styles.continueButton,
+                { backgroundColor: currentTheme.alternate },
+              ]}
+              onPress={handleContinue}
+            >
+              <Text style={styles.continueButtonText}>Continue to Dates</Text>
+              <Ionicons
+                name="arrow-forward"
+                size={20}
+                color="#fff"
+                style={styles.continueButtonIcon}
+              />
+            </Pressable>
+          </View>
+        )}
 
         <View style={styles.spacer} />
 
@@ -403,6 +461,30 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 12,
     fontFamily: "outfit",
+  },
+  continueButtonContainer: {
+    marginTop: 20,
+    marginBottom: 10,
+    width: "100%",
+  },
+  continueButton: {
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+  },
+  continueButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "outfit-bold",
+    marginRight: 8,
+  },
+  continueButtonIcon: {
+    marginLeft: 4,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
 

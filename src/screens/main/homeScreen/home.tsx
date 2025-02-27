@@ -595,13 +595,26 @@ const Home: React.FC = () => {
                 textInputContainer: {
                   backgroundColor: "transparent",
                 },
-                textInput: [
-                  styles.searchInput,
-                  {
-                    color: currentTheme.textPrimary,
-                    backgroundColor: currentTheme.accentBackground,
-                  },
-                ],
+                textInput: {
+                  height: 55,
+                  borderRadius: 15,
+                  paddingHorizontal: 45,
+                  fontSize: 16,
+                  fontFamily:
+                    Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
+                  backgroundColor: currentTheme.shadowBackground,
+                  ...Platform.select({
+                    ios: {
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                    },
+                    android: {
+                      elevation: 3,
+                    },
+                  }),
+                },
                 listView: {
                   backgroundColor: currentTheme.accentBackground,
                   borderRadius: 12,
@@ -797,8 +810,8 @@ const Home: React.FC = () => {
                       style={({ pressed }) => [
                         styles.tripCard,
                         {
-                          backgroundColor: currentTheme.accentBackground,
                           transform: [{ scale: pressed ? 0.98 : 1 }],
+                          backgroundColor: currentTheme.shadowBackground,
                         },
                       ]}
                     >
@@ -928,24 +941,6 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     marginBottom: 20,
-  },
-  searchInput: {
-    height: 55,
-    borderRadius: 15,
-    paddingHorizontal: 45,
-    fontSize: 16,
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   searchIcon: {
     position: "absolute",

@@ -14,6 +14,7 @@ export const lightTheme = {
   tabIcon: "#3BACE3",
   inactiveTabIcon: "#808080",
   error: "red",
+  shadowBackground: "#FFFFFF",
 };
 
 export const darkTheme = {
@@ -32,4 +33,5 @@ export const darkTheme = {
   tabIcon: "#3BACE3",
   inactiveTabIcon: "#808080",
   error: "red",
+  shadowBackground: "#1a1a1a",
 };

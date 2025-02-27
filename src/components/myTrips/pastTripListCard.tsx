@@ -85,7 +85,7 @@ const PastTripListCard: React.FC<PastTripListCardProps> = ({ trip }) => {
           }}
           style={[
             styles.cardContainer,
-            { backgroundColor: currentTheme.background },
+            { backgroundColor: currentTheme.shadowBackground },
           ]}
         >
           <Image
@@ -156,7 +156,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
-    backgroundColor: "#fff",
     padding: 12,
     alignItems: "center",
     gap: 15,

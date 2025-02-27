@@ -53,7 +53,7 @@ const SkeletonCard: React.FC<SkeletonCardProps> = ({ variant }) => {
       style={[
         styles.container,
         getCardStyle(),
-        { backgroundColor: currentTheme.accentBackground },
+        { backgroundColor: currentTheme.shadowBackground },
       ]}
     >
       <View style={StyleSheet.absoluteFill}>
@@ -141,7 +141,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 3.84,
-    backgroundColor: "#f8f8f8",
   },
   currentCard: {
     height: 240,

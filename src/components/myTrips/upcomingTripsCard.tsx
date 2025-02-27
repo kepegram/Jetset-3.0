@@ -13,6 +13,7 @@ import { RootStackParamList } from "../../navigation/appNav";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTheme } from "../../context/themeContext";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -28,6 +29,7 @@ interface UpcomingTripsCardProps {
 }
 
 const UpcomingTripsCard: React.FC<UpcomingTripsCardProps> = ({ userTrips }) => {
+  const { currentTheme } = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const scaleAnim = new Animated.Value(1);
 
@@ -108,7 +110,10 @@ const UpcomingTripsCard: React.FC<UpcomingTripsCardProps> = ({ userTrips }) => {
             docId: upcomingTripData?.id,
           });
         }}
-        style={styles.cardContainer}
+        style={[
+          styles.cardContainer,
+          { backgroundColor: currentTheme.shadowBackground },
+        ]}
       >
         <Image
           source={{
@@ -162,7 +167,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    backgroundColor: "#fff",
   },
   image: {
     width: "100%",

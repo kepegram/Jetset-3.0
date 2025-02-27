@@ -8,7 +8,7 @@ import {
   Pressable,
   StatusBar,
 } from "react-native";
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useTheme } from "../../../context/themeContext";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -45,6 +45,7 @@ const PopularDestinations: React.FC = () => {
     useContext(CreateTripContext) || {};
   const { destination } = route.params as RouteParams;
   const navigation = useNavigation<PopularDestinationsScreenNavigationProp>();
+  const [isLoading, setIsLoading] = useState(false);
 
   // Configure navigation header
   useEffect(() => {
@@ -63,6 +64,84 @@ const PopularDestinations: React.FC = () => {
       ),
     });
   }, [navigation]);
+
+  // Function to fetch photo reference and URL for the destination
+  const fetchDestinationDetails = async () => {
+    try {
+      setIsLoading(true);
+
+      // First, use Find Place to get the place_id
+      const findPlaceResponse = await fetch(
+        `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(
+          destination.name
+        )}&inputtype=textquery&fields=place_id&key=${
+          // @ts-ignore - Environment variable access
+          process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY
+        }`
+      );
+
+      const findPlaceData = await findPlaceResponse.json();
+
+      if (findPlaceData.candidates && findPlaceData.candidates.length > 0) {
+        const placeId = findPlaceData.candidates[0].place_id;
+
+        // Then, use Place Details to get full details including photos and URL
+        const detailsResponse = await fetch(
+          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=photos,url,formatted_address,geometry&key=${
+            // @ts-ignore - Environment variable access
+            process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY
+          }`
+        );
+
+        const detailsData = await detailsResponse.json();
+
+        if (detailsData.result) {
+          const photoReference =
+            detailsData.result.photos?.[0]?.photo_reference;
+          const placeUrl = detailsData.result.url;
+
+          // Set the destination in tripData with the additional details
+          setTripData({
+            ...tripData,
+            locationInfo: {
+              name: destination.name,
+              coordinates: destination.geoCoordinates
+                ? {
+                    lat: destination.geoCoordinates.latitude,
+                    lng: destination.geoCoordinates.longitude,
+                  }
+                : undefined,
+              photoRef: photoReference,
+              url: placeUrl,
+            },
+            preSelectedDestination: destination.name,
+          });
+        }
+      }
+    } catch (error) {
+      // If there's an error, set basic info without photoRef and url
+      setTripData({
+        ...tripData,
+        locationInfo: {
+          name: destination.name,
+          coordinates: destination.geoCoordinates
+            ? {
+                lat: destination.geoCoordinates.latitude,
+                lng: destination.geoCoordinates.longitude,
+              }
+            : undefined,
+        },
+        preSelectedDestination: destination.name,
+      });
+    } finally {
+      // Navigate to WhereTo screen
+      // @ts-ignore - Nested navigation type issue
+      navigation.navigate("MyTrips", {
+        screen: "WhereTo",
+      });
+      setIsLoading(false);
+    }
+  };
 
   return (
     <ScrollView
@@ -197,12 +276,14 @@ const PopularDestinations: React.FC = () => {
           style={[
             styles.exploreButton,
             { backgroundColor: currentTheme.alternate },
+            isLoading && styles.disabledButton,
           ]}
-          onPress={() => {
-            /* Handle explore press */
-          }}
+          onPress={fetchDestinationDetails}
+          disabled={isLoading}
         >
-          <Text style={styles.exploreButtonText}>Start Planning!</Text>
+          <Text style={styles.exploreButtonText}>
+            {isLoading ? "Loading..." : "Start Planning!"}
+          </Text>
         </Pressable>
       </View>
     </ScrollView>
@@ -315,6 +396,9 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
 });
 

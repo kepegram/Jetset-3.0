@@ -82,7 +82,11 @@ const CurrentTripCard: React.FC<CurrentTripCardProps> = ({ userTrips }) => {
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           onPress={() => navigation.navigate("WhereTo")}
-          style={[styles.cardContainer, styles.noTripCard]}
+          style={[
+            styles.cardContainer,
+            styles.noTripCard,
+            { backgroundColor: currentTheme.shadowBackground },
+          ]}
         >
           <Image
             source={require("../../assets/app-imgs/placeholder.jpeg")}
@@ -135,7 +139,10 @@ const CurrentTripCard: React.FC<CurrentTripCardProps> = ({ userTrips }) => {
               "",
           });
         }}
-        style={styles.cardContainer}
+        style={[
+          styles.cardContainer,
+          { backgroundColor: currentTheme.shadowBackground },
+        ]}
       >
         <Image
           source={
@@ -192,7 +199,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    backgroundColor: "#fff",
   },
   image: {
     width: "100%",

@@ -124,6 +124,7 @@ const GenerateTrip: React.FC = () => {
             const response = await fetch(
               `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(
                 destination
+                // @ts-ignore
               )}&inputtype=textquery&key=${process.env.GOOGLE_PLACES_API_KEY}`
             );
             const data = await response.json();
@@ -194,16 +195,20 @@ const GenerateTrip: React.FC = () => {
       docId
     );
 
-    const sanitizedTripData = {
-      ...tripData,
-      startDate: tripData.startDate?.format("YYYY-MM-DD") || null,
-      endDate: tripData.endDate?.format("YYYY-MM-DD") || null,
-    };
+    // Clean the tripData object to remove undefined values
+    const cleanTripData = Object.fromEntries(
+      Object.entries({
+        ...tripData,
+        startDate: tripData.startDate?.format("YYYY-MM-DD") || null,
+        endDate: tripData.endDate?.format("YYYY-MM-DD") || null,
+        preSelectedDestination: tripData.preSelectedDestination || null,
+      }).filter(([_, value]) => value !== undefined)
+    );
 
     await setDoc(userTripRef, {
       userEmail: user?.email || "unknown",
       tripPlan: tripResp,
-      tripData: sanitizedTripData,
+      tripData: cleanTripData,
       photoRef: photoRef,
       docId,
       createdAt: new Date().toISOString(),
