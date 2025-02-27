@@ -254,15 +254,12 @@ const Home: React.FC = () => {
           // await AsyncStorage.clear();
 
           const hasLoggedIn = await AsyncStorage.getItem("hasLoggedInBefore");
-          console.log("hasLoggedInBefore value:", hasLoggedIn);
 
           if (!hasLoggedIn) {
-            console.log("This is a first login!");
             setIsFirstLogin(true);
             // Set the flag that the user has logged in
             await AsyncStorage.setItem("hasLoggedInBefore", "true");
           } else {
-            console.log("This is NOT a first login");
             setIsFirstLogin(false);
           }
         } catch (error) {
@@ -286,13 +283,6 @@ const Home: React.FC = () => {
         throw new Error("User not authenticated");
       }
 
-      console.log("Loading trips for user:", user.uid);
-      console.log("First login status:", isFirstLogin);
-
-      // Check if user has manually refreshed trips before
-      const hasRefreshed = await AsyncStorage.getItem("hasRefreshedTrips");
-      console.log("Has user refreshed trips before:", hasRefreshed);
-
       const userTripsCollection = collection(
         FIREBASE_DB,
         `users/${user.uid}/suggestedTrips`
@@ -300,7 +290,6 @@ const Home: React.FC = () => {
 
       // Check if user has suggested trips
       const userTripsSnapshot = await getDocs(userTripsCollection);
-      console.log("User has existing trips:", !userTripsSnapshot.empty);
 
       // If user has their own trips, use them
       if (!userTripsSnapshot.empty) {
@@ -319,10 +308,8 @@ const Home: React.FC = () => {
       }
 
       // If the user doesn't have any trips yet, load from defaultTrips
-      console.log("Looking for default trips to load...");
       const defaultTripsCollection = collection(FIREBASE_DB, "defaultTrips");
       const defaultTripsSnapshot = await getDocs(defaultTripsCollection);
-      console.log("Number of default trips found:", defaultTripsSnapshot.size);
 
       if (!defaultTripsSnapshot.empty) {
         const defaultTrips: RecommendedTrip[] = [];
@@ -333,7 +320,6 @@ const Home: React.FC = () => {
         });
 
         if (defaultTrips.length > 0) {
-          console.log("Copying default trips to user collection...");
           // Save default trips to user collection
           const batch = writeBatch(FIREBASE_DB);
 
@@ -364,13 +350,11 @@ const Home: React.FC = () => {
             error: null,
             lastFetched: new Date(),
           });
-          console.log("Successfully loaded default trips for new user");
           return;
         }
       }
 
       // If we reach here, there were no user trips or default trips
-      console.log("No trips found (user or default)");
       setRecommendedTripsState((prev) => ({
         ...prev,
         status: "idle",

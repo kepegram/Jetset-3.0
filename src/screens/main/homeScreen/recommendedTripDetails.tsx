@@ -18,7 +18,15 @@ import HotelList from "../../../components/tripDetails/hotelList";
 import PlannedTrip from "../../../components/tripDetails/plannedTrip";
 import { MainButton } from "../../../components/ui/button";
 import { FIREBASE_DB, FIREBASE_AUTH } from "../../../../firebase.config";
-import { doc, setDoc } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 const { width, height } = Dimensions.get("window");
@@ -38,6 +46,7 @@ const RecommendedTripDetails: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute();
   const { trip, photoRef } = route.params as RouteParams;
+  const user = FIREBASE_AUTH.currentUser;
 
   const [tripDetails, setTripDetails] = useState<any>(null);
 
@@ -65,6 +74,58 @@ const RecommendedTripDetails: React.FC = () => {
       console.error("Error parsing trip details:", error);
     }
   }, [trip]);
+
+  const saveTrip = async () => {
+    if (!user?.uid) {
+      Alert.alert("Error", "You must be logged in to save a trip");
+      return;
+    }
+
+    try {
+      const docId = Date.now().toString();
+      const userTripRef = doc(
+        FIREBASE_DB,
+        "users",
+        user.uid,
+        "userTrips",
+        docId
+      );
+
+      // Save to userTrips
+      await setDoc(userTripRef, {
+        userEmail: user.email || "unknown",
+        tripPlan: tripDetails,
+        photoRef: photoRef,
+        docId,
+        createdAt: new Date().toISOString(),
+      });
+
+      // Delete from suggestedTrips
+      const suggestedTripsCollection = collection(
+        FIREBASE_DB,
+        `users/${user.uid}/suggestedTrips`
+      );
+
+      // Query to find the matching trip in suggestedTrips
+      const q = query(
+        suggestedTripsCollection,
+        where("fullResponse", "==", trip)
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      // Delete the matching trip
+      querySnapshot.forEach(async (document) => {
+        await deleteDoc(doc(suggestedTripsCollection, document.id));
+      });
+
+      Alert.alert("Success", "Trip saved successfully!");
+      navigation.goBack();
+    } catch (error) {
+      console.error("Error saving trip:", error);
+      Alert.alert("Error", "Failed to save trip. Please try again.");
+    }
+  };
 
   if (!tripDetails) {
     return (
@@ -95,7 +156,8 @@ const RecommendedTripDetails: React.FC = () => {
         <Image
           source={{
             uri: photoRef
-              ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
+              ? // @ts-ignore
+                `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
               : "https://via.placeholder.com/800",
           }}
           style={styles.image}
@@ -103,6 +165,7 @@ const RecommendedTripDetails: React.FC = () => {
       </View>
 
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -146,6 +209,44 @@ const RecommendedTripDetails: React.FC = () => {
             </View>
           </View>
 
+          <View style={styles.flightInfoContainer}>
+            <View
+              style={[
+                styles.flightContainer,
+                { backgroundColor: currentTheme.background },
+              ]}
+            >
+              <View style={styles.flightInfo}>
+                <View style={styles.airlineWrapper}>
+                  <Text
+                    style={[
+                      styles.airlineName,
+                      { color: currentTheme.textPrimary },
+                    ]}
+                  >
+                    {tripDetails?.travelPlan?.flights?.airlineName ||
+                      "Unknown Airline"}
+                  </Text>
+                </View>
+                <View style={styles.priceWrapper}>
+                  <Text
+                    style={[
+                      styles.priceLabel,
+                      { color: currentTheme.textSecondary },
+                    ]}
+                  >
+                    Approximate Price
+                  </Text>
+                  <Text
+                    style={[styles.price, { color: currentTheme.alternate }]}
+                  >
+                    ~${tripDetails?.travelPlan?.flights?.flightPrice || "N/A"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
           <HotelList hotelList={tripDetails?.travelPlan?.hotels} />
           <PlannedTrip details={tripDetails?.travelPlan} />
         </View>
@@ -154,23 +255,10 @@ const RecommendedTripDetails: React.FC = () => {
       <View
         style={[styles.bottomBar, { backgroundColor: currentTheme.background }]}
       >
-        <View style={styles.priceContainer}>
-          <Text
-            style={[styles.airlineName, { color: currentTheme.textPrimary }]}
-          >
-            {tripDetails?.travelPlan?.flights?.airlineName || "Unknown Airline"}{" "}
-            ✈️
-          </Text>
-          <Text style={[styles.price, { color: currentTheme.alternate }]}>
-            ${tripDetails?.travelPlan?.flights?.flightPrice || "N/A"}
-          </Text>
-        </View>
         <MainButton
-          onPress={() => {
-            console.log("Book Trip", tripDetails);
-          }}
-          buttonText={"Book Trip"}
-          width={width * 0.45}
+          onPress={saveTrip}
+          buttonText="Save Trip"
+          width="100%"
           style={[styles.saveButton]}
         />
       </View>
@@ -192,6 +280,12 @@ export const styles = StyleSheet.create({
     fontFamily: "outfit-medium",
     fontSize: 18,
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   imageContainer: {
     position: "absolute",
     top: 0,
@@ -203,15 +297,12 @@ export const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  scrollContent: {
-    paddingBottom: 100,
-    marginTop: height * 0.45,
-  },
   contentContainer: {
     padding: 24,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    marginTop: -30,
+    marginTop: height * 0.45,
+    flex: 1,
   },
   headerContainer: {
     marginBottom: 20,
@@ -238,25 +329,38 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 8,
   },
-  bottomBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 24,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.1)",
+  flightInfoContainer: {
+    marginBottom: 25,
   },
-  priceContainer: {
-    flex: 1,
+  flightContainer: {
+    padding: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.1)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  flightInfo: {
+    gap: 8,
+  },
+  airlineWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   airlineName: {
     fontFamily: "outfit-bold",
-    fontSize: 20,
-    marginBottom: 4,
+    fontSize: 18,
+  },
+  priceWrapper: {
+    gap: 2,
+  },
+  priceLabel: {
+    fontFamily: "outfit",
+    fontSize: 14,
   },
   price: {
     fontFamily: "outfit-bold",
@@ -268,7 +372,15 @@ export const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4.5,
-    borderRadius: 15,
+  },
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 24,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.1)",
   },
   backButton: {
     marginLeft: 16,

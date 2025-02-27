@@ -325,7 +325,6 @@ const ChooseDate: React.FC = () => {
               width="100%"
               backgroundColor={currentTheme.alternate}
               disabled={!startDate || !endDate}
-              style={styles.continueButton}
             />
           </View>
         </View>
@@ -458,10 +457,6 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: "auto",
     marginBottom: 24,
-  },
-  continueButton: {
-    borderRadius: 15,
-    height: 56,
   },
 });
 

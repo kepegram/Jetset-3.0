@@ -8,8 +8,9 @@ import {
   ActivityIndicator,
   Modal,
   Linking,
+  Animated,
 } from "react-native";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useRef, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -38,9 +39,58 @@ const Profile: React.FC = () => {
   const [userName, setUserName] = useState<string | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
   const user = getAuth().currentUser;
   const navigation = useNavigation<ProfileScreenNavigationProp>();
+
+  useEffect(() => {
+    if (showPrivacy) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.9,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [showPrivacy]);
+
+  const handleClosePrivacy = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.9,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowPrivacy(false);
+    });
+  };
 
   // Handle profile picture selection and upload
   const handlePickImage = async () => {
@@ -291,19 +341,34 @@ const Profile: React.FC = () => {
         </Pressable>
       </Modal>
 
-      {/* Add the Privacy Modal */}
+      {/* Update the Privacy Modal */}
       <Modal
         visible={showPrivacy}
-        animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowPrivacy(false)}
+        onRequestClose={handleClosePrivacy}
         statusBarTranslucent={true}
+        animationType="none"
       >
-        <View style={modalStyles.modalContainer}>
-          <View style={modalStyles.modalContent}>
-            <Privacy onClose={() => setShowPrivacy(false)} />
-          </View>
-        </View>
+        <Animated.View
+          style={[
+            modalStyles.modalContainer,
+            {
+              opacity: fadeAnim,
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            },
+          ]}
+        >
+          <Animated.View
+            style={[
+              modalStyles.modalContent,
+              {
+                transform: [{ scale: scaleAnim }],
+              },
+            ]}
+          >
+            <Privacy onClose={handleClosePrivacy} />
+          </Animated.View>
+        </Animated.View>
       </Modal>
 
       <View style={styles.profileContainer}>

@@ -24,6 +24,7 @@ import {
 } from "react-native-google-places-autocomplete";
 import { CreateTripContext } from "../../../../context/createTripContext";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { MainButton } from "../../../../components/ui/button";
 
 type WhereToNavigationProp = StackNavigationProp<RootStackParamList, "WhereTo">;
 
@@ -266,21 +267,12 @@ const WhereTo: React.FC = () => {
         {/* Continue Button */}
         {destinationSelected && (
           <View style={styles.continueButtonContainer}>
-            <Pressable
-              style={[
-                styles.continueButton,
-                { backgroundColor: currentTheme.alternate },
-              ]}
+            <MainButton
               onPress={handleContinue}
-            >
-              <Text style={styles.continueButtonText}>Continue to Dates</Text>
-              <Ionicons
-                name="arrow-forward"
-                size={20}
-                color="#fff"
-                style={styles.continueButtonIcon}
-              />
-            </Pressable>
+              buttonText="Continue to Dates"
+              width="100%"
+              style={styles.continueButton}
+            />
           </View>
         )}
 
@@ -469,19 +461,9 @@ const styles = StyleSheet.create({
   },
   continueButton: {
     paddingVertical: 15,
-    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
-  },
-  continueButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontFamily: "outfit-bold",
-    marginRight: 8,
-  },
-  continueButtonIcon: {
-    marginLeft: 4,
   },
   disabledButton: {
     opacity: 0.5,

@@ -16,6 +16,7 @@ import { CreateTripContext } from "../../../context/createTripContext";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../navigation/appNav";
 import MapView, { Marker } from "react-native-maps";
+import { MainButton } from "../../../components/ui/button";
 
 const { height } = Dimensions.get("window");
 
@@ -272,19 +273,16 @@ const PopularDestinations: React.FC = () => {
         )}
 
         {/* Start Planning Button */}
-        <Pressable
-          style={[
-            styles.exploreButton,
-            { backgroundColor: currentTheme.alternate },
-            isLoading && styles.disabledButton,
-          ]}
+        <MainButton
           onPress={fetchDestinationDetails}
+          buttonText={isLoading ? "Loading..." : "Start Planning!"}
           disabled={isLoading}
-        >
-          <Text style={styles.exploreButtonText}>
-            {isLoading ? "Loading..." : "Start Planning!"}
-          </Text>
-        </Pressable>
+          width="100%"
+          style={[
+            { backgroundColor: currentTheme.alternate },
+            isLoading && styles.disabledButton
+          ]}
+        />
       </View>
     </ScrollView>
   );

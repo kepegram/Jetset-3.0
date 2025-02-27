@@ -391,10 +391,7 @@ const TripDetails: React.FC = () => {
               }}
               buttonText="Book Now"
               width={width * 0.35}
-              style={[
-                styles.bookButton,
-                { backgroundColor: currentTheme.alternate },
-              ]}
+              style={styles.bookButton}
             />
           </View>
 
@@ -527,14 +524,12 @@ const TripDetails: React.FC = () => {
                 onPress={hideModal}
                 width="48%"
                 backgroundColor={currentTheme.secondary}
-                style={{ borderRadius: 12 }}
               />
               <MainButton
                 buttonText="Save Changes"
                 onPress={saveWhoChanges}
                 width="48%"
                 backgroundColor={currentTheme.alternate}
-                style={{ borderRadius: 12 }}
                 disabled={isUpdating}
               />
             </View>
@@ -655,7 +650,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4.5,
-    borderRadius: 15,
   },
   backButton: {
     marginLeft: 16,
