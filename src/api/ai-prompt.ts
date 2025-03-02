@@ -180,6 +180,13 @@ Important diversity requirements:
 - Destinations should vary in climate and setting (e.g., not all tropical beaches)
 - Cultural and geographical diversity must be maintained
 
+Important date requirements:
+- Start date must be in the current year
+- Dates must be during the destination's peak or shoulder season
+- Consider local weather patterns and events
+- Avoid major holidays unless they are a key attraction
+- Format dates as ISO strings (YYYY-MM-DD)
+
 Important formatting requirements:
 - Response must be ONLY valid JSON - no additional text before or after
 - All JSON properties must be wrapped in double quotes
@@ -199,6 +206,11 @@ Return this exact JSON structure:
     "destinationType": "Primary tourism type (Beach/Cultural/Historical/Adventure)",
     "destinationDescription": "Single line description",
     "photoRef": "photo_reference_string",
+    "dates": {
+      "startDate": "YYYY-MM-DD",
+      "endDate": "YYYY-MM-DD",
+      "bestTimeToVisit": "Brief explanation of why these dates are optimal"
+    },
     "flights": {
       "airlineName": "Airline Name",
       "flightPrice": "1200",

@@ -49,7 +49,7 @@ interface RecommendedTrip {
   description: string;
   imageUrl?: string;
   photoRef?: string | null;
-  fullResponse: string;
+  tripPlan: any; // This will store the full response
 }
 
 // Add this near the top of the file with other interfaces
@@ -143,14 +143,23 @@ const Home: React.FC = () => {
   const delay = (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms));
 
-  // Modify the generateSingleTrip function
-  const generateSingleTrip = async (
-    retryCount = 0
-  ): Promise<RecommendedTrip | null> => {
-    const MAX_RETRIES = 3;
-    const INITIAL_RETRY_DELAY = 1000;
+  // Add these utility functions near the top of the file, after the interfaces
+  const wait = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
 
+  const generateTripWithRetry = async (
+    attempt: number = 1,
+    maxAttempts: number = 3,
+    baseDelay: number = 2000
+  ): Promise<RecommendedTrip | null> => {
     try {
+      // Exponential backoff delay
+      if (attempt > 1) {
+        const delay =
+          baseDelay * Math.pow(2, attempt - 1) + Math.random() * 1000;
+        await wait(delay);
+      }
+
       const result = await chatSession.sendMessage(RECOMMEND_TRIP_AI_PROMPT);
       const responseText = await result.response.text();
 
@@ -166,18 +175,16 @@ const Home: React.FC = () => {
         tripResp = JSON.parse(cleanedResponse);
       } catch (parseError) {
         console.error("Failed to parse AI response:", parseError);
-        if (retryCount < MAX_RETRIES) {
-          await delay(INITIAL_RETRY_DELAY * Math.pow(2, retryCount));
-          return generateSingleTrip(retryCount + 1);
+        if (attempt < maxAttempts) {
+          return generateTripWithRetry(attempt + 1, maxAttempts, baseDelay);
         }
         return null;
       }
 
       if (!isValidTripResponse(tripResp)) {
         console.error("Invalid trip response structure");
-        if (retryCount < MAX_RETRIES) {
-          await delay(INITIAL_RETRY_DELAY * Math.pow(2, retryCount));
-          return generateSingleTrip(retryCount + 1);
+        if (attempt < maxAttempts) {
+          return generateTripWithRetry(attempt + 1, maxAttempts, baseDelay);
         }
         return null;
       }
@@ -192,28 +199,33 @@ const Home: React.FC = () => {
           tripResp.travelPlan.destinationDescription ||
           "No description available",
         photoRef,
-        fullResponse: JSON.stringify(tripResp),
+        tripPlan: tripResp,
       };
     } catch (error) {
       const aiError = error as AIError;
-      if (
-        retryCount < MAX_RETRIES &&
+      console.error(`Attempt ${attempt} failed:`, aiError);
+
+      // Check for specific error conditions that warrant a retry
+      const shouldRetry =
+        attempt < maxAttempts &&
         (aiError.message?.includes("503") ||
+          aiError.message?.includes("429") || // Rate limit error
           aiError.message?.includes("overloaded") ||
-          aiError.status === 503)
-      ) {
-        await delay(INITIAL_RETRY_DELAY * Math.pow(2, retryCount));
-        return generateSingleTrip(retryCount + 1);
+          aiError.status === 503 ||
+          aiError.status === 429);
+
+      if (shouldRetry) {
+        return generateTripWithRetry(attempt + 1, maxAttempts, baseDelay);
       }
-      console.error("Error generating trip:", error);
+
       return null;
     }
   };
 
-  // Add this utility function
+  // Update the generateTripsWithTimeout function
   const generateTripsWithTimeout = async (
-    promises: Promise<RecommendedTrip | null>[],
-    timeout: number = 30000
+    numberOfTrips: number = 3,
+    timeout: number = 45000 // Increased timeout to 45 seconds
   ): Promise<(RecommendedTrip | null)[]> => {
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error("Generation timed out")), timeout);
@@ -221,10 +233,19 @@ const Home: React.FC = () => {
 
     try {
       const results: (RecommendedTrip | null)[] = [];
-      for (let i = 0; i < promises.length; i++) {
+
+      // Generate trips sequentially with increasing delays
+      for (let i = 0; i < numberOfTrips; i++) {
         try {
-          const result = await Promise.race([promises[i], timeoutPromise]);
+          // Add increasing delay between trip generations
+          if (i > 0) {
+            await wait(3000 * i); // 3 second base delay, multiplied by trip index
+          }
+
+          const tripPromise = generateTripWithRetry();
+          const result = await Promise.race([tripPromise, timeoutPromise]);
           results.push(result);
+
           setLoadingProgress((prev) => ({
             ...prev,
             completed: prev.completed + 1,
@@ -370,7 +391,7 @@ const Home: React.FC = () => {
     }
   };
 
-  // Modify the handleRefresh function to handle the generation
+  // Update the handleRefresh function to use the new generation logic
   const handleRefresh = async () => {
     if (recommendedTripsState.status === "loading") return;
 
@@ -391,13 +412,10 @@ const Home: React.FC = () => {
         FIREBASE_DB,
         `users/${user.uid}/suggestedTrips`
       );
+      const defaultTripsCollection = collection(FIREBASE_DB, "defaultTrips");
 
-      // Generate new trips
-      const tripPromises = Array(3)
-        .fill(null)
-        .map((_, index) => delay(index * 500).then(() => generateSingleTrip()));
-
-      const generatedTrips = await generateTripsWithTimeout(tripPromises);
+      // Generate trips using the improved function
+      const generatedTrips = await generateTripsWithTimeout(3);
       const validTrips = generatedTrips.filter(
         (trip): trip is RecommendedTrip => trip !== null
       );
@@ -405,16 +423,29 @@ const Home: React.FC = () => {
       if (validTrips.length > 0) {
         const batch = writeBatch(FIREBASE_DB);
 
-        // Delete existing trips
-        const existingTripsSnapshot = await getDocs(userTripsCollection);
-        existingTripsSnapshot.forEach((document) => {
+        // Delete existing user trips
+        const existingUserTripsSnapshot = await getDocs(userTripsCollection);
+        existingUserTripsSnapshot.forEach((document) => {
           batch.delete(doc(userTripsCollection, document.id));
         });
 
-        // Add new trips
+        // Delete existing default trips
+        const existingDefaultTripsSnapshot = await getDocs(
+          defaultTripsCollection
+        );
+        existingDefaultTripsSnapshot.forEach((document) => {
+          batch.delete(doc(defaultTripsCollection, document.id));
+        });
+
+        // Add new trips to both collections
         validTrips.forEach((trip) => {
-          const newTripRef = doc(userTripsCollection);
-          batch.set(newTripRef, trip);
+          // Add to user's collection
+          const userTripRef = doc(userTripsCollection);
+          batch.set(userTripRef, trip);
+
+          // Add to default trips collection
+          const defaultTripRef = doc(defaultTripsCollection);
+          batch.set(defaultTripRef, trip);
         });
 
         await batch.commit();
@@ -424,18 +455,22 @@ const Home: React.FC = () => {
           error: null,
           lastFetched: new Date(),
         });
-        // Mark that the user has manually refreshed their trips
+
         await AsyncStorage.setItem("hasRefreshedTrips", "true");
         await AsyncStorage.setItem("lastFetchTime", new Date().toISOString());
       } else {
-        throw new Error("No valid trips could be generated. Please try again.");
+        throw new Error(
+          "Unable to generate valid trips. Please try again in a few moments."
+        );
       }
     } catch (error) {
       setRecommendedTripsState((prev) => ({
         ...prev,
         status: "error",
         error:
-          error instanceof Error ? error.message : "Failed to generate trips",
+          error instanceof Error
+            ? error.message
+            : "Failed to generate trips. Please try again in a few moments.",
       }));
     }
   };
@@ -444,7 +479,7 @@ const Home: React.FC = () => {
   const isRecommendedTrip = (
     trip: RecommendedTrip | { id: string }
   ): trip is RecommendedTrip => {
-    return (trip as RecommendedTrip).fullResponse !== undefined;
+    return (trip as RecommendedTrip).tripPlan !== undefined;
   };
 
   // Add this component for empty state
@@ -781,13 +816,12 @@ const Home: React.FC = () => {
                     </View>
                   );
                 } else if (isRecommendedTrip(trip)) {
-                  const tripInfo = JSON.parse(trip.fullResponse);
                   return (
                     <Pressable
                       testID={`trip-card-${trip.id}`}
                       onPress={() => {
                         navigation.navigate("RecommendedTripDetails", {
-                          trip: trip.fullResponse,
+                          trip: JSON.stringify(trip.tripPlan),
                           photoRef: trip.photoRef ?? "",
                         });
                       }}
@@ -843,8 +877,33 @@ const Home: React.FC = () => {
                             numberOfLines={2}
                             ellipsizeMode="tail"
                           >
-                            {tripInfo.travelPlan.destinationDescription}
+                            {trip.description}
                           </Text>
+                          {trip.tripPlan.travelPlan.dates && (
+                            <View style={styles.tripDatesContainer}>
+                              <Ionicons
+                                name="calendar-outline"
+                                size={14}
+                                color={currentTheme.textSecondary}
+                                style={styles.tripDateIcon}
+                              />
+                              <Text
+                                testID={`trip-dates-${trip.id}`}
+                                style={[
+                                  styles.tripDates,
+                                  { color: currentTheme.textSecondary },
+                                ]}
+                              >
+                                {new Date(
+                                  trip.tripPlan.travelPlan.dates.startDate
+                                ).toLocaleDateString()}{" "}
+                                -{" "}
+                                {new Date(
+                                  trip.tripPlan.travelPlan.dates.endDate
+                                ).toLocaleDateString()}
+                              </Text>
+                            </View>
+                          )}
                         </View>
                       </View>
                     </Pressable>
@@ -1162,6 +1221,18 @@ const styles = StyleSheet.create({
   },
   recommendedTripsContent: {
     paddingRight: 20,
+  },
+  tripDatesContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  tripDateIcon: {
+    marginRight: 4,
+  },
+  tripDates: {
+    fontSize: 12,
+    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
   },
 });
 

@@ -91,10 +91,25 @@ const RecommendedTripDetails: React.FC = () => {
         docId
       );
 
-      // Save to userTrips
+      // Create a tripData object that matches the structure of regular trips
+      const tripData = {
+        startDate: tripDetails?.travelPlan?.dates?.startDate || null,
+        endDate: tripDetails?.travelPlan?.dates?.endDate || null,
+        totalNoOfDays: tripDetails?.travelPlan?.numberOfDays || 5,
+        budget: tripDetails?.travelPlan?.budget || "average",
+        activityLevel: "moderate",
+        whoIsGoing: "2 adults",
+        locationInfo: {
+          name: tripDetails?.travelPlan?.destination || "",
+          photoRef: photoRef || null,
+        },
+      };
+
+      // Save to userTrips with the same structure as regular trips
       await setDoc(userTripRef, {
         userEmail: user.email || "unknown",
         tripPlan: tripDetails,
+        tripData: tripData,
         photoRef: photoRef,
         docId,
         createdAt: new Date().toISOString(),
@@ -106,10 +121,10 @@ const RecommendedTripDetails: React.FC = () => {
         `users/${user.uid}/suggestedTrips`
       );
 
-      // Query to find the matching trip in suggestedTrips
+      // Query to find the matching trip in suggestedTrips by destination
       const q = query(
         suggestedTripsCollection,
-        where("fullResponse", "==", trip)
+        where("name", "==", tripDetails?.travelPlan?.destination)
       );
 
       const querySnapshot = await getDocs(q);
@@ -198,14 +213,31 @@ const RecommendedTripDetails: React.FC = () => {
                 size={22}
                 color={currentTheme.alternate}
               />
-              <Text
-                style={[
-                  styles.tripMetaText,
-                  { color: currentTheme.textPrimary },
-                ]}
-              >
-                {tripDetails?.travelPlan?.numberOfDays} days
-              </Text>
+              {tripDetails?.travelPlan?.dates ? (
+                <Text
+                  style={[
+                    styles.tripMetaText,
+                    { color: currentTheme.textPrimary },
+                  ]}
+                >
+                  {new Date(
+                    tripDetails.travelPlan.dates.startDate
+                  ).toLocaleDateString()}{" "}
+                  -{" "}
+                  {new Date(
+                    tripDetails.travelPlan.dates.endDate
+                  ).toLocaleDateString()}
+                </Text>
+              ) : (
+                <Text
+                  style={[
+                    styles.tripMetaText,
+                    { color: currentTheme.textPrimary },
+                  ]}
+                >
+                  {tripDetails?.travelPlan?.numberOfDays} days
+                </Text>
+              )}
             </View>
           </View>
 
@@ -313,21 +345,23 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   tripMetaContainer: {
-    flexDirection: "row",
+    flexDirection: "column",
     marginBottom: 25,
-    gap: 15,
+    gap: 10,
   },
   tripMetaItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
     borderRadius: 12,
+    flexWrap: "wrap",
   },
   tripMetaText: {
     fontFamily: "outfit-medium",
     fontSize: 16,
     marginLeft: 8,
+    flex: 1,
   },
   flightInfoContainer: {
     marginBottom: 25,

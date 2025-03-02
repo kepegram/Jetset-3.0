@@ -7,6 +7,7 @@ import {
   ViewStyle,
   DimensionValue,
   StyleProp,
+  View,
 } from "react-native";
 import { useTheme } from "../../context/themeContext";
 
@@ -20,6 +21,7 @@ type ButtonProps = {
   children?: React.ReactNode;
   disabled?: boolean;
   textColor?: string;
+  rightIcon?: React.ReactNode;
 };
 
 const CustomButton: React.FC<ButtonProps> = ({
@@ -78,6 +80,7 @@ const MainButton: React.FC<ButtonProps> = ({
   children,
   disabled,
   textColor,
+  rightIcon,
 }) => {
   const { currentTheme } = useTheme();
 
@@ -99,14 +102,17 @@ const MainButton: React.FC<ButtonProps> = ({
       {children ? (
         children
       ) : (
-        <Text
-          style={[
-            styles.mainButtonText,
-            { color: textColor || currentTheme.buttonText },
-          ]}
-        >
-          {buttonText}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Text
+            style={[
+              styles.mainButtonText,
+              { color: textColor || currentTheme.buttonText },
+            ]}
+          >
+            {buttonText}
+          </Text>
+          {rightIcon}
+        </View>
       )}
     </Pressable>
   );

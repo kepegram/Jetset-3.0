@@ -272,6 +272,14 @@ const WhereTo: React.FC = () => {
               buttonText="Continue to Dates"
               width="100%"
               style={styles.continueButton}
+              rightIcon={
+                <MaterialIcons
+                  name="arrow-forward-ios"
+                  size={20}
+                  color="white"
+                  style={{ marginLeft: 8 }}
+                />
+              }
             />
           </View>
         )}
