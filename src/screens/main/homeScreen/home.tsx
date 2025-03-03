@@ -221,10 +221,6 @@ const Home: React.FC = () => {
     );
   };
 
-  // Add this utility function
-  const delay = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms));
-
   // Add these utility functions near the top of the file, after the interfaces
   const wait = (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms));
@@ -971,7 +967,7 @@ const Home: React.FC = () => {
                         style={({ pressed }) => [
                           styles.dontLikeButton,
                           {
-                            borderColor: currentTheme.textSecondaryLight20,
+                            borderColor: currentTheme.alternate,
                             opacity: pressed ? 0.8 : 1,
                             transform: [{ scale: pressed ? 0.98 : 1 }],
                           },
@@ -980,13 +976,13 @@ const Home: React.FC = () => {
                         <Ionicons
                           name="add-circle-outline"
                           size={40}
-                          color={currentTheme.textSecondaryLight20}
+                          color={currentTheme.alternate}
                           style={styles.createTripIcon}
                         />
                         <Text
                           style={[
                             styles.dontLikeButtonText,
-                            { color: currentTheme.textSecondaryLight20 },
+                            { color: currentTheme.alternate },
                           ]}
                         >
                           Create Your Own{"\n"}Adventure
@@ -1137,7 +1133,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   greetingText: {
-    fontSize: 32,
+    fontSize: 28,
     color: "white",
     fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
     fontWeight: "bold",
@@ -1147,7 +1143,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 10,
   },
   subGreetingText: {
-    fontSize: 20,
+    fontSize: 18,
     color: "white",
     fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
     marginTop: 8,
@@ -1242,19 +1238,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: width * 0.6,
     height: width * 0.8,
-    padding: 20,
     marginRight: 20,
-  },
-  dontLikeButton: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
     borderRadius: 15,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderWidth: 2,
-    borderStyle: "dashed",
-    padding: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -1267,15 +1253,26 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  dontLikeButton: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 15,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    padding: 20,
+  },
   dontLikeButtonText: {
     fontSize: 18,
     fontWeight: "600",
     textAlign: "center",
     fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
     marginTop: 10,
+    lineHeight: 24,
   },
   createTripIcon: {
-    marginBottom: 10,
+    marginBottom: 15,
   },
   tripCard: {
     borderRadius: 15,

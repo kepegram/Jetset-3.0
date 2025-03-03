@@ -328,7 +328,7 @@ const RecommendedTripDetails: React.FC = () => {
             <View
               style={[
                 styles.flightContainer,
-                { backgroundColor: currentTheme.background },
+                { backgroundColor: currentTheme.accentBackground },
               ]}
             >
               <View style={styles.flightInfo}>

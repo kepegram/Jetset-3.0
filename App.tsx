@@ -121,6 +121,7 @@ const App: React.FC = () => {
         signInWithCredential(FIREBASE_AUTH, credential)
           .then(async (userCredential) => {
             const user = userCredential.user;
+            console.log("Google sign in successful:", user.email);
             // Save user data to Firestore
             const userRef = doc(FIREBASE_DB, "users", user.uid);
             const userDoc = await getDoc(userRef);
@@ -134,15 +135,25 @@ const App: React.FC = () => {
                 authProvider: "google",
                 photoURL: user.photoURL || null,
               });
+              console.log("Created new user document in Firestore");
             }
 
             // Register for push notifications after successful sign in
             await registerForPushNotificationsAsync();
           })
           .catch((error) => {
-            console.error("Error signing in with Google: ", error);
+            console.error("Error signing in with Google:", {
+              code: error.code,
+              message: error.message,
+              email: error.email,
+              credential: error.credential,
+            });
           });
+      } else {
+        console.error("No id_token received from Google sign in");
       }
+    } else if (response?.type === "error") {
+      console.error("Google sign in error:", response.error);
     }
   }, [response]);
 
@@ -157,11 +168,22 @@ const App: React.FC = () => {
 
         // Wait for Firebase auth state
         const authPromise = new Promise((resolve) => {
-          const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
-            setUser(user);
-            unsubscribe(); // Cleanup subscription
-            resolve(true);
-          });
+          // Keep the auth subscription active
+          onAuthStateChanged(
+            FIREBASE_AUTH,
+            (user) => {
+              console.log(
+                "Auth state changed:",
+                user ? "User logged in" : "No user"
+              );
+              setUser(user);
+              resolve(true);
+            },
+            (error) => {
+              console.error("Auth state error:", error);
+              resolve(true);
+            }
+          );
         });
 
         // Add a minimum delay to prevent flash
@@ -176,7 +198,7 @@ const App: React.FC = () => {
           // Add other critical initialization promises here
         ]);
       } catch (e) {
-        console.warn(e);
+        console.warn("Prepare error:", e);
       } finally {
         setAppIsReady(true);
       }

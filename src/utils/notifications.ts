@@ -229,7 +229,30 @@ export const sendSecurityNotification = async (action: string) => {
 interface NotificationSettings {
   pushEnabled: boolean;
   tripUpdatesEnabled: boolean;
+  countdownEnabled: boolean;
+  weatherAlertsEnabled: boolean;
+  flightRemindersEnabled: boolean;
+  // Notification preferences
+  preferences: {
+    countdownDays: number[]; // Array of days before trip to notify [7, 3, 1, 0]
+    weatherAlertTypes: ("severe" | "warning" | "update")[]; // Types of weather alerts to receive
+    notifyBeforeActivities: boolean; // Whether to notify before scheduled activities
+  };
 }
+
+// Default notification settings
+export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
+  pushEnabled: true,
+  tripUpdatesEnabled: true,
+  countdownEnabled: true,
+  weatherAlertsEnabled: true,
+  flightRemindersEnabled: true,
+  preferences: {
+    countdownDays: [7, 3, 1, 0],
+    weatherAlertTypes: ["severe", "warning", "update"],
+    notifyBeforeActivities: true,
+  },
+};
 
 // Get user notification settings
 export const getUserNotificationSettings =
@@ -242,8 +265,32 @@ export const getUserNotificationSettings =
 
     const data = userDoc.data();
     return {
-      pushEnabled: data.notificationSettings?.pushEnabled ?? true,
-      tripUpdatesEnabled: data.notificationSettings?.tripUpdatesEnabled ?? true,
+      pushEnabled:
+        data.notificationSettings?.pushEnabled ??
+        DEFAULT_NOTIFICATION_SETTINGS.pushEnabled,
+      tripUpdatesEnabled:
+        data.notificationSettings?.tripUpdatesEnabled ??
+        DEFAULT_NOTIFICATION_SETTINGS.tripUpdatesEnabled,
+      countdownEnabled:
+        data.notificationSettings?.countdownEnabled ??
+        DEFAULT_NOTIFICATION_SETTINGS.countdownEnabled,
+      weatherAlertsEnabled:
+        data.notificationSettings?.weatherAlertsEnabled ??
+        DEFAULT_NOTIFICATION_SETTINGS.weatherAlertsEnabled,
+      flightRemindersEnabled:
+        data.notificationSettings?.flightRemindersEnabled ??
+        DEFAULT_NOTIFICATION_SETTINGS.flightRemindersEnabled,
+      preferences: {
+        countdownDays:
+          data.notificationSettings?.preferences?.countdownDays ??
+          DEFAULT_NOTIFICATION_SETTINGS.preferences.countdownDays,
+        weatherAlertTypes:
+          data.notificationSettings?.preferences?.weatherAlertTypes ??
+          DEFAULT_NOTIFICATION_SETTINGS.preferences.weatherAlertTypes,
+        notifyBeforeActivities:
+          data.notificationSettings?.preferences?.notifyBeforeActivities ??
+          DEFAULT_NOTIFICATION_SETTINGS.preferences.notifyBeforeActivities,
+      },
     };
   };
 
@@ -257,4 +304,327 @@ export const updateNotificationSettings = async (
   await updateDoc(doc(FIREBASE_DB, `users/${user.uid}`), {
     notificationSettings: settings,
   });
+};
+
+// Schedule countdown notifications for a trip
+export const scheduleTripCountdownNotifications = async (
+  tripId: string,
+  tripName: string,
+  startDate: Date
+) => {
+  const notifications = [
+    {
+      days: 7,
+      emoji: "🗓️",
+      message: "Your trip to {tripName} is just a week away!",
+    },
+    {
+      days: 3,
+      emoji: "📅",
+      message: "Only 3 days until your {tripName} adventure begins!",
+    },
+    {
+      days: 1,
+      emoji: "🎒",
+      message: "Get ready! Your trip to {tripName} starts tomorrow!",
+    },
+    {
+      days: 0,
+      emoji: "✈️",
+      message: "Today's the day! Your {tripName} journey begins!",
+    },
+  ];
+
+  for (const notification of notifications) {
+    const notificationDate = new Date(startDate);
+    notificationDate.setDate(notificationDate.getDate() - notification.days);
+
+    if (notificationDate > new Date()) {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `${notification.emoji} Trip Countdown`,
+          body: notification.message.replace("{tripName}", tripName),
+          data: { tripId, type: "countdown" },
+        },
+        trigger: {
+          channelId: "default",
+          date: notificationDate,
+        },
+      });
+
+      // Save to Firestore for tracking
+      await saveNotificationToFirestore(
+        `${notification.emoji} Trip Countdown`,
+        notification.message.replace("{tripName}", tripName),
+        { tripId, type: "countdown", daysRemaining: notification.days }
+      );
+    }
+  }
+};
+
+// Schedule flight check-in reminder
+export const scheduleFlightCheckInReminder = async (
+  tripId: string,
+  tripName: string,
+  flightDate: Date
+) => {
+  const checkInDate = new Date(flightDate);
+  checkInDate.setDate(checkInDate.getDate() - 1);
+
+  if (checkInDate > new Date()) {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "✈️ Flight Check-in Reminder",
+        body: `Don't forget to check in for your flight to ${tripName}! Most airlines open check-in 24 hours before departure.`,
+        data: { tripId, type: "flight-checkin" },
+      },
+      trigger: {
+        channelId: "default",
+        date: checkInDate,
+      },
+    });
+
+    await saveNotificationToFirestore(
+      "✈️ Flight Check-in Reminder",
+      `Don't forget to check in for your flight to ${tripName}!`,
+      { tripId, type: "flight-checkin" }
+    );
+  }
+};
+
+// Send weather alert for trip
+export const sendWeatherAlert = async (
+  tripId: string,
+  tripName: string,
+  alertType: "severe" | "warning" | "update",
+  weatherDetails: string
+) => {
+  const alertEmojis = {
+    severe: "⛈️",
+    warning: "🌧️",
+    update: "🌤️",
+  };
+
+  const alertTitles = {
+    severe: "Severe Weather Alert",
+    warning: "Weather Warning",
+    update: "Weather Update",
+  };
+
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: `${alertEmojis[alertType]} ${alertTitles[alertType]}`,
+      body: `${weatherDetails} for your trip to ${tripName}`,
+      data: { tripId, type: "weather", alertType },
+      sound: true,
+      badge: 1,
+    },
+    trigger: null, // Send immediately
+  });
+
+  await saveNotificationToFirestore(
+    `${alertEmojis[alertType]} ${alertTitles[alertType]}`,
+    `${weatherDetails} for your trip to ${tripName}`,
+    { tripId, type: "weather", alertType }
+  );
+};
+
+// Weather API integration
+// @ts-ignore
+const WEATHER_API_KEY = process.env.EXPO_PUBLIC_WEATHER_API_KEY;
+const WEATHER_API_BASE_URL = "https://api.weatherapi.com/v1";
+const WEATHER_CHECK_INTERVAL = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+
+// Cache for weather checks to prevent duplicate API calls
+const weatherCheckCache = new Map<
+  string,
+  {
+    timestamp: number;
+    alerts: WeatherAlert[];
+  }
+>();
+
+// Validate weather API key
+const validateWeatherApiKey = () => {
+  if (!WEATHER_API_KEY) {
+    console.error(
+      "Weather API key is not configured. Please add EXPO_PUBLIC_WEATHER_API_KEY to your .env file"
+    );
+    return false;
+  }
+  return true;
+};
+
+interface WeatherAlert {
+  severity: "severe" | "warning" | "update";
+  details: string;
+  timestamp: number;
+}
+
+// Check if we need to make a new API call
+const shouldCheckWeather = (location: string): boolean => {
+  const cached = weatherCheckCache.get(location);
+  if (!cached) return true;
+
+  const now = Date.now();
+  return now - cached.timestamp >= WEATHER_CHECK_INTERVAL;
+};
+
+// Check weather for a trip
+export const checkWeatherForTrip = async (
+  tripId: string,
+  tripName: string,
+  location: string,
+  startDate: Date,
+  endDate: Date
+) => {
+  try {
+    const settings = await getUserNotificationSettings();
+    if (!settings?.weatherAlertsEnabled) return;
+
+    if (!validateWeatherApiKey()) return;
+
+    // Check cache first
+    if (!shouldCheckWeather(location)) {
+      const cached = weatherCheckCache.get(location);
+      if (cached) {
+        console.log("Using cached weather data for", location);
+        return cached.alerts;
+      }
+    }
+
+    console.log("Fetching fresh weather data for", location);
+    const response = await fetch(
+      `${WEATHER_API_BASE_URL}/forecast.json?key=${WEATHER_API_KEY}&q=${encodeURIComponent(
+        location
+      )}&days=3&alerts=yes`
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("Weather API Error:", {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData,
+      });
+      return [];
+    }
+
+    const data = await response.json();
+    const alerts: WeatherAlert[] = [];
+    const now = Date.now();
+
+    // Check for severe weather alerts
+    if (data.alerts?.alert) {
+      for (const alert of data.alerts.alert) {
+        const severity =
+          alert.severity === "Severe"
+            ? "severe"
+            : alert.severity === "Moderate"
+            ? "warning"
+            : "update";
+
+        if (settings.preferences.weatherAlertTypes.includes(severity)) {
+          alerts.push({
+            severity,
+            details: alert.desc,
+            timestamp: now,
+          });
+        }
+      }
+    }
+
+    // Update cache
+    weatherCheckCache.set(location, {
+      timestamp: now,
+      alerts,
+    });
+
+    // Only send notifications for new alerts
+    for (const alert of alerts) {
+      await sendWeatherAlert(tripId, tripName, alert.severity, alert.details);
+    }
+
+    return alerts;
+  } catch (error) {
+    console.error("Error checking weather:", error);
+    return [];
+  }
+};
+
+// Schedule all trip-related notifications
+export const scheduleAllTripNotifications = async (
+  tripId: string,
+  tripName: string,
+  startDate: Date,
+  location: string,
+  hasFlights: boolean = true
+) => {
+  try {
+    const settings = await getUserNotificationSettings();
+    if (!settings || !settings.pushEnabled) return;
+
+    // Schedule countdown notifications if enabled
+    if (settings.countdownEnabled) {
+      await scheduleTripCountdownNotifications(tripId, tripName, startDate);
+    }
+
+    // Schedule flight check-in reminder if enabled and trip includes flights
+    if (settings.flightRemindersEnabled && hasFlights) {
+      await scheduleFlightCheckInReminder(tripId, tripName, startDate);
+    }
+
+    // Initial weather check if enabled
+    if (settings.weatherAlertsEnabled) {
+      await checkWeatherForTrip(
+        tripId,
+        tripName,
+        location,
+        startDate,
+        new Date(startDate.getTime() + 3 * 24 * 60 * 60 * 1000)
+      );
+    }
+
+    console.log("Successfully scheduled all trip notifications");
+  } catch (error) {
+    console.error("Error scheduling trip notifications:", error);
+    throw error;
+  }
+};
+
+// Test weather notifications
+export const testWeatherNotifications = async () => {
+  try {
+    // Test location with known weather conditions
+    const testTrip = {
+      id: "test-trip-" + Date.now(),
+      name: "Test Trip to New York",
+      location: "New York",
+      startDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+    };
+
+    console.log("Testing weather notifications for:", testTrip.location);
+
+    // Send one test weather alert
+    await sendWeatherAlert(
+      testTrip.id,
+      testTrip.name,
+      "warning",
+      "Test Weather Warning: This is a test weather alert for your upcoming trip."
+    );
+    console.log("Sent test weather alert");
+
+    return {
+      success: true,
+      message:
+        "Weather test notification sent. Check your device for the notification.",
+    };
+  } catch (error: any) {
+    console.error("Error testing weather notifications:", error);
+    return {
+      success: false,
+      error: error.message || "Unknown error occurred",
+      message: "Weather notification test failed. Check console for details.",
+    };
+  }
 };

@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -37,6 +38,9 @@ interface LoginProps {
     options?: AuthRequestPromptOptions
   ) => Promise<AuthSessionResult>;
 }
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const IS_SMALL_DEVICE = SCREEN_HEIGHT < 700;
 
 const Login: React.FC<LoginProps> = ({ promptAsync }) => {
   const [email, setEmail] = useState<string>("");
@@ -128,7 +132,7 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
   return (
     <KeyboardAvoidingView
       testID="login-screen"
-      style={[styles.container, { backgroundColor: "white" }]}
+      style={[styles.container, { backgroundColor: "#F8F9FA" }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.scrollContainer}>
@@ -139,7 +143,7 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
           />
           <Text
             testID="login-subtitle"
-            style={[styles.subTitle, { color: "black" }]}
+            style={[styles.subTitle, { color: "#1A1A1A" }]}
           >
             Welcome back, adventurer
           </Text>
@@ -147,15 +151,17 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
 
         <View testID="login-form" style={styles.loginContainer}>
           <View style={styles.inputWrapper}>
-            <Text style={[styles.inputHeader, { color: "black" }]}>Email</Text>
+            <Text style={[styles.inputHeader, { color: "#4A4A4A" }]}>
+              Email
+            </Text>
             <TextInput
               testID="login-email-input"
               style={[
                 styles.input,
                 {
                   backgroundColor: "white",
-                  color: "black",
-                  borderColor: "gray",
+                  color: "#1A1A1A",
+                  borderColor: "#E0E0E0",
                 },
               ]}
               placeholder="user@example.com"
@@ -170,7 +176,7 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
           </View>
 
           <View style={styles.inputWrapper}>
-            <Text style={[styles.inputHeader, { color: "black" }]}>
+            <Text style={[styles.inputHeader, { color: "#4A4A4A" }]}>
               Password
             </Text>
             <View style={styles.passwordContainer}>
@@ -180,8 +186,8 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
                   styles.input,
                   {
                     backgroundColor: "white",
-                    color: "black",
-                    borderColor: "gray",
+                    color: "#1A1A1A",
+                    borderColor: "#E0E0E0",
                   },
                 ]}
                 placeholder="••••••••••"
@@ -241,7 +247,7 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
           {errorMessage && (
             <Text
               testID="login-error-message"
-              style={[styles.errorText, { color: "red" }]}
+              style={[styles.errorText, { color: "#FF4D4D" }]}
             >
               {errorMessage}
             </Text>
@@ -250,11 +256,11 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
 
         <View style={styles.dividerContainer}>
           <View style={styles.dividerContainer}>
-            <View style={[styles.divider, { backgroundColor: "gray" }]} />
-            <Text style={[styles.dividerText, { color: "black" }]}>
+            <View style={[styles.divider, { backgroundColor: "#E0E0E0" }]} />
+            <Text style={[styles.dividerText, { color: "#4A4A4A" }]}>
               or continue with
             </Text>
-            <View style={[styles.divider, { backgroundColor: "gray" }]} />
+            <View style={[styles.divider, { backgroundColor: "#E0E0E0" }]} />
           </View>
         </View>
 
@@ -314,44 +320,62 @@ export default Login;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
+    backgroundColor: "#F8F9FA",
   },
   scrollContainer: {
-    flexGrow: 1,
-    padding: 24,
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === "ios" ? (IS_SMALL_DEVICE ? 32 : 48) : 24,
   },
   headerContainer: {
     alignItems: "center",
-    marginTop: 20,
+    marginBottom: IS_SMALL_DEVICE ? 16 : 24,
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: IS_SMALL_DEVICE ? 60 : 70,
+    height: IS_SMALL_DEVICE ? 60 : 70,
+    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
   },
   subTitle: {
-    fontSize: 16,
-    lineHeight: 24,
-    letterSpacing: 0.3,
+    fontSize: IS_SMALL_DEVICE ? 18 : 20,
+    fontWeight: "600",
+    color: "#1A1A1A",
+    textAlign: "center",
+    marginBottom: IS_SMALL_DEVICE ? 4 : 8,
   },
   loginContainer: {
     width: "100%",
-    marginTop: 20,
+    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
   },
   inputWrapper: {
-    marginBottom: 20,
+    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
   },
   inputHeader: {
-    fontSize: 16,
+    fontSize: 11,
     fontWeight: "600",
-    marginBottom: 8,
+    marginBottom: 2,
+    color: "#4A4A4A",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   input: {
     width: "100%",
-    height: 56,
-    borderRadius: 12,
+    height: IS_SMALL_DEVICE ? 44 : 48,
+    borderRadius: 25,
     paddingHorizontal: 16,
+    backgroundColor: "white",
     borderWidth: 1,
-    fontSize: 16,
+    borderColor: "#E0E0E0",
+    fontSize: IS_SMALL_DEVICE ? 13 : 14,
+    color: "#1A1A1A",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   passwordContainer: {
     position: "relative",
@@ -360,79 +384,98 @@ const styles = StyleSheet.create({
   eyeIcon: {
     position: "absolute",
     right: 16,
-    top: 16,
-    padding: 4,
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 8,
   },
   forgotPasswordContainer: {
     alignSelf: "flex-end",
-    marginBottom: 24,
+    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
   },
   forgotPasswordText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: "600",
+    color: "#3BACE3",
   },
   button: {
     width: "100%",
-    marginBottom: 16,
+    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
+    height: IS_SMALL_DEVICE ? 44 : 48,
+    borderRadius: 25,
+    backgroundColor: "#3BACE3",
+    shadowColor: "#3BACE3",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   errorText: {
     textAlign: "center",
-    fontSize: 14,
-    marginBottom: 16,
-  },
-  createAccountContainer: {
-    marginBottom: 32,
-    alignItems: "center",
-  },
-  createAccountText: {
-    fontSize: 15,
-  },
-  signUpLink: {
-    fontWeight: "600",
+    fontSize: 11,
+    color: "#FF4D4D",
+    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
   },
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
   },
   divider: {
     flex: 1,
     height: 1,
+    backgroundColor: "#E0E0E0",
   },
   dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
+    marginHorizontal: 12,
+    fontSize: 11,
     fontWeight: "500",
+    color: "#4A4A4A",
   },
   socialIconsContainer: {
     flexDirection: "column",
-    gap: 12,
+    gap: IS_SMALL_DEVICE ? 6 : 8,
     width: "100%",
   },
   socialButton: {
-    height: 56,
-    borderRadius: 12,
+    height: IS_SMALL_DEVICE ? 44 : 48,
+    borderRadius: 25,
     borderWidth: 1,
-    borderColor: "black",
+    borderColor: "#E0E0E0",
+    backgroundColor: "white",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 12,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   socialIcon: {
-    width: 16,
-    height: 16,
+    width: 18,
+    height: 18,
   },
   socialButtonText: {
-    fontSize: 20,
+    fontSize: IS_SMALL_DEVICE ? 13 : 14,
     fontWeight: "600",
+    color: "#1A1A1A",
   },
   loginLink: {
     alignItems: "center",
-    marginTop: 20,
+    marginTop: IS_SMALL_DEVICE ? 4 : 8,
+    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
   },
   loginText: {
-    fontSize: 16,
-    fontWeight: "500",
+    fontSize: IS_SMALL_DEVICE ? 13 : 14,
+    color: "#4A4A4A",
+    textAlign: "center",
   },
 });

@@ -169,7 +169,11 @@ const MyTrips: React.FC = () => {
 
   // Only render content when we have fetched the data
   if (userTrips === null) {
-    return null;
+    return (
+      <View
+        style={[styles.container, { backgroundColor: currentTheme.background }]}
+      />
+    );
   }
 
   const getPastTrips = () => {
@@ -240,9 +244,10 @@ const MyTrips: React.FC = () => {
           <Text
             style={[styles.headerTitle, { color: currentTheme.textPrimary }]}
           >
-            {`${
-              displayName?.split(" ")[0]}'s` || `${userName?.split(" ")[0]}'s` || "My"
-            } Trips ✈️
+            {`${displayName?.split(" ")[0]}'s` ||
+              `${userName?.split(" ")[0]}'s` ||
+              "My"}{" "}
+            Trips ✈️
           </Text>
           <Pressable
             style={[

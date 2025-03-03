@@ -9,6 +9,7 @@ import {
   Platform,
   Image,
   SafeAreaView,
+  Dimensions,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -58,6 +59,9 @@ interface PasswordFieldProps {
   editable: boolean;
   testID?: string;
 }
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const IS_SMALL_DEVICE = SCREEN_HEIGHT < 700;
 
 const InputField: React.FC<InputFieldProps> = ({ label, ...props }) => (
   <View style={styles.inputWrapper}>
@@ -217,7 +221,7 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync }) => {
     <SafeAreaView testID="signup-screen" style={styles.container}>
       <KeyboardAvoidingView
         testID="signup-content"
-        style={[styles.contentContainer, { backgroundColor: "white" }]}
+        style={[styles.contentContainer, { backgroundColor: "#F8F9FA" }]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View testID="signup-header" style={styles.headerContainer}>
@@ -348,55 +352,64 @@ export default SignUp;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
+    backgroundColor: "#F8F9FA",
   },
   contentContainer: {
     flex: 1,
-    padding: 24,
-    justifyContent: "flex-start",
-    paddingTop: 0,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === "ios" ? (IS_SMALL_DEVICE ? 8 : 16) : 8,
   },
   headerContainer: {
     alignItems: "center",
-    marginBottom: 22,
+    marginBottom: IS_SMALL_DEVICE ? 12 : 16,
   },
   logo: {
-    width: 80,
-    height: 80,
-  },
-  appName: {
-    fontSize: 42,
-    fontWeight: "bold",
-    marginBottom: 8,
-    letterSpacing: 0.5,
+    width: IS_SMALL_DEVICE ? 50 : 60,
+    height: IS_SMALL_DEVICE ? 50 : 60,
+    marginBottom: IS_SMALL_DEVICE ? 4 : 8,
   },
   subtitle: {
-    fontSize: 16,
-    opacity: 0.8,
-    letterSpacing: 0.3,
-    color: "black",
+    fontSize: IS_SMALL_DEVICE ? 18 : 20,
+    fontWeight: "600",
+    color: "#1A1A1A",
+    textAlign: "center",
+    marginBottom: IS_SMALL_DEVICE ? 4 : 8,
   },
   signUpContainer: {
-    marginBottom: 16,
+    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
     width: "100%",
     maxWidth: 400,
     alignSelf: "center",
   },
   inputWrapper: {
-    marginBottom: 12,
+    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
   },
   inputLabel: {
-    fontSize: 16,
+    fontSize: 11,
     fontWeight: "600",
-    marginBottom: 8,
+    marginBottom: 2,
+    color: "#4A4A4A",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   input: {
     width: "100%",
-    height: 50,
-    borderRadius: 12,
+    height: IS_SMALL_DEVICE ? 44 : 48,
+    borderRadius: 25,
     paddingHorizontal: 16,
+    backgroundColor: "white",
     borderWidth: 1,
-    fontSize: 16,
+    borderColor: "#E0E0E0",
+    fontSize: IS_SMALL_DEVICE ? 13 : 14,
+    color: "#1A1A1A",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   passwordContainer: {
     position: "relative",
@@ -405,67 +418,92 @@ const styles = StyleSheet.create({
   eyeIcon: {
     position: "absolute",
     right: 16,
-    top: 10,
-    padding: 4,
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 8,
   },
   button: {
     width: "100%",
-    marginTop: 16,
+    marginTop: IS_SMALL_DEVICE ? 8 : 12,
+    height: IS_SMALL_DEVICE ? 44 : 48,
+    borderRadius: 25,
+    backgroundColor: "#3BACE3",
+    shadowColor: "#3BACE3",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   errorText: {
     textAlign: "center",
-    marginTop: 12,
-    fontSize: 14,
+    marginTop: IS_SMALL_DEVICE ? 4 : 8,
+    fontSize: 11,
     fontWeight: "500",
-    color: "red",
+    color: "#FF4D4D",
   },
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
   },
   divider: {
     flex: 1,
-    height: 1.5,
-    backgroundColor: "grey",
+    height: 1,
+    backgroundColor: "#E0E0E0",
   },
   dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
+    marginHorizontal: 12,
+    fontSize: 11,
     fontWeight: "500",
-    color: "grey",
+    color: "#4A4A4A",
   },
   socialButtonsContainer: {
     flexDirection: "column",
-    gap: 12,
+    gap: IS_SMALL_DEVICE ? 6 : 8,
     width: "100%",
     maxWidth: 400,
     alignSelf: "center",
-    marginBottom: 16,
+    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
   },
   socialButton: {
-    height: 54,
-    borderRadius: 12,
+    height: IS_SMALL_DEVICE ? 44 : 48,
+    borderRadius: 25,
     borderWidth: 1,
-    borderColor: "black",
+    borderColor: "#E0E0E0",
+    backgroundColor: "white",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 12,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   socialIcon: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
   },
   socialButtonText: {
-    fontSize: 19,
+    fontSize: IS_SMALL_DEVICE ? 13 : 14,
     fontWeight: "600",
+    color: "#1A1A1A",
   },
   loginLink: {
     alignItems: "center",
+    marginTop: IS_SMALL_DEVICE ? 4 : 8,
   },
   loginText: {
-    fontSize: 16,
-    fontWeight: "500",
+    fontSize: IS_SMALL_DEVICE ? 13 : 14,
+    color: "#4A4A4A",
+    textAlign: "center",
   },
 });
