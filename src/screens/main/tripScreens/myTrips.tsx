@@ -3,7 +3,14 @@ import { useTheme } from "../../../context/themeContext";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../navigation/appNav";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import { collection, getDocs, query } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  doc,
+  setDoc,
+  deleteDoc,
+} from "firebase/firestore";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
 import {
   Pressable,
@@ -52,26 +59,89 @@ const MyTrips: React.FC = () => {
       const tripsRef = collection(FIREBASE_DB, `users/${user.uid}/userTrips`);
       const snapshot = await getDocs(tripsRef);
 
-      // Map the documents and determine their type based on ID prefix
-      const allTrips = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        const id = doc.id;
-        let subcollection;
+      // Map the documents and determine their current status based on dates
+      const allTrips = await Promise.all(
+        snapshot.docs.map(async (docSnapshot) => {
+          const data = docSnapshot.data();
+          const id = docSnapshot.id;
+          const startDate = moment(data.tripData?.startDate);
+          const endDate = moment(data.tripData?.endDate);
+          const today = moment().startOf("day");
 
-        if (id.startsWith("up_")) {
-          subcollection = "upcomingTrips";
-        } else if (id.startsWith("cur_")) {
-          subcollection = "currentTrips";
-        } else if (id.startsWith("past_")) {
-          subcollection = "pastTrips";
-        }
+          // Determine the current status
+          let currentStatus;
+          if (startDate.isAfter(today)) {
+            currentStatus = "up";
+          } else if (endDate.isBefore(today)) {
+            currentStatus = "past";
+          } else {
+            currentStatus = "cur";
+          }
 
-        return {
-          id: id,
-          ...data,
-          subcollection: subcollection, // Keep this for backwards compatibility with UI
-        };
-      });
+          // Check if the status prefix in the ID matches the current status
+          const currentPrefix = id.split("_")[0];
+          if (currentPrefix !== currentStatus) {
+            // Status has changed, need to update the document
+            const newId = `${currentStatus}_${id.split("_")[1]}`;
+            const oldDocRef = doc(
+              FIREBASE_DB,
+              `users/${user.uid}/userTrips/${id}`
+            );
+            const newDocRef = doc(
+              FIREBASE_DB,
+              `users/${user.uid}/userTrips/${newId}`
+            );
+
+            try {
+              // Copy the document with the new ID
+              await setDoc(newDocRef, {
+                ...data,
+                docId: newId,
+              });
+              // Delete the old document
+              await deleteDoc(oldDocRef);
+
+              // Return the updated trip data
+              return {
+                id: newId,
+                ...data,
+                docId: newId,
+                subcollection:
+                  currentStatus === "up"
+                    ? "upcomingTrips"
+                    : currentStatus === "cur"
+                    ? "currentTrips"
+                    : "pastTrips",
+              };
+            } catch (error) {
+              console.error("Error updating trip status:", error);
+              // If update fails, return the original data
+              return {
+                id: id,
+                ...data,
+                subcollection:
+                  currentPrefix === "up"
+                    ? "upcomingTrips"
+                    : currentPrefix === "cur"
+                    ? "currentTrips"
+                    : "pastTrips",
+              };
+            }
+          }
+
+          // If no update needed, return the original data
+          return {
+            id: id,
+            ...data,
+            subcollection:
+              currentPrefix === "up"
+                ? "upcomingTrips"
+                : currentPrefix === "cur"
+                ? "currentTrips"
+                : "pastTrips",
+          };
+        })
+      );
 
       setUserTrips(allTrips);
     } catch (error) {
