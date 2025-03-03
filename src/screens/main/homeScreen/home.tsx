@@ -1156,7 +1156,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 10,
   },
   scrollViewContent: {
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
   recommendedTripsContainer: {
     width: "100%",
@@ -1166,7 +1166,7 @@ const styles = StyleSheet.create({
     marginTop: -120,
   },
   searchContainer: {
-    marginBottom: 20,
+    marginBottom: 10,
   },
   searchIcon: {
     position: "absolute",
@@ -1243,6 +1243,7 @@ const styles = StyleSheet.create({
     width: width * 0.6,
     height: width * 0.8,
     padding: 20,
+    marginRight: 20,
   },
   dontLikeButton: {
     width: "100%",
@@ -1267,7 +1268,6 @@ const styles = StyleSheet.create({
     }),
   },
   dontLikeButtonText: {
-    color: "white",
     fontSize: 18,
     fontWeight: "600",
     textAlign: "center",

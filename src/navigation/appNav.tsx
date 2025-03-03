@@ -53,6 +53,7 @@ export type RootStackParamList = {
   RecommendedTripDetails: { trip: string; photoRef: string };
   Notifications: undefined;
   NotificationSettings: undefined;
+  MyTrips: { screen: string };
   MyTripsMain: undefined;
   WhereTo: undefined;
   ManualTripBuilder: undefined;

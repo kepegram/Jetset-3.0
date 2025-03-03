@@ -1,5 +1,5 @@
 import "react-native-get-random-values";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Pressable, Platform, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -8,7 +8,7 @@ import {
   onAuthStateChanged,
   signInWithCredential,
 } from "firebase/auth";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, useNavigation } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { FIREBASE_AUTH } from "./firebase.config";
 import { useColorScheme } from "react-native";
@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as SplashScreen from "expo-splash-screen";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
+import * as Notifications from "expo-notifications";
 import Welcome from "./src/screens/onboarding/welcome/welcome";
 import Login from "./src/screens/onboarding/userAuth/login";
 import SignUp from "./src/screens/onboarding/userAuth/signup";
@@ -27,6 +28,7 @@ import Privacy from "./src/screens/onboarding/privacy/Privacy";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { FIREBASE_DB } from "./firebase.config";
 import * as Font from "expo-font";
+import { registerForPushNotificationsAsync } from "./src/utils/notifications";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -39,6 +41,18 @@ export type RootStackParamList = {
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
+
+// Configure notifications behavior
+Notifications.setNotificationHandler({
+  handleNotification: async () => {
+    return {
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      priority: Notifications.AndroidNotificationPriority.HIGH,
+    };
+  },
+});
 
 // Configure splash screen to stay visible
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -58,7 +72,46 @@ const App: React.FC = () => {
     androidClientId: process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID,
   });
 
+  const notificationListener = useRef<any>();
+  const responseListener = useRef<any>();
+  const navigationRef = useRef<any>();
+
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    // Set up notification listeners
+    notificationListener.current =
+      Notifications.addNotificationReceivedListener((notification) => {
+        console.log("Notification received:", notification);
+      });
+
+    responseListener.current =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        console.log("Notification response:", response);
+        const data = response.notification.request.content.data;
+
+        // Handle notification tap
+        if (data.tripId) {
+          navigationRef.current?.navigate("TripDetails", {
+            trip: data.tripId,
+            photoRef: data.photoRef || "",
+            docId: data.tripId,
+          });
+        }
+      });
+
+    // Request permissions on app start
+    registerForPushNotificationsAsync().catch((error) => {
+      console.log("Failed to get push token:", error);
+    });
+
+    return () => {
+      Notifications.removeNotificationSubscription(
+        notificationListener.current
+      );
+      Notifications.removeNotificationSubscription(responseListener.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (response?.type === "success") {
@@ -82,6 +135,9 @@ const App: React.FC = () => {
                 photoURL: user.photoURL || null,
               });
             }
+
+            // Register for push notifications after successful sign in
+            await registerForPushNotificationsAsync();
           })
           .catch((error) => {
             console.error("Error signing in with Google: ", error);
@@ -168,7 +224,7 @@ const App: React.FC = () => {
   return (
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <ThemeProvider>
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
           <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
           <Stack.Navigator initialRouteName="Welcome">
             {user ? (

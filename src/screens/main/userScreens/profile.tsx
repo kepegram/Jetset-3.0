@@ -27,7 +27,7 @@ import Privacy from "../../../screens/onboarding/privacy/Privacy";
 // Navigation prop type for type safety when navigating
 type ProfileScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  "Profile"
+  "Profile" | "MyTrips"
 >;
 
 const Profile: React.FC = () => {
@@ -457,7 +457,9 @@ const Profile: React.FC = () => {
                   : "transparent",
               },
             ]}
-            onPress={() => navigation.navigate("MyTripsMain")}
+            onPress={() =>
+              navigation.navigate("MyTrips", { screen: "MyTripsMain" })
+            }
           >
             <View style={styles.optionContent}>
               <Ionicons

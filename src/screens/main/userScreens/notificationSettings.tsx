@@ -1,28 +1,115 @@
-import React, { useState } from "react";
-import { StyleSheet, Text, View, SafeAreaView, Switch } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  SafeAreaView,
+  Switch,
+  Alert,
+  Pressable,
+  Linking,
+} from "react-native";
 import { useTheme } from "../../../context/themeContext";
+import {
+  getUserNotificationSettings,
+  updateNotificationSettings,
+  registerForPushNotificationsAsync,
+  testNotification,
+} from "../../../utils/notifications";
 
 const NotificationSettings: React.FC = () => {
   const { currentTheme } = useTheme();
   const [pushEnabled, setPushEnabled] = useState(true);
   const [tripUpdatesEnabled, setTripUpdatesEnabled] = useState(true);
-  const [promotionalEnabled, setPromotionalEnabled] = useState(false);
-  const [emailEnabled, setEmailEnabled] = useState(true);
+
+  useEffect(() => {
+    loadNotificationSettings();
+  }, []);
+
+  const loadNotificationSettings = async () => {
+    const settings = await getUserNotificationSettings();
+    if (settings) {
+      setPushEnabled(settings.pushEnabled);
+      setTripUpdatesEnabled(settings.tripUpdatesEnabled);
+    }
+  };
+
+  const handlePushToggle = async (value: boolean) => {
+    if (value) {
+      const token = await registerForPushNotificationsAsync();
+      if (!token) {
+        Alert.alert(
+          "Permission Required",
+          "Please enable notifications in your device settings to receive push notifications.",
+          [
+            {
+              text: "Open Settings",
+              onPress: () => Linking.openSettings(),
+            },
+            { text: "Cancel" },
+          ]
+        );
+        return;
+      }
+    }
+    setPushEnabled(value);
+    await updateNotificationSettings({
+      pushEnabled: value,
+      tripUpdatesEnabled,
+    });
+  };
+
+  const handleTripUpdatesToggle = async (value: boolean) => {
+    setTripUpdatesEnabled(value);
+    await updateNotificationSettings({
+      pushEnabled,
+      tripUpdatesEnabled: value,
+    });
+  };
+
+  const handleTestNotification = async () => {
+    try {
+      await testNotification();
+    } catch (error) {
+      Alert.alert(
+        "Notification Error",
+        "Failed to send test notification. Please check your notification permissions in device settings.",
+        [
+          {
+            text: "Open Settings",
+            onPress: () => Linking.openSettings(),
+          },
+          { text: "OK" },
+        ]
+      );
+    }
+  };
 
   const NotificationOption = ({
     title,
     description,
     value,
     onValueChange,
+    disabled = false,
   }: {
     title: string;
     description: string;
     value: boolean;
     onValueChange: (value: boolean) => void;
+    disabled?: boolean;
   }) => (
     <View style={styles.optionContainer}>
       <View style={styles.optionTextContainer}>
-        <Text style={[styles.optionTitle, { color: currentTheme.textPrimary }]}>
+        <Text
+          style={[
+            styles.optionTitle,
+            {
+              color: disabled
+                ? currentTheme.textSecondary
+                : currentTheme.textPrimary,
+            },
+          ]}
+        >
           {title}
         </Text>
         <Text
@@ -39,6 +126,7 @@ const NotificationSettings: React.FC = () => {
         onValueChange={onValueChange}
         trackColor={{ false: "#767577", true: currentTheme.alternate }}
         thumbColor={"#f4f3f4"}
+        disabled={disabled}
       />
     </View>
   );
@@ -58,29 +146,29 @@ const NotificationSettings: React.FC = () => {
           title="Push Notifications"
           description="Receive notifications on your device"
           value={pushEnabled}
-          onValueChange={setPushEnabled}
+          onValueChange={handlePushToggle}
         />
 
         <NotificationOption
           title="Trip Updates"
-          description="Get notified about changes to your trips"
+          description="Get notified about changes to your trips and upcoming trip reminders"
           value={tripUpdatesEnabled}
-          onValueChange={setTripUpdatesEnabled}
+          onValueChange={handleTripUpdatesToggle}
+          disabled={!pushEnabled}
         />
 
-        <NotificationOption
-          title="Promotional Notifications"
-          description="Receive deals and special offers"
-          value={promotionalEnabled}
-          onValueChange={setPromotionalEnabled}
-        />
-
-        <NotificationOption
-          title="Email Notifications"
-          description="Receive updates via email"
-          value={emailEnabled}
-          onValueChange={setEmailEnabled}
-        />
+        {pushEnabled && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.testButton,
+              { backgroundColor: currentTheme.alternate },
+              { opacity: pressed ? 0.8 : 1 },
+            ]}
+            onPress={handleTestNotification}
+          >
+            <Text style={styles.testButtonText}>Test Notification</Text>
+          </Pressable>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -120,6 +208,18 @@ const styles = StyleSheet.create({
   optionDescription: {
     fontSize: 14,
     fontFamily: "outfit-regular",
+  },
+  testButton: {
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  testButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+    fontFamily: "outfit-medium",
   },
 });
 

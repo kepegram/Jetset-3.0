@@ -11,13 +11,21 @@
       "backgroundColor": "#3BACE3",
       "hideExponentText": true
     },
+    "notification": {
+      "icon": "./src/assets/icons/Light.png",
+      "color": "#3BACE3",
+      "iosDisplayInForeground": true
+    },
     "ios": {
       "supportsTablet": true,
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.kpegra1.jetset",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       },
       "icon": "./src/assets/icons/Light.png",
       "alternateIcons": {
@@ -57,6 +65,13 @@
             "useFrameworks": "static",
             "deploymentTarget": "15.1"
           }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./src/assets/icons/Light.png",
+          "color": "#3BACE3"
         }
       ]
     ],

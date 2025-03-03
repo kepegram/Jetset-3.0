@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { useTheme } from "../../../context/themeContext";
+import { useProfile } from "../../../context/profileContext";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../navigation/appNav";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -9,6 +10,7 @@ import {
   doc,
   setDoc,
   deleteDoc,
+  getDoc,
 } from "firebase/firestore";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
 import {
@@ -33,7 +35,9 @@ type MyTripsScreenNavigationProp =
 
 const MyTrips: React.FC = () => {
   const { currentTheme } = useTheme();
+  const { displayName } = useProfile();
   const [userTrips, setUserTrips] = useState<any[] | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const navigation = useNavigation<MyTripsScreenNavigationProp>();
   const ITEMS_TO_SHOW = 6;
 
@@ -41,9 +45,28 @@ const MyTrips: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
-      if (user) GetMyTrips();
-    }, [user])
+      if (user) {
+        GetMyTrips();
+        // Fetch username if displayName is not available
+        if (!displayName) {
+          fetchUserName();
+        }
+      }
+    }, [user, displayName])
   );
+
+  const fetchUserName = async () => {
+    if (!user) return;
+    try {
+      const userDoc = await getDoc(doc(FIREBASE_DB, "users", user.uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        setUserName(data?.name || data?.username || "");
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
 
   const GetMyTrips = async () => {
     try {
@@ -217,7 +240,9 @@ const MyTrips: React.FC = () => {
           <Text
             style={[styles.headerTitle, { color: currentTheme.textPrimary }]}
           >
-            My Trips ✈️
+            {`${
+              displayName?.split(" ")[0]}'s` || `${userName?.split(" ")[0]}'s` || "My"
+            } Trips ✈️
           </Text>
           <Pressable
             style={[
