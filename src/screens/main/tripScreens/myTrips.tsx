@@ -6,7 +6,6 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import {
   collection,
   getDocs,
-  query,
   doc,
   setDoc,
   deleteDoc,
@@ -28,15 +27,13 @@ import UpcomingTripsCard from "../../../components/myTrips/upcomingTripsCard";
 import PastTripListCard from "../../../components/myTrips/pastTripListCard";
 import moment from "moment";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import SkeletonCard from "../../../components/common/SkeletonCard";
 
 type MyTripsScreenNavigationProp =
   NativeStackNavigationProp<RootStackParamList>;
 
 const MyTrips: React.FC = () => {
   const { currentTheme } = useTheme();
-  const [userTrips, setUserTrips] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [userTrips, setUserTrips] = useState<any[] | null>(null);
   const navigation = useNavigation<MyTripsScreenNavigationProp>();
   const ITEMS_TO_SHOW = 6;
 
@@ -50,9 +47,6 @@ const MyTrips: React.FC = () => {
 
   const GetMyTrips = async () => {
     try {
-      setLoading(true);
-      setUserTrips([]);
-
       if (!user) return;
 
       // Get all trips from the userTrips collection
@@ -146,10 +140,14 @@ const MyTrips: React.FC = () => {
       setUserTrips(allTrips);
     } catch (error) {
       console.error("Error fetching user trips:", error);
-    } finally {
-      setLoading(false);
+      setUserTrips([]);
     }
   };
+
+  // Only render content when we have fetched the data
+  if (userTrips === null) {
+    return null;
+  }
 
   const getPastTrips = () => {
     return userTrips
@@ -243,19 +241,25 @@ const MyTrips: React.FC = () => {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        {loading ? (
+        {userTrips.length === 0 ? (
+          <StartNewTripCard navigation={navigation} />
+        ) : (
           <View style={styles.tripsContainer}>
-            <View style={styles.sectionHeaderContainer}>
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  { color: currentTheme.textPrimary },
-                ]}
-              >
-                Current Trip
-              </Text>
-            </View>
-            <SkeletonCard variant="current" />
+            {hasCurrentTrip && (
+              <>
+                <View style={styles.sectionHeaderContainer}>
+                  <Text
+                    style={[
+                      styles.sectionTitle,
+                      { color: currentTheme.textPrimary },
+                    ]}
+                  >
+                    Current Trip
+                  </Text>
+                </View>
+                <CurrentTripsCard userTrips={userTrips} />
+              </>
+            )}
 
             <View style={styles.sectionHeaderContainer}>
               <Text
@@ -266,49 +270,98 @@ const MyTrips: React.FC = () => {
               >
                 Upcoming Trips
               </Text>
+              {totalUpcomingTrips >= 3 && (
+                <Pressable
+                  style={styles.seeAllButton}
+                  onPress={() => {
+                    const upcomingTrips = userTrips.filter((trip) => {
+                      const startDate = moment(trip.tripData.startDate).startOf(
+                        "day"
+                      );
+                      return startDate.isAfter(moment().startOf("day"));
+                    });
+                    if (upcomingTrips.length > 0) {
+                      navigation.navigate("AllTripsView", {
+                        trips: JSON.stringify(upcomingTrips),
+                        type: "upcoming",
+                      });
+                    }
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.seeAllText,
+                      { color: currentTheme.alternate },
+                    ]}
+                  >
+                    See All
+                  </Text>
+                </Pressable>
+              )}
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {[1, 2, 3].map((_, index) => (
-                <SkeletonCard key={index} variant="upcoming" />
-              ))}
-            </ScrollView>
-
-            <View style={styles.sectionHeaderContainer}>
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  { color: currentTheme.textPrimary },
-                ]}
-              >
-                Past Trips
-              </Text>
-            </View>
-            {[1, 2, 3].map((_, index) => (
-              <SkeletonCard key={index} variant="past" />
-            ))}
-          </View>
-        ) : (
-          <>
-            {userTrips.length === 0 ? (
-              <StartNewTripCard navigation={navigation} />
-            ) : (
-              <View style={styles.tripsContainer}>
-                {hasCurrentTrip && (
-                  <>
-                    <View style={styles.sectionHeaderContainer}>
-                      <Text
-                        style={[
-                          styles.sectionTitle,
-                          { color: currentTheme.textPrimary },
-                        ]}
-                      >
-                        Current Trip
-                      </Text>
+            {sortedUpcomingTrips.length > 0 ? (
+              <View>
+                <FlatList
+                  data={sortedUpcomingTrips}
+                  horizontal
+                  renderItem={({ item }) => (
+                    <View style={styles.upcomingTripCard}>
+                      <UpcomingTripsCard userTrips={[item]} />
                     </View>
-                    <CurrentTripsCard userTrips={userTrips} />
-                  </>
-                )}
+                  )}
+                  keyExtractor={(item) => item.id}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.upcomingTripsContainer}
+                  ListFooterComponent={() =>
+                    totalUpcomingTrips > ITEMS_TO_SHOW ? (
+                      <Pressable
+                        style={styles.seeMoreButton}
+                        onPress={() => console.log("See all upcoming trips")}
+                      >
+                        <Text
+                          style={[
+                            styles.seeMoreText,
+                            { color: currentTheme.alternate },
+                          ]}
+                        >
+                          See All ({totalUpcomingTrips})
+                        </Text>
+                      </Pressable>
+                    ) : null
+                  }
+                />
+              </View>
+            ) : (
+              <Pressable
+                style={styles.noUpcomingTripsContainer}
+                onPress={() => navigation.navigate("WhereTo")}
+              >
+                <MaterialCommunityIcons
+                  name="calendar-plus"
+                  size={24}
+                  color={currentTheme.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.noUpcomingTripsText,
+                    { color: currentTheme.textSecondary },
+                  ]}
+                >
+                  No upcoming trips planned
+                </Text>
+                <Text
+                  style={[
+                    styles.addTripText,
+                    { color: currentTheme.alternate },
+                  ]}
+                >
+                  Tap to plan a new adventure
+                </Text>
+              </Pressable>
+            )}
 
+            {totalPastTrips > 0 && (
+              <>
                 <View style={styles.sectionHeaderContainer}>
                   <Text
                     style={[
@@ -316,22 +369,22 @@ const MyTrips: React.FC = () => {
                       { color: currentTheme.textPrimary },
                     ]}
                   >
-                    Upcoming Trips
+                    Past Trips
                   </Text>
-                  {totalUpcomingTrips >= 3 && (
+                  {totalPastTrips >= 3 && (
                     <Pressable
                       style={styles.seeAllButton}
                       onPress={() => {
-                        const upcomingTrips = userTrips.filter((trip) => {
-                          const startDate = moment(
-                            trip.tripData.startDate
-                          ).startOf("day");
-                          return startDate.isAfter(moment().startOf("day"));
-                        });
-                        if (upcomingTrips.length > 0) {
+                        const pastTrips = userTrips.filter((trip) =>
+                          moment(trip.tripData.endDate).isBefore(
+                            moment(),
+                            "day"
+                          )
+                        );
+                        if (pastTrips.length > 0) {
                           navigation.navigate("AllTripsView", {
-                            trips: JSON.stringify(upcomingTrips),
-                            type: "upcoming",
+                            trips: JSON.stringify(pastTrips),
+                            type: "past",
                           });
                         }
                       }}
@@ -347,150 +400,45 @@ const MyTrips: React.FC = () => {
                     </Pressable>
                   )}
                 </View>
-                {sortedUpcomingTrips.length > 0 ? (
-                  <View>
-                    <FlatList
-                      data={sortedUpcomingTrips}
-                      horizontal
-                      renderItem={({ item }) => (
-                        <View style={styles.upcomingTripCard}>
-                          <UpcomingTripsCard userTrips={[item]} />
-                        </View>
-                      )}
-                      keyExtractor={(item) => item.id}
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.upcomingTripsContainer}
-                      ListFooterComponent={() =>
-                        totalUpcomingTrips > ITEMS_TO_SHOW ? (
-                          <Pressable
-                            style={styles.seeMoreButton}
-                            onPress={() =>
-                              console.log("See all upcoming trips")
-                            }
-                          >
-                            <Text
-                              style={[
-                                styles.seeMoreText,
-                                { color: currentTheme.alternate },
-                              ]}
-                            >
-                              See All ({totalUpcomingTrips})
-                            </Text>
-                          </Pressable>
-                        ) : null
-                      }
-                    />
-                  </View>
-                ) : (
-                  <Pressable
-                    style={styles.noUpcomingTripsContainer}
-                    onPress={() => navigation.navigate("WhereTo")}
-                  >
-                    <MaterialCommunityIcons
-                      name="calendar-plus"
-                      size={24}
-                      color={currentTheme.textSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.noUpcomingTripsText,
-                        { color: currentTheme.textSecondary },
-                      ]}
+                <View style={styles.pastTripsContainer}>
+                  {getPastTrips().map((trip, index) => {
+                    if (!trip || !trip.tripData || !trip.tripPlan) {
+                      console.warn(
+                        `Skipping invalid trip at index ${index}:`,
+                        trip
+                      );
+                      return null;
+                    }
+                    return (
+                      <PastTripListCard
+                        trip={{
+                          tripData: trip.tripData,
+                          tripPlan: trip.tripPlan,
+                          id: trip.id,
+                        }}
+                        key={index}
+                      />
+                    );
+                  })}
+                  {totalPastTrips > ITEMS_TO_SHOW && (
+                    <Pressable
+                      style={styles.seeMoreButton}
+                      onPress={() => console.log("See all past trips")}
                     >
-                      No upcoming trips planned
-                    </Text>
-                    <Text
-                      style={[
-                        styles.addTripText,
-                        { color: currentTheme.alternate },
-                      ]}
-                    >
-                      Tap to plan a new adventure
-                    </Text>
-                  </Pressable>
-                )}
-
-                {totalPastTrips > 0 && (
-                  <>
-                    <View style={styles.sectionHeaderContainer}>
                       <Text
                         style={[
-                          styles.sectionTitle,
-                          { color: currentTheme.textPrimary },
+                          styles.seeMoreText,
+                          { color: currentTheme.alternate },
                         ]}
                       >
-                        Past Trips
+                        See All ({totalPastTrips})
                       </Text>
-                      {totalPastTrips >= 3 && (
-                        <Pressable
-                          style={styles.seeAllButton}
-                          onPress={() => {
-                            const pastTrips = userTrips.filter((trip) =>
-                              moment(trip.tripData.endDate).isBefore(
-                                moment(),
-                                "day"
-                              )
-                            );
-                            if (pastTrips.length > 0) {
-                              navigation.navigate("AllTripsView", {
-                                trips: JSON.stringify(pastTrips),
-                                type: "past",
-                              });
-                            }
-                          }}
-                        >
-                          <Text
-                            style={[
-                              styles.seeAllText,
-                              { color: currentTheme.alternate },
-                            ]}
-                          >
-                            See All
-                          </Text>
-                        </Pressable>
-                      )}
-                    </View>
-                    <View style={styles.pastTripsContainer}>
-                      {getPastTrips().map((trip, index) => {
-                        if (!trip || !trip.tripData || !trip.tripPlan) {
-                          console.warn(
-                            `Skipping invalid trip at index ${index}:`,
-                            trip
-                          );
-                          return null;
-                        }
-                        return (
-                          <PastTripListCard
-                            trip={{
-                              tripData: trip.tripData,
-                              tripPlan: trip.tripPlan,
-                              id: trip.id,
-                            }}
-                            key={index}
-                          />
-                        );
-                      })}
-                      {totalPastTrips > ITEMS_TO_SHOW && (
-                        <Pressable
-                          style={styles.seeMoreButton}
-                          onPress={() => console.log("See all past trips")}
-                        >
-                          <Text
-                            style={[
-                              styles.seeMoreText,
-                              { color: currentTheme.alternate },
-                            ]}
-                          >
-                            See All ({totalPastTrips})
-                          </Text>
-                        </Pressable>
-                      )}
-                    </View>
-                  </>
-                )}
-              </View>
+                    </Pressable>
+                  )}
+                </View>
+              </>
             )}
-          </>
+          </View>
         )}
       </ScrollView>
     </View>

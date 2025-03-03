@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Pressable, StyleSheet, Text, View, SafeAreaView } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  SafeAreaView,
+  Switch,
+} from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../navigation/appNav";
@@ -16,7 +23,7 @@ type EditScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 const Edit: React.FC = () => {
-  const { currentTheme } = useTheme();
+  const { currentTheme, theme, setTheme } = useTheme();
   const navigation = useNavigation<EditScreenNavigationProp>();
   const [userName, setUserName] = useState<string | null>("");
   const [isThirdPartyAuth, setIsThirdPartyAuth] = useState(false);
@@ -153,6 +160,40 @@ const Edit: React.FC = () => {
               />
             </Pressable>
           )}
+
+          {/* Dark Mode Toggle */}
+          <View
+            style={[
+              styles.securityOption,
+              {
+                backgroundColor: "transparent",
+              },
+            ]}
+          >
+            <View style={styles.optionContent}>
+              <Ionicons
+                name={theme === "dark" ? "moon-outline" : "sunny-outline"}
+                size={24}
+                color={currentTheme.icon}
+              />
+              <View style={styles.optionTextContainer}>
+                <Text
+                  style={[
+                    styles.optionLabel,
+                    { color: currentTheme.textPrimary },
+                  ]}
+                >
+                  Dark Mode
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={theme === "dark"}
+              onValueChange={(value) => setTheme(value ? "dark" : "light")}
+              trackColor={{ false: "#767577", true: currentTheme.alternate }}
+              thumbColor={"#f4f3f4"}
+            />
+          </View>
         </View>
 
         {/* Delete Account Button */}

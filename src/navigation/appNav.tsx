@@ -20,7 +20,6 @@ import Profile from "../screens/main/userScreens/profile";
 import Edit from "../screens/main/userScreens/edit";
 import ChangeUsername from "../screens/main/userScreens/changeUsername";
 import ChangePassword from "../screens/main/userScreens/changePassword";
-import AppTheme from "../screens/main/userScreens/appTheme";
 import DeleteAccount from "../screens/main/userScreens/deleteAccount";
 import ReviewTrip from "../screens/main/tripScreens/buildTrip/reviewTrip";
 import GenerateTrip from "../screens/main/tripScreens/buildTrip/generateTrip";
@@ -454,14 +453,6 @@ const ProfileStack: React.FC = () => {
         options={({ navigation }) => ({
           ...screenOptions({ navigation }),
           title: "Change Password",
-        })}
-      />
-      <RootStack.Screen
-        name="AppTheme"
-        component={AppTheme}
-        options={({ navigation }) => ({
-          ...screenOptions({ navigation }),
-          title: "",
         })}
       />
       <RootStack.Screen

@@ -231,7 +231,7 @@ const WhereTo: React.FC = () => {
                 {
                   backgroundColor: `${currentTheme.secondary}15`,
                   color: currentTheme.textPrimary,
-                  borderColor: `${currentTheme.alternate}30`,
+                  borderColor: `${currentTheme.alternate}`,
                 },
               ],
               listView: [
