@@ -24,10 +24,19 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
   - Activity level customization
 
 - **Comprehensive Itineraries**:
+
   - Day-by-day detailed travel plans
   - Points of interest with descriptions
   - Travel time estimates between locations
   - Budget considerations and recommendations
+
+- **Smart Notifications**:
+  - Real-time push notifications for trip updates
+  - Trip reminders 24 hours before departure
+  - Interactive notification center with read/unread states
+  - Customizable notification preferences
+  - Travel alerts and security notifications
+  - Swipe-to-delete notification management
 
 ### User Experience
 
@@ -37,6 +46,7 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
   - Dark and light theme support
   - Intuitive navigation flow
   - Responsive design for all screen sizes
+  - Interactive notification badges and indicators
 
 - **Interactive Maps**:
   - Visual trip planning interface
@@ -51,6 +61,15 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
   - iOS and Android compatibility
   - Native performance optimization
   - Platform-specific UI adaptations
+
+- **Notification System**:
+
+  - Expo Notifications integration
+  - Firebase-backed notification storage
+  - Real-time notification updates
+  - Background notification handling
+  - Custom notification channels for Android
+  - Rich notification support for iOS
 
 - **Offline Capabilities**:
 
@@ -109,6 +128,7 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
 - **Navigation**: React Navigation
 - **Maps**: React Native Maps
 - **Animations**: React Native Animated
+- **Notifications**: Expo Notifications
 
 ### Backend Services
 
