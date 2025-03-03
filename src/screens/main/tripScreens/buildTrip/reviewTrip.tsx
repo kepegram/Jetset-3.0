@@ -566,44 +566,6 @@ const ReviewTrip: React.FC = () => {
             backgroundColor={currentTheme.alternate}
             width="85%"
           />
-
-          {/* Debug Button for Testing */}
-          <Pressable
-            onPress={() => {
-              // Log the entire tripData object with formatting
-              console.log(
-                "Trip Data for Testing:",
-                JSON.stringify(tripData, null, 2)
-              );
-
-              // Show a simple alert
-              alert("Trip data logged to console");
-            }}
-            style={({ pressed }) => [
-              styles.debugButton,
-              {
-                backgroundColor: pressed
-                  ? `${currentTheme.secondary}30`
-                  : `${currentTheme.secondary}15`,
-                borderColor: currentTheme.secondary,
-              },
-            ]}
-          >
-            <Ionicons
-              name="code-outline"
-              size={18}
-              color={currentTheme.textSecondary}
-              style={styles.debugIcon}
-            />
-            <Text
-              style={[
-                styles.debugButtonText,
-                { color: currentTheme.textSecondary },
-              ]}
-            >
-              Log Trip Data (Debug)
-            </Text>
-          </Pressable>
         </View>
       </View>
 

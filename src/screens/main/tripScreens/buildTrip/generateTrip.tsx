@@ -26,6 +26,7 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getPhotoReference } from "../../../../api/places-api";
 import * as Progress from "react-native-progress";
+import moment from "moment";
 
 type GenerateTripScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -186,13 +187,28 @@ const GenerateTrip: React.FC = () => {
     tripResp: TripResponse,
     photoRef: string | null
   ) => {
-    const docId = Date.now().toString();
-    const userTripRef = doc(
+    const timestamp = Date.now().toString();
+    const startDate = moment(tripData.startDate);
+    const endDate = moment(tripData.endDate);
+    const today = moment().startOf("day");
+
+    // Determine status prefix for the document ID
+    let statusPrefix;
+    if (startDate.isAfter(today)) {
+      statusPrefix = "up";
+    } else if (endDate.isBefore(today)) {
+      statusPrefix = "past";
+    } else {
+      statusPrefix = "cur";
+    }
+
+    // Create document ID with status prefix
+    const docId = `${statusPrefix}_${timestamp}`;
+
+    // Create a document reference using the new path structure
+    const tripDocRef = doc(
       FIREBASE_DB,
-      "users",
-      user?.uid || "unknown",
-      "userTrips",
-      docId
+      `users/${user?.uid || "unknown"}/userTrips/${docId}`
     );
 
     // Clean the tripData object to remove undefined values
@@ -205,7 +221,7 @@ const GenerateTrip: React.FC = () => {
       }).filter(([_, value]) => value !== undefined)
     );
 
-    await setDoc(userTripRef, {
+    await setDoc(tripDocRef, {
       userEmail: user?.email || "unknown",
       tripPlan: tripResp,
       tripData: cleanTripData,

@@ -7,7 +7,6 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
-  Linking,
   Animated,
 } from "react-native";
 import React, { useCallback, useState, useRef, useEffect } from "react";
@@ -386,18 +385,26 @@ const Profile: React.FC = () => {
             {isLoading ? (
               <ActivityIndicator size="large" color={currentTheme.primary} />
             ) : (
-              <Image
-                source={{
-                  uri:
-                    profilePicture ||
-                    "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Default_pfp.svg/2048px-Default_pfp.svg.png",
-                  cache: "reload",
-                }}
-                style={styles.profilePicture}
-                onError={(e) =>
-                  console.log("Error loading image:", e.nativeEvent.error)
-                }
-              />
+              <>
+                <Image
+                  source={{
+                    uri:
+                      profilePicture ||
+                      "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Default_pfp.svg/2048px-Default_pfp.svg.png",
+                    cache: "reload",
+                  }}
+                  style={styles.profilePicture}
+                  onError={(e) =>
+                    console.log("Error loading image:", e.nativeEvent.error)
+                  }
+                />
+                <Pressable
+                  style={styles.editIconContainer}
+                  onPress={handlePickImage}
+                >
+                  <Ionicons name="pencil" size={16} color="#FFFFFF" />
+                </Pressable>
+              </>
             )}
           </Pressable>
         </View>
@@ -610,14 +617,22 @@ const styles = StyleSheet.create({
   },
   editIconContainer: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
+    bottom: 5,
+    right: 5,
     backgroundColor: "rgba(0, 0, 0, 0.6)",
     width: 32,
     height: 32,
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   settingsContainer: {
     flex: 1,
@@ -706,12 +721,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalImageContainer: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: 250,
+    height: 250,
+    borderRadius: 125,
     overflow: "hidden",
-    borderWidth: 3,
-    borderColor: "rgba(0, 0, 0, 0.1)",
   },
   modalProfilePicture: {
     width: "100%",

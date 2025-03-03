@@ -48,17 +48,32 @@ const MyTrips: React.FC = () => {
 
       if (!user) return;
 
-      const tripsQuery = query(
-        collection(FIREBASE_DB, `users/${user.uid}/userTrips`)
-      );
+      // Get all trips from the userTrips collection
+      const tripsRef = collection(FIREBASE_DB, `users/${user.uid}/userTrips`);
+      const snapshot = await getDocs(tripsRef);
 
-      const querySnapshot = await getDocs(tripsQuery);
-      const trips = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      // Map the documents and determine their type based on ID prefix
+      const allTrips = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        const id = doc.id;
+        let subcollection;
 
-      setUserTrips(trips);
+        if (id.startsWith("up_")) {
+          subcollection = "upcomingTrips";
+        } else if (id.startsWith("cur_")) {
+          subcollection = "currentTrips";
+        } else if (id.startsWith("past_")) {
+          subcollection = "pastTrips";
+        }
+
+        return {
+          id: id,
+          ...data,
+          subcollection: subcollection, // Keep this for backwards compatibility with UI
+        };
+      });
+
+      setUserTrips(allTrips);
     } catch (error) {
       console.error("Error fetching user trips:", error);
     } finally {
@@ -68,7 +83,7 @@ const MyTrips: React.FC = () => {
 
   const getPastTrips = () => {
     return userTrips
-      .filter((trip) => moment(trip.tripData.endDate).isBefore(moment(), "day"))
+      .filter((trip) => trip.subcollection === "pastTrips")
       .sort((a, b) => {
         const dateA = moment(a.tripData.endDate);
         const dateB = moment(b.tripData.endDate);
@@ -78,10 +93,7 @@ const MyTrips: React.FC = () => {
   };
 
   const sortedUpcomingTrips = userTrips
-    .filter((trip) => {
-      const startDate = moment(trip.tripData.startDate).startOf("day");
-      return startDate.isAfter(moment().startOf("day"));
-    })
+    .filter((trip) => trip.subcollection === "upcomingTrips")
     .sort((a, b) => {
       const dateA = moment(a.tripData.startDate);
       const dateB = moment(b.tripData.startDate);
@@ -89,29 +101,20 @@ const MyTrips: React.FC = () => {
     })
     .slice(0, ITEMS_TO_SHOW);
 
-  const totalUpcomingTrips = userTrips.filter((trip) => {
-    const startDate = moment(trip.tripData.startDate).startOf("day");
-    return startDate.isAfter(moment().startOf("day"));
-  }).length;
-
-  const totalPastTrips = userTrips.filter((trip) =>
-    moment(trip.tripData.endDate).isBefore(moment(), "day")
+  const totalUpcomingTrips = userTrips.filter(
+    (trip) => trip.subcollection === "upcomingTrips"
   ).length;
 
-  const hasCurrentTrip = userTrips.some((trip) => {
-    const startDate = moment(trip.tripData.startDate).startOf("day");
-    const endDate = moment(trip.tripData.endDate).endOf("day");
-    const today = moment().startOf("day");
-    return startDate.isSameOrBefore(today) && endDate.isSameOrAfter(today);
-  });
+  const totalPastTrips = userTrips.filter(
+    (trip) => trip.subcollection === "pastTrips"
+  ).length;
+
+  const hasCurrentTrip = userTrips.some(
+    (trip) => trip.subcollection === "currentTrips"
+  );
 
   const getCurrentTrips = () => {
-    return userTrips.filter((trip) => {
-      const startDate = moment(trip.tripData.startDate).startOf("day");
-      const endDate = moment(trip.tripData.endDate).endOf("day");
-      const today = moment().startOf("day");
-      return startDate.isSameOrBefore(today) && endDate.isSameOrAfter(today);
-    });
+    return userTrips.filter((trip) => trip.subcollection === "currentTrips");
   };
 
   const scaleAnim = new Animated.Value(1);

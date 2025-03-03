@@ -16,7 +16,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTheme } from "../../../../../context/themeContext";
 import { CreateTripContext } from "../../../../../context/createTripContext";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../../../firebase.config";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection } from "firebase/firestore";
 import { MaterialIcons, Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import CalendarPicker from "react-native-calendar-picker";
 import moment, { Moment } from "moment";
@@ -174,13 +174,32 @@ const ManualTripBuilder: React.FC = () => {
     setLoading(true);
     try {
       const docId = Date.now().toString();
-      const userTripRef = doc(
+      const today = moment().startOf("day");
+
+      // Determine which subcollection to save to
+      let subcollectionPath;
+      if (startDate.isAfter(today)) {
+        subcollectionPath = "upcomingTrips";
+      } else if (endDate.isBefore(today)) {
+        subcollectionPath = "pastTrips";
+      } else {
+        subcollectionPath = "currentTrips";
+      }
+
+      // First, create a reference to the userTrips collection
+      const userTripsCollectionRef = collection(
         FIREBASE_DB,
-        "users",
-        user.uid,
-        "userTrips",
-        docId
+        `users/${user.uid}/userTrips`
       );
+
+      // Then, create a reference to the specific subcollection
+      const subcollectionRef = collection(
+        userTripsCollectionRef,
+        subcollectionPath
+      );
+
+      // Finally, create a document reference in the subcollection
+      const tripDocRef = doc(subcollectionRef, docId);
 
       const tripPlan = {
         travelPlan: {
@@ -201,7 +220,7 @@ const ManualTripBuilder: React.FC = () => {
         totalNoOfDays: endDate.diff(startDate, "days") + 1,
       };
 
-      await setDoc(userTripRef, {
+      await setDoc(tripDocRef, {
         userEmail: user.email || "unknown",
         tripPlan,
         tripData: sanitizedTripData,

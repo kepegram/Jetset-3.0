@@ -45,6 +45,21 @@ const PlannedTrip: React.FC<PlannedTripProps> = ({ details }) => {
     }));
   };
 
+  // Add validation for details and provide default values
+  const validDetails =
+    details && typeof details === "object"
+      ? details
+      : {
+          itinerary: [],
+          budget: "",
+          destination: "",
+        };
+
+  // Ensure itinerary is an array
+  const safeItinerary = Array.isArray(validDetails.itinerary)
+    ? validDetails.itinerary
+    : [];
+
   if (!details || typeof details !== "object") {
     return (
       <View style={styles.errorContainer}>
@@ -67,12 +82,12 @@ const PlannedTrip: React.FC<PlannedTripProps> = ({ details }) => {
   };
 
   const initialRegion =
-    details.itinerary.length > 0 &&
-    details.itinerary[0].places.length > 0 &&
-    details.itinerary[0].places[0].geoCoordinates
+    safeItinerary.length > 0 &&
+    safeItinerary[0].places.length > 0 &&
+    safeItinerary[0].places[0].geoCoordinates
       ? {
-          latitude: details.itinerary[0].places[0].geoCoordinates.latitude,
-          longitude: details.itinerary[0].places[0].geoCoordinates.longitude,
+          latitude: safeItinerary[0].places[0].geoCoordinates.latitude,
+          longitude: safeItinerary[0].places[0].geoCoordinates.longitude,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }
@@ -84,7 +99,7 @@ const PlannedTrip: React.FC<PlannedTripProps> = ({ details }) => {
         🏕️ Suggested Itinerary
       </Text>
 
-      {details.itinerary.map(({ day, places }) => (
+      {safeItinerary.map(({ day, places = [] }) => (
         <View key={day}>
           <Text style={[styles.dayText, { color: currentTheme.textPrimary }]}>
             {day}
@@ -128,7 +143,7 @@ const PlannedTrip: React.FC<PlannedTripProps> = ({ details }) => {
 
       <Modal visible={isMapVisible} onRequestClose={toggleMapModal}>
         <MapView style={styles.map} initialRegion={initialRegion}>
-          {details.itinerary.map(({ places }) =>
+          {safeItinerary.map(({ places }) =>
             places.map((place, index) => {
               if (
                 !place.geoCoordinates?.latitude ||

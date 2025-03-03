@@ -9,22 +9,24 @@ import {
 } from "react-native";
 import { useTheme } from "../../context/themeContext";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
 
 interface RecommendedTripSkeletonProps {
-  loadingProgress?: number;
-  isFirstCard?: boolean;
-  status?: "loading" | "completed";
+  status: "waiting" | "loading" | "completed" | "error";
+  currentlyGenerating?: boolean;
+  tripNumber: number;
 }
 
 const RecommendedTripSkeleton: React.FC<RecommendedTripSkeletonProps> = ({
-  loadingProgress = 0,
-  isFirstCard = false,
-  status = "loading",
+  status = "waiting",
+  currentlyGenerating = false,
+  tripNumber,
 }) => {
   const { currentTheme } = useTheme();
   const shimmerValue = useRef(new Animated.Value(-1)).current;
+  const pulseValue = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     const shimmerAnimation = Animated.loop(
@@ -35,30 +37,117 @@ const RecommendedTripSkeleton: React.FC<RecommendedTripSkeletonProps> = ({
       })
     );
 
-    shimmerAnimation.start();
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseValue, {
+          toValue: 1.05,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
 
-    return () => shimmerAnimation.stop();
-  }, []);
+    if (currentlyGenerating) {
+      pulseAnimation.start();
+    } else {
+      pulseAnimation.stop();
+    }
+
+    if (status === "loading" || status === "waiting") {
+      shimmerAnimation.start();
+    } else {
+      shimmerAnimation.stop();
+    }
+
+    return () => {
+      shimmerAnimation.stop();
+      pulseAnimation.stop();
+    };
+  }, [currentlyGenerating, status]);
 
   const translateX = shimmerValue.interpolate({
     inputRange: [-1, 1],
     outputRange: [-width, width],
   });
 
+  const getStatusColor = () => {
+    switch (status) {
+      case "completed":
+        return "#4CAF50";
+      case "error":
+        return "#F44336";
+      case "loading":
+        return "#2196F3";
+      default:
+        return currentTheme.textSecondary;
+    }
+  };
+
+  const getStatusText = () => {
+    switch (status) {
+      case "completed":
+        return "Trip generated!";
+      case "error":
+        return "Error generating trip";
+      case "loading":
+        return "Generating trip...";
+      default:
+        return "Waiting...";
+    }
+  };
+
+  const getStatusIcon = () => {
+    switch (status) {
+      case "completed":
+        return "checkmark-circle";
+      case "error":
+        return "alert-circle";
+      case "loading":
+        return "refresh-circle";
+      default:
+        return "time";
+    }
+  };
+
   return (
-    <View style={{ alignItems: "center" }}>
-      {isFirstCard && (
+    <Animated.View
+      style={[
+        styles.container,
+        { transform: [{ scale: currentlyGenerating ? pulseValue : 1 }] },
+      ]}
+    >
+      <View style={styles.statusHeader}>
         <Text
-          style={[styles.loadingText, { color: currentTheme.textSecondary }]}
+          style={[styles.tripNumberText, { color: currentTheme.textSecondary }]}
         >
-          {status === "completed" ? "Trip generated!" : "Generating trip..."}
+          Trip {tripNumber}
         </Text>
-      )}
+        <View style={styles.statusContainer}>
+          <Ionicons
+            name={getStatusIcon()}
+            size={16}
+            color={getStatusColor()}
+            style={[
+              styles.statusIcon,
+              status === "loading" && styles.spinningIcon,
+            ]}
+          />
+          <Text style={[styles.statusText, { color: getStatusColor() }]}>
+            {getStatusText()}
+          </Text>
+        </View>
+      </View>
       <View
         style={[
           styles.tripCard,
           { backgroundColor: currentTheme.shadowBackground },
           status === "completed" && styles.completedCard,
+          status === "error" && styles.errorCard,
         ]}
       >
         <View style={StyleSheet.absoluteFill}>
@@ -68,6 +157,7 @@ const RecommendedTripSkeleton: React.FC<RecommendedTripSkeletonProps> = ({
               styles.shimmer,
               {
                 transform: [{ translateX }],
+                opacity: status === "loading" ? 1 : 0,
               },
             ]}
           >
@@ -118,14 +208,47 @@ const RecommendedTripSkeleton: React.FC<RecommendedTripSkeletonProps> = ({
           </View>
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    alignItems: "center",
+    marginRight: 20,
+  },
+  statusHeader: {
+    alignItems: "center",
+    marginBottom: 10,
+    width: width * 0.6,
+  },
+  tripNumberText: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 4,
+    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
+  },
+  statusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: "rgba(0,0,0,0.05)",
+  },
+  statusIcon: {
+    marginRight: 6,
+  },
+  statusText: {
+    fontSize: 14,
+    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
+  },
+  spinningIcon: {
+    transform: [{ rotate: "45deg" }],
+  },
   tripCard: {
     borderRadius: 15,
-    marginRight: 20,
     width: width * 0.6,
     height: width * 0.8,
     overflow: "hidden",
@@ -172,13 +295,15 @@ const styles = StyleSheet.create({
     width: "90%",
     borderRadius: 4,
   },
-  loadingText: {
-    fontSize: 14,
-    marginBottom: 10,
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
-  },
   completedCard: {
-    opacity: 0.7,
+    opacity: 0.8,
+    borderColor: "#4CAF50",
+    borderWidth: 2,
+  },
+  errorCard: {
+    opacity: 0.8,
+    borderColor: "#F44336",
+    borderWidth: 2,
   },
 });
 

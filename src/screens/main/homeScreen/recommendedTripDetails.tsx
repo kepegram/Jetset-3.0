@@ -28,6 +28,8 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { travelOptions } from "../tripScreens/buildTrip/whosGoing";
+import moment from "moment";
 
 const { width, height } = Dimensions.get("window");
 
@@ -49,6 +51,8 @@ const RecommendedTripDetails: React.FC = () => {
   const user = FIREBASE_AUTH.currentUser;
 
   const [tripDetails, setTripDetails] = useState<any>(null);
+  const randomTravelOption =
+    travelOptions[Math.floor(Math.random() * travelOptions.length)];
 
   useEffect(() => {
     navigation.setOptions({
@@ -66,9 +70,27 @@ const RecommendedTripDetails: React.FC = () => {
     });
   }, [navigation, currentTheme.background]);
 
+  const adjustDateToCurrentYear = (dateString: string) => {
+    const date = new Date(dateString);
+    const currentYear = new Date().getFullYear();
+    date.setFullYear(currentYear);
+    return date.toISOString().split("T")[0];
+  };
+
   useEffect(() => {
     try {
       const parsedTrip = JSON.parse(trip);
+
+      // Adjust dates to current year if they exist
+      if (parsedTrip?.travelPlan?.dates) {
+        parsedTrip.travelPlan.dates.startDate = adjustDateToCurrentYear(
+          parsedTrip.travelPlan.dates.startDate
+        );
+        parsedTrip.travelPlan.dates.endDate = adjustDateToCurrentYear(
+          parsedTrip.travelPlan.dates.endDate
+        );
+      }
+
       setTripDetails(parsedTrip);
     } catch (error) {
       console.error("Error parsing trip details:", error);
@@ -82,14 +104,23 @@ const RecommendedTripDetails: React.FC = () => {
     }
 
     try {
-      const docId = Date.now().toString();
-      const userTripRef = doc(
-        FIREBASE_DB,
-        "users",
-        user.uid,
-        "userTrips",
-        docId
-      );
+      const timestamp = Date.now().toString();
+      const startDate = moment(tripDetails?.travelPlan?.dates?.startDate);
+      const endDate = moment(tripDetails?.travelPlan?.dates?.endDate);
+      const today = moment().startOf("day");
+
+      // Determine status prefix for the document ID
+      let statusPrefix;
+      if (startDate.isAfter(today)) {
+        statusPrefix = "up";
+      } else if (endDate.isBefore(today)) {
+        statusPrefix = "past";
+      } else {
+        statusPrefix = "cur";
+      }
+
+      // Create document ID with status prefix
+      const docId = `${statusPrefix}_${timestamp}`;
 
       // Create a tripData object that matches the structure of regular trips
       const tripData = {
@@ -98,17 +129,41 @@ const RecommendedTripDetails: React.FC = () => {
         totalNoOfDays: tripDetails?.travelPlan?.numberOfDays || 5,
         budget: tripDetails?.travelPlan?.budget || "average",
         activityLevel: "moderate",
-        whoIsGoing: "2 adults",
+        whoIsGoing: randomTravelOption.label,
         locationInfo: {
           name: tripDetails?.travelPlan?.destination || "",
           photoRef: photoRef || null,
         },
       };
 
+      // Ensure dates are in current year before saving
+      if (tripData.startDate) {
+        tripData.startDate = adjustDateToCurrentYear(tripData.startDate);
+      }
+      if (tripData.endDate) {
+        tripData.endDate = adjustDateToCurrentYear(tripData.endDate);
+      }
+
+      // Create a document reference using the new path structure
+      const tripDocRef = doc(
+        FIREBASE_DB,
+        `users/${user.uid}/userTrips/${docId}`
+      );
+
       // Save to userTrips with the same structure as regular trips
-      await setDoc(userTripRef, {
+      await setDoc(tripDocRef, {
         userEmail: user.email || "unknown",
-        tripPlan: tripDetails,
+        tripPlan: {
+          ...tripDetails,
+          travelPlan: {
+            ...tripDetails.travelPlan,
+            dates: {
+              startDate: tripData.startDate,
+              endDate: tripData.endDate,
+              bestTimeToVisit: tripDetails?.travelPlan?.dates?.bestTimeToVisit,
+            },
+          },
+        },
         tripData: tripData,
         photoRef: photoRef,
         docId,
@@ -222,11 +277,19 @@ const RecommendedTripDetails: React.FC = () => {
                 >
                   {new Date(
                     tripDetails.travelPlan.dates.startDate
-                  ).toLocaleDateString()}{" "}
+                  ).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}{" "}
                   -{" "}
                   {new Date(
                     tripDetails.travelPlan.dates.endDate
-                  ).toLocaleDateString()}
+                  ).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </Text>
               ) : (
                 <Text
@@ -238,6 +301,26 @@ const RecommendedTripDetails: React.FC = () => {
                   {tripDetails?.travelPlan?.numberOfDays} days
                 </Text>
               )}
+            </View>
+            <View
+              style={[
+                styles.tripMetaItem,
+                { backgroundColor: `${currentTheme.alternate}20` },
+              ]}
+            >
+              <Ionicons
+                name={randomTravelOption.icon as any}
+                size={22}
+                color={currentTheme.alternate}
+              />
+              <Text
+                style={[
+                  styles.tripMetaText,
+                  { color: currentTheme.textPrimary },
+                ]}
+              >
+                {randomTravelOption.label}
+              </Text>
             </View>
           </View>
 
