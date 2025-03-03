@@ -7,9 +7,9 @@
     "sdkVersion": "52.0.0",
     "splash": {
       "image": "./src/assets/splash/splash-icon-light.png",
-      "imageWidth": 200,
       "resizeMode": "contain",
-      "backgroundColor": "#3BACE3"
+      "backgroundColor": "#3BACE3",
+      "hideExponentText": true
     },
     "ios": {
       "supportsTablet": true,

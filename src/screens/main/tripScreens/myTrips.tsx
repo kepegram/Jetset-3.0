@@ -220,17 +220,17 @@ const MyTrips: React.FC = () => {
             My Trips ✈️
           </Text>
           <Pressable
-            style={styles.addButton}
+            style={[
+              styles.addButton,
+              { backgroundColor: currentTheme.alternate },
+            ]}
             onPress={() => navigation.navigate("WhereTo")}
           >
             <Fontisto
               name="plus-a"
               size={24}
-              color={currentTheme.icon}
-              style={[
-                styles.addButton,
-                { backgroundColor: currentTheme.accentBackground },
-              ]}
+              color={currentTheme.background}
+              style={styles.addIcon}
             />
           </Pressable>
         </View>
@@ -470,8 +470,19 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   addButton: {
-    padding: 8,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 16,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addIcon: {
+    width: 24,
+    height: 24,
   },
   scrollContent: {
     paddingHorizontal: 20,

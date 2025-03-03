@@ -14,10 +14,48 @@ import { lightTheme, darkTheme } from "../theme/theme";
 // Define the possible theme values
 type Theme = "light" | "dark";
 
+// Define the theme object structure
+type ThemeObject = {
+  background: string;
+  primary: string;
+  secondary: string;
+  alternate: string;
+  // Alternate variations
+  alternateLight10: string;
+  alternateLight15: string;
+  alternateLight20: string;
+  alternateLight30: string;
+  alternateLight50: string;
+  alternateLight90: string;
+  // Secondary variations
+  secondaryLight10: string;
+  secondaryLight15: string;
+  secondaryLight20: string;
+  // Text Secondary variations
+  textSecondaryLight20: string;
+  // Error variations
+  errorLight15: string;
+  // Accent Background variations
+  accentBackgroundLight80: string;
+  // Original colors
+  accentBackground: string;
+  textPrimary: string;
+  textSecondary: string;
+  textMatch: string;
+  buttonBackground: string;
+  buttonText: string;
+  inactive: string;
+  icon: string;
+  tabIcon: string;
+  inactiveTabIcon: string;
+  error: string;
+  shadowBackground: string;
+};
+
 // Define the shape of our theme context
 type ThemeContextType = {
   theme: Theme; // Current theme mode
-  currentTheme: typeof lightTheme | typeof darkTheme; // Theme object containing colors and styles
+  currentTheme: ThemeObject; // Theme object containing colors and styles
   setTheme: (newTheme: Theme) => void; // Function to update theme
 };
 

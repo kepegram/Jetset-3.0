@@ -159,7 +159,7 @@ const PastTripDetails: React.FC = () => {
             <View
               style={[
                 styles.tripMetaItem,
-                { backgroundColor: `${currentTheme.alternate}20` },
+                { backgroundColor: currentTheme.alternateLight20 },
               ]}
             >
               <Ionicons
@@ -180,7 +180,7 @@ const PastTripDetails: React.FC = () => {
             <View
               style={[
                 styles.tripMetaItem,
-                { backgroundColor: `${currentTheme.alternate}20` },
+                { backgroundColor: currentTheme.alternateLight20 },
               ]}
             >
               <Ionicons

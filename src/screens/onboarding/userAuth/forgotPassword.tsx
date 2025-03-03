@@ -116,8 +116,8 @@ const ForgotPassword: React.FC = () => {
                     ? currentTheme.error
                     : currentTheme.alternate,
                   backgroundColor: feedbackMessage.includes("Failed")
-                    ? `${currentTheme.error}15`
-                    : `${currentTheme.alternate}15`,
+                    ? currentTheme.errorLight15
+                    : currentTheme.alternateLight15,
                 },
               ]}
             >

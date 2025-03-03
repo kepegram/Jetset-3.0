@@ -17,12 +17,16 @@ interface RecommendedTripSkeletonProps {
   status: "waiting" | "loading" | "completed" | "error";
   currentlyGenerating?: boolean;
   tripNumber: number;
+  loadingProgress?: number;
+  isFirstCard?: boolean;
 }
 
 const RecommendedTripSkeleton: React.FC<RecommendedTripSkeletonProps> = ({
   status = "waiting",
   currentlyGenerating = false,
   tripNumber,
+  loadingProgress = 0,
+  isFirstCard = false,
 }) => {
   const { currentTheme } = useTheme();
   const shimmerValue = useRef(new Animated.Value(-1)).current;

@@ -261,7 +261,7 @@ const ManualTripBuilder: React.FC = () => {
       <View
         style={[
           styles.inputWrapper,
-          { backgroundColor: `${currentTheme.secondary}15` },
+          { backgroundColor: currentTheme.secondaryLight15 },
         ]}
       >
         <TextInput
@@ -300,7 +300,7 @@ const ManualTripBuilder: React.FC = () => {
         onPress={() => setShowCalendar(!showCalendar)}
         style={[
           styles.dateButton,
-          { backgroundColor: `${currentTheme.secondary}15` },
+          { backgroundColor: currentTheme.secondaryLight15 },
         ]}
       >
         <Text style={[styles.dateText, { color: currentTheme.textPrimary }]}>
@@ -316,7 +316,7 @@ const ManualTripBuilder: React.FC = () => {
         <View
           style={[
             styles.calendarWrapper,
-            { backgroundColor: `${currentTheme.secondary}10` },
+            { backgroundColor: currentTheme.secondaryLight10 },
           ]}
         >
           <CalendarPicker
@@ -326,7 +326,7 @@ const ManualTripBuilder: React.FC = () => {
             selectedStartDate={startDate?.toDate()}
             selectedEndDate={endDate?.toDate()}
             selectedRangeStyle={{
-              backgroundColor: `${currentTheme.alternate}50`,
+              backgroundColor: currentTheme.alternateLight50,
             }}
             selectedDayStyle={{
               backgroundColor: currentTheme.alternate,
@@ -336,7 +336,7 @@ const ManualTripBuilder: React.FC = () => {
               fontWeight: "600",
             }}
             textStyle={{ color: currentTheme.textPrimary }}
-            todayBackgroundColor={`${currentTheme.alternate}30`}
+            todayBackgroundColor={currentTheme.alternateLight30}
             width={Dimensions.get("window").width - 48}
           />
         </View>
@@ -359,7 +359,7 @@ const ManualTripBuilder: React.FC = () => {
           <View
             style={[
               styles.inputWrapper,
-              { backgroundColor: `${currentTheme.secondary}15`, flex: 1 },
+              { backgroundColor: currentTheme.secondaryLight15, flex: 1 },
             ]}
           >
             <TextInput
@@ -387,7 +387,7 @@ const ManualTripBuilder: React.FC = () => {
       <Pressable
         style={[
           styles.addButton,
-          { backgroundColor: `${currentTheme.alternate}20` },
+          { backgroundColor: currentTheme.alternateLight20 },
         ]}
         onPress={handleAddActivity}
       >

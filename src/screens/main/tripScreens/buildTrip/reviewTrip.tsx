@@ -131,8 +131,8 @@ const ReviewTrip: React.FC = () => {
     textInput: {
       ...styles.textInput,
       color: currentTheme.textPrimary,
-      backgroundColor: `${currentTheme.secondary}15`,
-      borderColor: `${currentTheme.alternate}30`,
+      backgroundColor: currentTheme.secondaryLight15,
+      borderColor: currentTheme.alternateLight30,
     },
     listView: {
       backgroundColor: currentTheme.background,
@@ -145,7 +145,7 @@ const ReviewTrip: React.FC = () => {
       color: currentTheme.textPrimary,
     },
     separator: {
-      backgroundColor: `${currentTheme.textSecondary}20`,
+      backgroundColor: currentTheme.textSecondaryLight20,
       height: 1,
     },
   });
@@ -171,14 +171,14 @@ const ReviewTrip: React.FC = () => {
           <View
             style={[
               styles.calendarWrapper,
-              { backgroundColor: currentTheme.alternate + "20" },
+              { backgroundColor: currentTheme.alternateLight50 },
             ]}
           >
             <View style={styles.dateRangeWrapper}>
               <View
                 style={[
                   styles.dateRangeContainer,
-                  { backgroundColor: currentTheme.alternate + "20" },
+                  { backgroundColor: currentTheme.alternateLight50 },
                 ]}
               >
                 <Ionicons
@@ -213,7 +213,7 @@ const ReviewTrip: React.FC = () => {
                   }}
                   style={[
                     styles.resetIcon,
-                    { backgroundColor: currentTheme.alternate + "20" },
+                    { backgroundColor: currentTheme.alternateLight50 },
                   ]}
                 />
               )}
@@ -249,7 +249,7 @@ const ReviewTrip: React.FC = () => {
                 />
               }
               selectedRangeStyle={{
-                backgroundColor: `${currentTheme.alternate}50`,
+                backgroundColor: currentTheme.alternateLight50,
               }}
               selectedDayStyle={{
                 backgroundColor: currentTheme.alternate,
@@ -291,7 +291,7 @@ const ReviewTrip: React.FC = () => {
                     borderColor:
                       tripData?.whoIsGoing === option.label
                         ? currentTheme.alternate
-                        : currentTheme.secondary,
+                        : currentTheme.secondaryLight15,
                     opacity: pressed ? 0.8 : 1,
                   },
                 ]}
@@ -304,7 +304,7 @@ const ReviewTrip: React.FC = () => {
                         backgroundColor:
                           tripData?.whoIsGoing === option.label
                             ? currentTheme.alternate
-                            : `${currentTheme.secondary}15`,
+                            : currentTheme.secondaryLight15,
                       },
                     ]}
                   >
@@ -356,7 +356,7 @@ const ReviewTrip: React.FC = () => {
                     borderColor:
                       tripData?.budget === option.value
                         ? currentTheme.alternate
-                        : currentTheme.secondary,
+                        : currentTheme.secondaryLight15,
                     opacity: pressed ? 0.8 : 1,
                   },
                 ]}
@@ -369,7 +369,7 @@ const ReviewTrip: React.FC = () => {
                         backgroundColor:
                           tripData?.budget === option.value
                             ? currentTheme.alternate
-                            : `${currentTheme.secondary}15`,
+                            : currentTheme.secondaryLight15,
                       },
                     ]}
                   >
@@ -421,7 +421,7 @@ const ReviewTrip: React.FC = () => {
                     borderColor:
                       tripData?.activityLevel === option.value
                         ? currentTheme.alternate
-                        : currentTheme.secondary,
+                        : currentTheme.secondaryLight15,
                     opacity: pressed ? 0.8 : 1,
                   },
                 ]}
@@ -434,7 +434,7 @@ const ReviewTrip: React.FC = () => {
                         backgroundColor:
                           tripData?.activityLevel === option.value
                             ? currentTheme.alternate
-                            : `${currentTheme.secondary}15`,
+                            : currentTheme.secondaryLight15,
                       },
                     ]}
                   >
@@ -620,8 +620,8 @@ const ReviewTrip: React.FC = () => {
                   styles.closeButton,
                   {
                     backgroundColor: pressed
-                      ? `${currentTheme.secondary}20`
-                      : `${currentTheme.secondary}10`,
+                      ? currentTheme.secondaryLight20
+                      : currentTheme.secondaryLight10,
                   },
                 ]}
               >

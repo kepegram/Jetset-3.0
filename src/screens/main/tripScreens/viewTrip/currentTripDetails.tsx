@@ -102,6 +102,7 @@ const CurrentTripDetails: React.FC = () => {
                 ? // @ts-ignore
                   `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${
                     photoRef || tripDetails?.photoRef
+                    // @ts-ignore
                   }&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
                 : "https://via.placeholder.com/800",
           }}
@@ -136,7 +137,7 @@ const CurrentTripDetails: React.FC = () => {
             <View
               style={[
                 styles.tripMetaItem,
-                { backgroundColor: `${currentTheme.alternate}20` },
+                { backgroundColor: currentTheme.alternateLight20 },
               ]}
             >
               <Ionicons
@@ -160,7 +161,7 @@ const CurrentTripDetails: React.FC = () => {
             <View
               style={[
                 styles.tripMetaItem,
-                { backgroundColor: `${currentTheme.alternate}20` },
+                { backgroundColor: currentTheme.alternateLight20 },
               ]}
             >
               <Ionicons

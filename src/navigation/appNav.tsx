@@ -37,6 +37,8 @@ import WhosGoing from "../screens/main/tripScreens/buildTrip/whosGoing";
 import MoreInfo from "../screens/main/tripScreens/buildTrip/moreInfo";
 import PopularDestinations from "../screens/main/homeScreen/popularDestinationsDetail";
 import AllTripsView from "../screens/main/tripScreens/viewTrip/allTripsView";
+import NotificationsScreen from "../screens/main/notificationsScreen/notifications";
+import NotificationSettings from "../screens/main/userScreens/notificationSettings";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -49,6 +51,8 @@ export type RootStackParamList = {
   HomeMain: undefined;
   PopularDestinations: { destination: any };
   RecommendedTripDetails: { trip: string; photoRef: string };
+  Notifications: undefined;
+  NotificationSettings: undefined;
   MyTripsMain: undefined;
   WhereTo: undefined;
   ManualTripBuilder: undefined;
@@ -112,6 +116,11 @@ const HomeStack: React.FC = () => {
       <RootStack.Screen
         name="HomeMain"
         component={Home}
+        options={{ headerShown: false }}
+      />
+      <RootStack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
         options={{ headerShown: false }}
       />
       <RootStack.Screen
@@ -463,6 +472,14 @@ const ProfileStack: React.FC = () => {
           title: "Delete Account",
         })}
       />
+      <RootStack.Screen
+        name="NotificationSettings"
+        component={NotificationSettings}
+        options={({ navigation }) => ({
+          ...screenOptions({ navigation }),
+          title: "Notifications",
+        })}
+      />
     </RootStack.Navigator>
   );
 };
@@ -508,7 +525,7 @@ const TabNavigator: React.FC = () => {
           padding: 8,
           borderRadius: 12,
           backgroundColor: focused
-            ? `${currentTheme.alternate}20`
+            ? currentTheme.alternateLight20
             : "transparent",
         }}
       >
@@ -598,7 +615,7 @@ const TabNavigator: React.FC = () => {
                   padding: 4,
                   borderRadius: 24,
                   backgroundColor: focused
-                    ? `${currentTheme.alternate}20`
+                    ? currentTheme.alternateLight20
                     : "transparent",
                 }}
               >

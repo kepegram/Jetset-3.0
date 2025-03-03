@@ -21,6 +21,9 @@ import {
   getDocs,
   writeBatch,
   getDoc,
+  query,
+  where,
+  onSnapshot,
 } from "firebase/firestore";
 import { FIREBASE_DB } from "../../../../firebase.config";
 import { Ionicons } from "@expo/vector-icons";
@@ -83,7 +86,13 @@ interface RecommendedTripsState {
 
 const { width } = Dimensions.get("window");
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, "HomeMain">;
+// Update the RootStackParamList type definition
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList & {
+    Notifications: undefined;
+  },
+  "HomeMain"
+>;
 
 const Home: React.FC = () => {
   const { currentTheme } = useTheme();
@@ -109,8 +118,33 @@ const Home: React.FC = () => {
   const googlePlacesRef = useRef<any>(null);
   const [hasGeneratedTrips, setHasGeneratedTrips] = useState<boolean>(false);
   const [userName, setUserName] = useState<string | null>(null);
+  const [hasNotifications, setHasNotifications] = useState<boolean>(false);
 
-  // Fetch user data when screen comes into focus
+  // Update the checkUnreadNotifications function to use real-time updates
+  const checkUnreadNotifications = useCallback(() => {
+    const user = getAuth().currentUser;
+    if (!user) return;
+
+    try {
+      const notificationsRef = collection(
+        FIREBASE_DB,
+        `users/${user.uid}/notifications`
+      );
+      const unreadQuery = query(notificationsRef, where("read", "==", false));
+
+      // Set up real-time listener for notifications
+      const unsubscribe = onSnapshot(unreadQuery, (snapshot) => {
+        setHasNotifications(!snapshot.empty);
+      });
+
+      // Return unsubscribe function for cleanup
+      return unsubscribe;
+    } catch (error) {
+      console.error("Error checking notifications:", error);
+    }
+  }, []);
+
+  // Update useFocusEffect to handle real-time updates
   useFocusEffect(
     useCallback(() => {
       const fetchUserData = async () => {
@@ -129,7 +163,16 @@ const Home: React.FC = () => {
       };
 
       fetchUserData();
-    }, [])
+      // Set up notification listener
+      const unsubscribe = checkUnreadNotifications();
+
+      // Cleanup function
+      return () => {
+        if (unsubscribe) {
+          unsubscribe();
+        }
+      };
+    }, [checkUnreadNotifications])
   );
 
   // Generate appropriate greeting based on time of day
@@ -540,7 +583,7 @@ const Home: React.FC = () => {
         style={({ pressed }) => [
           styles.dontLikeButton,
           {
-            borderColor: theme.alternate,
+            borderColor: theme.textSecondaryLight20,
             opacity: pressed ? 0.8 : 1,
             transform: [{ scale: pressed ? 0.98 : 1 }],
           },
@@ -549,10 +592,15 @@ const Home: React.FC = () => {
         <Ionicons
           name="add-circle-outline"
           size={40}
-          color={theme.alternate}
+          color={theme.textSecondaryLight20}
           style={styles.createTripIcon}
         />
-        <Text style={[styles.dontLikeButtonText, { color: theme.alternate }]}>
+        <Text
+          style={[
+            styles.dontLikeButtonText,
+            { color: theme.textSecondaryLight20 },
+          ]}
+        >
           Generate New{"\n"}Adventures
         </Text>
       </Pressable>
@@ -649,13 +697,29 @@ const Home: React.FC = () => {
             />
           </View>
           <View testID="home-header-content" style={styles.headerContent}>
-            <Text
-              testID="home-greeting"
-              style={styles.greetingText}
-              onPress={resetStorageForTesting}
-            >
-              {getGreeting()}
-            </Text>
+            <View style={styles.headerTopRow}>
+              <Text
+                testID="home-greeting"
+                style={styles.greetingText}
+                onPress={resetStorageForTesting}
+              >
+                {getGreeting()}
+              </Text>
+              <Pressable
+                onPress={() => navigation.navigate("Notifications")}
+                style={({ pressed }) => [
+                  styles.notificationButton,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Ionicons
+                  name="notifications-outline"
+                  size={32}
+                  color="white"
+                />
+                {hasNotifications && <View style={styles.notificationDot} />}
+              </Pressable>
+            </View>
             <Text testID="home-subgreeting" style={styles.subGreetingText}>
               Let's plan your next adventure!
             </Text>
@@ -907,7 +971,7 @@ const Home: React.FC = () => {
                         style={({ pressed }) => [
                           styles.dontLikeButton,
                           {
-                            borderColor: currentTheme.alternate,
+                            borderColor: currentTheme.textSecondaryLight20,
                             opacity: pressed ? 0.8 : 1,
                             transform: [{ scale: pressed ? 0.98 : 1 }],
                           },
@@ -916,13 +980,13 @@ const Home: React.FC = () => {
                         <Ionicons
                           name="add-circle-outline"
                           size={40}
-                          color={currentTheme.alternate}
+                          color={currentTheme.textSecondaryLight20}
                           style={styles.createTripIcon}
                         />
                         <Text
                           style={[
                             styles.dontLikeButtonText,
-                            { color: currentTheme.alternate },
+                            { color: currentTheme.textSecondaryLight20 },
                           ]}
                         >
                           Create Your Own{"\n"}Adventure
@@ -1062,17 +1126,22 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     position: "absolute",
-    top: 80,
+    top: 65,
     left: 20,
     right: 20,
-    alignItems: "center",
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    width: "100%",
   },
   greetingText: {
     fontSize: 32,
     color: "white",
     fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
     fontWeight: "bold",
-    alignSelf: "flex-start",
+    flex: 1,
     textShadowColor: "rgba(0, 0, 0, 0.75)",
     textShadowOffset: { width: -1, height: 1 },
     textShadowRadius: 10,
@@ -1081,7 +1150,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: "white",
     fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
-    alignSelf: "flex-start",
     marginTop: 8,
     textShadowColor: "rgba(0, 0, 0, 0.75)",
     textShadowOffset: { width: -1, height: 1 },
@@ -1095,7 +1163,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    marginTop: -100,
+    marginTop: -120,
   },
   searchContainer: {
     marginBottom: 20,
@@ -1401,6 +1469,22 @@ const styles = StyleSheet.create({
   tripDates: {
     fontSize: 12,
     fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
+  },
+  notificationButton: {
+    padding: 8,
+    position: "relative",
+    marginLeft: 16,
+  },
+  notificationDot: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#FF3B30",
+    borderWidth: 2,
+    borderColor: "white",
   },
 });
 

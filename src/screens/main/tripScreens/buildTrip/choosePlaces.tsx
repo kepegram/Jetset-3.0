@@ -153,7 +153,7 @@ const ChoosePlaces: React.FC = () => {
                   {
                     backgroundColor:
                       selectedDestination === destination.id
-                        ? `${currentTheme.alternate}90`
+                        ? currentTheme.alternateLight90
                         : "rgba(0,0,0,0.5)",
                   },
                 ]}

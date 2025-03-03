@@ -186,7 +186,7 @@ const PopularDestinations: React.FC = () => {
           <View
             style={[
               styles.tripMetaItem,
-              { backgroundColor: `${currentTheme.alternate}10` },
+              { backgroundColor: currentTheme.alternateLight10 },
             ]}
           >
             <View style={styles.tripMetaIconContainer}>
@@ -221,7 +221,7 @@ const PopularDestinations: React.FC = () => {
         <View
           style={[
             styles.descriptionContainer,
-            { backgroundColor: `${currentTheme.accentBackground}80` },
+            { backgroundColor: currentTheme.accentBackgroundLight80 },
           ]}
         >
           <Text
@@ -280,7 +280,7 @@ const PopularDestinations: React.FC = () => {
           width="100%"
           style={[
             { backgroundColor: currentTheme.alternate },
-            isLoading && styles.disabledButton
+            isLoading && styles.disabledButton,
           ]}
         />
       </View>

@@ -186,7 +186,7 @@ const ChooseDate: React.FC = () => {
                       <View
                         style={[
                           styles.nightsContainer,
-                          { backgroundColor: `${currentTheme.alternate}20` },
+                          { backgroundColor: currentTheme.alternateLight20 },
                         ]}
                       >
                         <Text
@@ -225,7 +225,7 @@ const ChooseDate: React.FC = () => {
                   <TouchableOpacity
                     style={[
                       styles.resetButton,
-                      { backgroundColor: `${currentTheme.alternate}20` },
+                      { backgroundColor: currentTheme.alternateLight20 },
                     ]}
                     onPress={handleResetDates}
                   >
@@ -270,7 +270,7 @@ const ChooseDate: React.FC = () => {
               todayBackgroundColor="#F0F0F0"
               todayTextStyle={{ color: currentTheme.alternate }}
               selectedRangeStyle={{
-                backgroundColor: `${currentTheme.alternate}30`,
+                backgroundColor: currentTheme.alternateLight30,
               }}
               selectedDayStyle={{
                 backgroundColor: currentTheme.alternate,
