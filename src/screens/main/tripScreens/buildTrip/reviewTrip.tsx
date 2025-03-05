@@ -7,8 +7,8 @@ import {
   Animated as RNAnimated,
   Dimensions,
 } from "react-native";
-import React, { useState, useEffect, useContext, useCallback } from "react";
-import { CreateTripContext } from "../../../../context/createTripContext";
+import React, { useState, useEffect, useCallback } from "react";
+import { useTrip } from "../../../../context/createTripContext";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../../navigation/appNav";
 import { useNavigation } from "@react-navigation/native";
@@ -29,7 +29,7 @@ type ReviewTripScreenNavigationProp = NativeStackNavigationProp<
 const ReviewTrip: React.FC = () => {
   const { currentTheme } = useTheme();
   const navigation = useNavigation<ReviewTripScreenNavigationProp>();
-  const { tripData, setTripData } = useContext(CreateTripContext) || {};
+  const { tripData, setTripData } = useTrip();
   const [localTripData, setLocalTripData] = useState(tripData);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempStartDate, setTempStartDate] = useState<Date | null>(null);

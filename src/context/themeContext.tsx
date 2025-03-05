@@ -12,7 +12,7 @@ import { getAuth } from "firebase/auth";
 import { lightTheme, darkTheme } from "../theme/theme";
 
 // Define the possible theme values
-type Theme = "light" | "dark";
+export type Theme = "light" | "dark";
 
 // Define the theme object structure
 type ThemeObject = {

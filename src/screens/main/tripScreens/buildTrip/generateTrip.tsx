@@ -13,6 +13,7 @@ import {
   StyleSheet,
   SafeAreaView,
   ActivityIndicator,
+  Pressable,
 } from "react-native";
 import { CreateTripContext } from "../../../../context/createTripContext";
 import { AI_PROMPT, PLACE_AI_PROMPT } from "../../../../api/ai-prompt";
@@ -27,6 +28,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getPhotoReference } from "../../../../api/places-api";
 import * as Progress from "react-native-progress";
 import moment from "moment";
+import { useTrip } from "../../../../context/createTripContext";
 
 type GenerateTripScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -43,14 +45,17 @@ interface TripResponse {
 const GenerateTrip: React.FC = () => {
   const { currentTheme } = useTheme();
   const navigation = useNavigation<GenerateTripScreenNavigationProp>();
-  const { tripData = {}, setTripData = () => {} } =
-    useContext(CreateTripContext) || {};
+  const { tripData, setTripData } = useTrip();
   const [loading, setLoading] = useState(false);
   const isMounted = useRef(true);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("Initializing your trip...");
 
   const user = FIREBASE_AUTH.currentUser;
+
+  const totalDays = tripData.totalNoOfDays || 0;
+  const whoIsGoing =
+    typeof tripData.whoIsGoing === "string" ? tripData.whoIsGoing : "";
 
   // Construct the final AI prompt based on trip data
   const getFinalPrompt = () => {
@@ -70,12 +75,9 @@ const GenerateTrip: React.FC = () => {
     }
 
     // Replace placeholders with actual trip data
-    FINAL_PROMPT = FINAL_PROMPT.replace(
-      "{totalDays}",
-      tripData.totalNoOfDays?.toString() || "0"
-    )
-      .replace("{totalNight}", (tripData.totalNoOfDays - 1).toString() || "0")
-      .replace("{whoIsGoing}", tripData.whoIsGoing || "")
+    FINAL_PROMPT = FINAL_PROMPT.replace("{totalDays}", totalDays.toString())
+      .replace("{totalNight}", (totalDays - 1).toString() || "0")
+      .replace("{whoIsGoing}", whoIsGoing)
       .replace("{budget}", tripData.budget?.toString() || "")
       .replace("{activityLevel}", tripData.activityLevel || "");
 
@@ -109,12 +111,15 @@ const GenerateTrip: React.FC = () => {
       updateProgress(0.7, "Finding the perfect photos for your destination...");
       let photoRef = null;
       if (!tripData?.destinationType) {
-        if (tripData?.locationInfo?.placeId) {
-          try {
-            photoRef = await getPhotoReference(tripData.locationInfo.placeId);
-          } catch (error) {
-            console.error("Error fetching photo reference:", error);
-          }
+        const placeId = tripData.locationInfo?.place_id;
+        if (!placeId) {
+          console.error("No place_id found");
+          return;
+        }
+        try {
+          photoRef = await getPhotoReference(placeId);
+        } catch (error) {
+          console.error("Error fetching photo reference:", error);
         }
       } else {
         // For AI-generated destination trips, get photo reference for the generated destination
@@ -125,8 +130,10 @@ const GenerateTrip: React.FC = () => {
             const response = await fetch(
               `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(
                 destination
-                // @ts-ignore
-              )}&inputtype=textquery&key=${process.env.GOOGLE_PLACES_API_KEY}`
+              )}&inputtype=textquery&key=${
+                // @ts-ignore - Environment variable access
+                process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY
+              }`
             );
             const data = await response.json();
 
@@ -153,8 +160,19 @@ const GenerateTrip: React.FC = () => {
     }
   };
 
+  const debugTripData = () => {
+    console.log("Current Trip Data:", JSON.stringify(tripData, null, 2));
+  };
+
+  const debugAIPrompt = () => {
+    const prompt = getFinalPrompt();
+    console.log("AI Prompt after replacements:", prompt);
+  };
+
   const parseAIResponse = (responseText: string): TripResponse => {
+    console.log("Raw AI Response:", responseText);
     const cleanedResponse = cleanJsonResponse(responseText);
+    console.log("Cleaned Response:", cleanedResponse);
     try {
       const parsed = JSON.parse(cleanedResponse);
       if (!parsed?.travelPlan) {
@@ -163,24 +181,52 @@ const GenerateTrip: React.FC = () => {
       return parsed;
     } catch (error) {
       console.error("JSON parsing error:", error);
+      console.error("Failed response:", cleanedResponse);
       throw new Error("Failed to parse AI response");
     }
   };
 
   const cleanJsonResponse = (response: string): string => {
     let cleanedResponse = response.trim();
-    let braceCount = 0;
-    let lastValidIndex = 0;
 
-    for (let i = 0; i < cleanedResponse.length; i++) {
-      if (cleanedResponse[i] === "{") braceCount++;
-      if (cleanedResponse[i] === "}") {
-        braceCount--;
-        if (braceCount === 0) lastValidIndex = i;
-      }
+    // Remove any text before the first {
+    const firstBrace = cleanedResponse.indexOf("{");
+    if (firstBrace !== -1) {
+      cleanedResponse = cleanedResponse.substring(firstBrace);
     }
 
-    return cleanedResponse.substring(0, lastValidIndex + 1);
+    // Remove any text after the last }
+    const lastBrace = cleanedResponse.lastIndexOf("}");
+    if (lastBrace !== -1) {
+      cleanedResponse = cleanedResponse.substring(0, lastBrace + 1);
+    }
+
+    // Fix common JSON issues without escaping quotes
+    cleanedResponse = cleanedResponse
+      .replace(/\n/g, " ") // Replace newlines with spaces
+      .replace(/,\s*}/g, "}") // Remove trailing commas
+      .replace(/,\s*]/g, "]") // Remove trailing commas in arrays
+      .replace(/"https":\/{2}/g, '"https://') // Fix broken https URLs
+      .replace(/"http":\/{2}/g, '"http://') // Fix broken http URLs
+      .replace(/Day\s+"(\d+)"/g, "Day $1") // Fix day numbering format
+      .replace(/"\s+"/g, '" "'); // Fix spaces between quotes
+
+    // Try to parse the JSON to see if it's valid
+    try {
+      return JSON.stringify(JSON.parse(cleanedResponse));
+    } catch (error) {
+      // If parsing fails, try more aggressive fixes
+      cleanedResponse = cleanedResponse
+        .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?\s*:/g, '"$2":') // Ensure property names are quoted
+        .replace(/:\s*'([^']*)'/g, ':"$1"'); // Replace single quotes with double quotes
+
+      try {
+        return JSON.stringify(JSON.parse(cleanedResponse));
+      } catch (error) {
+        // Return the cleaned response anyway, even though it might not parse
+        return cleanedResponse;
+      }
+    }
   };
 
   const saveTripToFirestore = async (
@@ -188,18 +234,26 @@ const GenerateTrip: React.FC = () => {
     photoRef: string | null
   ) => {
     const timestamp = Date.now().toString();
-    const startDate = moment(tripData.startDate);
-    const endDate = moment(tripData.endDate);
+    const startDateStr = tripData.startDate
+      ? moment(tripData.startDate).format("YYYY-MM-DD")
+      : "";
+    const endDateStr = tripData.endDate
+      ? moment(tripData.endDate).format("YYYY-MM-DD")
+      : "";
     const today = moment().startOf("day");
 
     // Determine status prefix for the document ID
     let statusPrefix;
-    if (startDate.isAfter(today)) {
-      statusPrefix = "up";
-    } else if (endDate.isBefore(today)) {
-      statusPrefix = "past";
-    } else {
-      statusPrefix = "cur";
+    if (startDateStr && endDateStr) {
+      const startDate = moment(startDateStr);
+      const endDate = moment(endDateStr);
+      if (startDate.isAfter(today)) {
+        statusPrefix = "up";
+      } else if (endDate.isBefore(today)) {
+        statusPrefix = "past";
+      } else {
+        statusPrefix = "cur";
+      }
     }
 
     // Create document ID with status prefix
@@ -215,8 +269,8 @@ const GenerateTrip: React.FC = () => {
     const cleanTripData = Object.fromEntries(
       Object.entries({
         ...tripData,
-        startDate: tripData.startDate?.format("YYYY-MM-DD") || null,
-        endDate: tripData.endDate?.format("YYYY-MM-DD") || null,
+        startDate: startDateStr,
+        endDate: endDateStr,
         preSelectedDestination: tripData.preSelectedDestination || null,
       }).filter(([_, value]) => value !== undefined)
     );

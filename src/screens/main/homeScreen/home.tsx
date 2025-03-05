@@ -42,6 +42,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import RecommendedTripSkeleton from "../../../components/common/RecommendedTripSkeleton";
 import { useProfile } from "../../../context/profileContext";
 import { useRecommendedTrips } from "../../../context/recommendedTripsContext";
+import { useTrip } from "../../../context/createTripContext";
 
 // Interface for extended Google Place Details including photo information
 interface ExtendedGooglePlaceDetail extends GooglePlaceDetail {
@@ -98,8 +99,7 @@ type NavigationProp = NativeStackNavigationProp<
 const Home: React.FC = () => {
   const { currentTheme } = useTheme();
   const { displayName } = useProfile();
-  const { tripData = {}, setTripData = () => {} } =
-    useContext(CreateTripContext) || {};
+  const { tripData, setTripData } = useTrip();
   const {
     recommendedTripsState,
     setRecommendedTripsState,
@@ -187,12 +187,21 @@ const Home: React.FC = () => {
     const firstName =
       displayName?.split(" ")[0] || userName?.split(" ")[0] || "there"; // Get first name from displayName or userName, fallback to 'there'
 
+    // Determine text size based on name length
+    const nameLength = firstName.length;
+    let fontSize = 28; // Default size
+    if (nameLength > 12) {
+      fontSize = 24;
+    } else if (nameLength > 15) {
+      fontSize = 22;
+    }
+
     if (currentHour < 12) {
-      return `Morning, ${firstName} ☀️`;
+      return { text: `Morning, ${firstName} ☀️`, fontSize };
     } else if (currentHour < 18) {
-      return `Afternoon, ${firstName} 🌤️`;
+      return { text: `Afternoon, ${firstName} 🌤️`, fontSize };
     } else {
-      return `Evening, ${firstName} 🌙`;
+      return { text: `Evening, ${firstName} 🌙`, fontSize };
     }
   };
 
@@ -245,7 +254,7 @@ const Home: React.FC = () => {
       }
 
       const result = await chatSession.sendMessage(RECOMMEND_TRIP_AI_PROMPT);
-      const responseText = await result.response.text();
+      let responseText = await result.response.text();
 
       if (!responseText) {
         throw new Error("Empty response from AI");
@@ -253,18 +262,48 @@ const Home: React.FC = () => {
 
       let tripResp;
       try {
-        // More aggressive JSON cleanup
-        const cleanedResponse = responseText
+        // First, try to extract JSON from markdown if present
+        const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          responseText = jsonMatch[1];
+        }
+
+        // Basic cleanup first
+        let cleanedResponse = responseText
           .trim()
           .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove control characters
-          .replace(/,\s*([\]}])/g, "$1") // Remove trailing commas
-          .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3'); // Ensure all keys are quoted
+          .replace(/\n/g, " ") // Remove newlines
+          .replace(/\s+/g, " "); // Normalize spaces
 
-        tripResp = JSON.parse(cleanedResponse);
+        // Find the JSON object boundaries
+        const startIdx = cleanedResponse.indexOf("{");
+        const endIdx = cleanedResponse.lastIndexOf("}") + 1;
+
+        if (startIdx !== -1 && endIdx > startIdx) {
+          cleanedResponse = cleanedResponse.slice(startIdx, endIdx);
+        }
+
+        try {
+          // First attempt with minimal cleaning
+          tripResp = JSON.parse(cleanedResponse);
+        } catch (initialParseError) {
+          // If that fails, try more aggressive cleaning
+          cleanedResponse = cleanedResponse
+            .replace(/,(?=\s*[}\]])/g, "") // Remove trailing commas
+            .replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":') // Quote unquoted keys
+            .replace(/:\s*'([^']*)'/g, ':"$1"') // Convert single quotes to double quotes
+            .replace(/\\(?=[^"\\])/g, "\\\\") // Escape backslashes
+            .replace(/(?<!\\)"/g, '\\"') // Escape unescaped quotes
+            .replace(/\\/g, "\\\\") // Double escape backslashes
+            .replace(/\\\\"/g, '\\"'); // Fix double escaped quotes
+
+          tripResp = JSON.parse(cleanedResponse);
+        }
       } catch (parseError) {
         console.error("Failed to parse AI response:", parseError);
+        console.log("Raw response:", responseText);
+
         if (attempt < maxAttempts) {
-          console.log(`Retrying parse attempt ${attempt + 1}/${maxAttempts}`);
           return generateTripWithRetry(attempt + 1, maxAttempts, baseDelay);
         }
         throw new Error(
@@ -273,13 +312,11 @@ const Home: React.FC = () => {
       }
 
       if (!isValidTripResponse(tripResp)) {
-        console.error("Invalid trip response structure");
+        console.error(
+          "Invalid trip response structure:",
+          JSON.stringify(tripResp, null, 2)
+        );
         if (attempt < maxAttempts) {
-          console.log(
-            `Retrying due to invalid structure attempt ${
-              attempt + 1
-            }/${maxAttempts}`
-          );
           return generateTripWithRetry(attempt + 1, maxAttempts, baseDelay);
         }
         throw new Error("Invalid trip response structure");
@@ -301,20 +338,17 @@ const Home: React.FC = () => {
       const aiError = error as AIError;
       console.error(`Attempt ${attempt} failed:`, aiError);
 
-      // Check for specific error conditions that warrant a retry
       const shouldRetry =
         attempt < maxAttempts &&
         (aiError.message?.includes("503") ||
           aiError.message?.includes("429") ||
           aiError.message?.includes("overloaded") ||
           aiError.message?.includes("parse") ||
+          aiError.message?.includes("timeout") ||
           aiError.status === 503 ||
           aiError.status === 429);
 
       if (shouldRetry) {
-        console.log(
-          `Retrying due to error attempt ${attempt + 1}/${maxAttempts}`
-        );
         return generateTripWithRetry(attempt + 1, maxAttempts, baseDelay);
       }
 
@@ -324,7 +358,7 @@ const Home: React.FC = () => {
 
   const generateTripsWithTimeout = async (
     numberOfTrips: number = 3,
-    timeout: number = 60000 // Increased timeout to 60 seconds
+    timeout: number = 120000 // Increased timeout to 120 seconds
   ): Promise<(RecommendedTrip | null)[]> => {
     const results: (RecommendedTrip | null)[] = [];
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -332,7 +366,7 @@ const Home: React.FC = () => {
     });
 
     try {
-      // Generate trips sequentially with increasing delays
+      // Generate trips with increased delays between attempts
       for (let i = 0; i < numberOfTrips; i++) {
         try {
           setLoadingProgress((prev) => ({
@@ -345,7 +379,7 @@ const Home: React.FC = () => {
 
           // Add increasing delay between trip generations
           if (i > 0) {
-            await wait(3000 * i); // 3 second base delay, multiplied by trip index
+            await wait(5000 * i); // 5 second base delay, multiplied by trip index
           }
 
           const tripPromise = generateTripWithRetry();
@@ -359,6 +393,11 @@ const Home: React.FC = () => {
               index === i ? (result ? "completed" : "error") : status
             ),
           }));
+
+          // If this generation failed, wait a bit longer before the next attempt
+          if (!result && i < numberOfTrips - 1) {
+            await wait(7000); // Wait 7 seconds before trying the next trip
+          }
         } catch (error) {
           console.error(`Error generating trip ${i + 1}:`, error);
           results.push(null);
@@ -369,11 +408,19 @@ const Home: React.FC = () => {
               index === i ? "error" : status
             ),
           }));
+
+          // Wait before trying the next trip after an error
+          if (i < numberOfTrips - 1) {
+            await wait(7000);
+          }
         }
       }
 
       // If we have at least one successful trip, consider it a partial success
-      if (results.some((trip) => trip !== null)) {
+      const validTrips = results.filter(
+        (trip): trip is RecommendedTrip => trip !== null
+      );
+      if (validTrips.length > 0) {
         return results;
       }
 
@@ -426,8 +473,12 @@ const Home: React.FC = () => {
 
   // Modify loadExistingTrips to respect loading state
   const loadExistingTrips = async () => {
-    // Don't reload if we're already loading
-    if (recommendedTripsState.status === "loading") return;
+    // Don't reload if we're already loading or generating new trips
+    if (
+      recommendedTripsState.status === "loading" ||
+      loadingProgress.completed > 0
+    )
+      return;
 
     try {
       const user = getAuth().currentUser;
@@ -459,7 +510,15 @@ const Home: React.FC = () => {
         const trips: RecommendedTrip[] = [];
         userTripsSnapshot.forEach((doc) => {
           const tripData = doc.data();
-          trips.push(tripData as RecommendedTrip);
+          trips.push({
+            id: tripData.id,
+            name: tripData.name,
+            description: tripData.description,
+            imageUrl: tripData.imageUrl,
+            photoRef:
+              tripData.photoRef === null ? undefined : tripData.photoRef,
+            tripPlan: tripData.tripPlan,
+          });
         });
 
         // Sort trips by ID to maintain consistent order
@@ -474,13 +533,51 @@ const Home: React.FC = () => {
         return;
       }
 
-      // If we reach here, show empty state
-      setRecommendedTripsState((prev) => ({
-        ...prev,
-        trips: [], // Ensure trips array is empty
-        status: "idle",
-        error: null,
-      }));
+      // Check if user has refreshed trips before
+      const hasRefreshed = await AsyncStorage.getItem("hasRefreshedTrips");
+
+      // Only show default trips if user hasn't refreshed AND we're not generating new trips
+      if (!hasRefreshed && loadingProgress.completed === 0) {
+        // Fetch default trips from Firestore
+        const defaultTripsCollection = collection(FIREBASE_DB, "defaultTrips");
+        const defaultTripsSnapshot = await getDocs(defaultTripsCollection);
+
+        if (!defaultTripsSnapshot.empty) {
+          const defaultTrips: RecommendedTrip[] = [];
+          defaultTripsSnapshot.forEach((doc) => {
+            const data = doc.data();
+            defaultTrips.push({
+              id: data.id,
+              name: data.name,
+              description: data.description,
+              imageUrl: data.imageUrl,
+              photoRef: data.photoRef,
+              tripPlan: data.tripPlan,
+            } as RecommendedTrip);
+          });
+
+          // Sort default trips by ID to maintain consistent order
+          defaultTrips.sort((a, b) => a.id.localeCompare(b.id));
+
+          setRecommendedTripsState({
+            trips: defaultTrips,
+            status: "success",
+            error: null,
+            lastFetched: new Date(),
+          });
+          return;
+        }
+      }
+
+      // If we reach here and we're not generating new trips, show empty state
+      if (loadingProgress.completed === 0) {
+        setRecommendedTripsState((prev) => ({
+          ...prev,
+          trips: [], // Ensure trips array is empty
+          status: "idle",
+          error: null,
+        }));
+      }
     } catch (error) {
       console.error("Error loading trips:", error);
       setRecommendedTripsState((prev) => ({
@@ -708,10 +805,15 @@ const Home: React.FC = () => {
             <View style={styles.headerTopRow}>
               <Text
                 testID="home-greeting"
-                style={styles.greetingText}
+                style={[
+                  styles.greetingText,
+                  { fontSize: getGreeting().fontSize },
+                ]}
                 onPress={resetStorageForTesting}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
-                {getGreeting()}
+                {getGreeting().text}
               </Text>
               <Pressable
                 onPress={() => navigation.navigate("Notifications")}
@@ -760,8 +862,9 @@ const Home: React.FC = () => {
                     locationInfo: {
                       name: data.description,
                       coordinates: details.geometry.location,
-                      photoRef: photoReference,
+                      photoRef: photoReference ?? undefined,
                       url: details.url,
+                      place_id: details.place_id,
                     },
                   });
                   // Clear input

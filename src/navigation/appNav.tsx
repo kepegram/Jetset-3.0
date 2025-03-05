@@ -21,7 +21,7 @@ import {
 import { ProfileProvider, useProfile } from "../context/profileContext";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import { CreateTripContext } from "../context/createTripContext";
+import { CreateTripContext, TripData } from "../context/createTripContext";
 import { RecommendedTripsProvider } from "../context/recommendedTripsContext";
 
 // Import all screens
@@ -73,7 +73,7 @@ export type RootStackParamList = {
   ReviewTrip: undefined;
   GenerateTrip: undefined;
   TripDetails: { trip: string; photoRef: string; docId: string };
-  CurrentTripDetails: { trip: string; photoRef: string };
+  CurrentTripDetails: { trip: string; photoRef: string; docId: string };
   PastTripDetails: { trip: string; photoRef: string; docId: string };
   IteneraryDetail: {
     place: {
@@ -647,7 +647,7 @@ const TabNavigator: React.FC = () => {
 };
 
 const AppNav = () => {
-  const [tripData, setTripData] = useState({});
+  const [tripData, setTripData] = useState<TripData>({});
   const { theme } = useTheme();
 
   return (

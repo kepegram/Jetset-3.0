@@ -13,7 +13,7 @@ import { RootStackParamList } from "../../../../navigation/appNav";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../../../../context/themeContext";
 import { MainButton } from "../../../../components/ui/button";
-import { CreateTripContext } from "../../../../context/createTripContext";
+import { useTrip } from "../../../../context/createTripContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -27,8 +27,7 @@ const { width, height } = Dimensions.get("window");
 const ChoosePlaces: React.FC = () => {
   const navigation = useNavigation<ChoosePlacesNavigationProp>();
   const { currentTheme } = useTheme();
-  const { tripData = {}, setTripData = () => {} } =
-    useContext(CreateTripContext) || {};
+  const { tripData, setTripData } = useTrip();
   const [selectedDestination, setSelectedDestination] = useState<string | null>(
     null
   );
@@ -94,7 +93,8 @@ const ChoosePlaces: React.FC = () => {
         ...tripData,
         destinationType: selectedPlace?.label,
         locationInfo: {
-          name: `${selectedPlace?.label}`,
+          name: selectedPlace?.label || "",
+          place_id: selectedPlace?.id || "",
         },
       });
       navigation.navigate("ChooseDate");

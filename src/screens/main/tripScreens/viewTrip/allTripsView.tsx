@@ -109,7 +109,7 @@ const AllTripsView: React.FC = () => {
           </Text>
           <View style={styles.dateContainer}>
             <Ionicons
-              name={type === "past" ? "calendar-check" : "calendar-outline"}
+              name={type === "past" ? "calendar-outline" : "calendar-outline"}
               size={18}
               color={currentTheme.textSecondary}
             />

@@ -22,11 +22,16 @@ type ChangeUsernameScreenNavigationProp = NativeStackNavigationProp<
   "ChangeUsername"
 >;
 
+// Constants for username validation
+const USERNAME_MIN_LENGTH = 3;
+const USERNAME_MAX_LENGTH = 20;
+
 const ChangeUsername: React.FC = () => {
   const { currentTheme } = useTheme();
   const navigation = useNavigation<ChangeUsernameScreenNavigationProp>();
   const [userName, setUserName] = useState<string | null>("");
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Fetch current username on component mount
   useEffect(() => {
@@ -48,10 +53,39 @@ const ChangeUsername: React.FC = () => {
     fetchUserData();
   }, []);
 
+  // Username validation function
+  const validateUsername = (username: string) => {
+    if (!username || username.length < USERNAME_MIN_LENGTH) {
+      return `Username must be at least ${USERNAME_MIN_LENGTH} characters`;
+    }
+    if (username.length > USERNAME_MAX_LENGTH) {
+      return `Username cannot exceed ${USERNAME_MAX_LENGTH} characters`;
+    }
+    // Only allow letters, numbers, and underscores
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      return "Username can only contain letters, numbers, and underscores";
+    }
+    return null;
+  };
+
+  // Handle text input change with validation
+  const handleUsernameChange = (text: string) => {
+    // Limit to max length
+    const trimmedText = text.slice(0, USERNAME_MAX_LENGTH);
+    setUserName(trimmedText);
+    setErrorMessage(null);
+  };
+
   // Handle saving the new username
   const handleSave = async () => {
-    if (!userName?.trim()) {
-      Alert.alert("Error", "Please enter a valid username");
+    if (!userName) {
+      setErrorMessage("Please enter a username");
+      return;
+    }
+
+    const validationError = validateUsername(userName);
+    if (validationError) {
+      setErrorMessage(validationError);
       return;
     }
 
@@ -105,13 +139,13 @@ const ChangeUsername: React.FC = () => {
           <Text
             style={[styles.inputLabel, { color: currentTheme.textPrimary }]}
           >
-            Username
+            Username ({USERNAME_MIN_LENGTH}-{USERNAME_MAX_LENGTH} characters)
           </Text>
           <View
             style={[
               styles.inputWrapper,
               {
-                borderColor: currentTheme.inactive,
+                borderColor: errorMessage ? "#FF3B30" : currentTheme.inactive,
                 backgroundColor:
                   currentTheme.background === "#FFFFFF" ? "#F5F5F5" : "#2A2A2A",
               },
@@ -122,11 +156,14 @@ const ChangeUsername: React.FC = () => {
               placeholder="Enter your username"
               placeholderTextColor={currentTheme.secondary}
               value={userName || ""}
-              onChangeText={setUserName}
+              onChangeText={handleUsernameChange}
               autoCapitalize="none"
               autoCorrect={false}
+              maxLength={USERNAME_MAX_LENGTH}
             />
           </View>
+
+          {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
         </View>
 
         {/* Action buttons */}
@@ -165,7 +202,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 12,
-    marginBottom: 24,
+    marginBottom: 8,
     paddingHorizontal: 16,
     height: 56,
   },
@@ -190,5 +227,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
     fontFamily: "outfit-medium",
+  },
+  errorText: {
+    color: "#FF3B30",
+    fontSize: 14,
+    marginBottom: 16,
+    fontFamily: "outfit",
   },
 });

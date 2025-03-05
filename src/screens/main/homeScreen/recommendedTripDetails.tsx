@@ -29,6 +29,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { travelOptions } from "../tripScreens/buildTrip/whosGoing";
 import moment from "moment";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width, height } = Dimensions.get("window");
 
@@ -188,6 +189,9 @@ const RecommendedTripDetails: React.FC = () => {
         await deleteDoc(doc(suggestedTripsCollection, document.id));
       });
 
+      // Mark that the user has saved a trip, so default trips won't be shown again
+      await AsyncStorage.setItem("hasRefreshedTrips", "true");
+
       Alert.alert("Success", "Trip saved successfully!");
       navigation.goBack();
     } catch (error) {
@@ -218,7 +222,10 @@ const RecommendedTripDetails: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         <View style={styles.imageContainer}>
           <Image
             source={{
@@ -231,7 +238,12 @@ const RecommendedTripDetails: React.FC = () => {
           />
         </View>
 
-        <View style={styles.contentContainer}>
+        <View
+          style={[
+            styles.contentContainer,
+            { backgroundColor: currentTheme.background },
+          ]}
+        >
           <View style={styles.headerContainer}>
             <Text
               style={[
@@ -311,40 +323,36 @@ const RecommendedTripDetails: React.FC = () => {
             </View>
           </View>
 
-          <View style={styles.flightInfoContainer}>
-            <View
-              style={[
-                styles.flightContainer,
-                { backgroundColor: currentTheme.accentBackground },
-              ]}
-            >
-              <View style={styles.flightInfo}>
-                <View style={styles.airlineWrapper}>
-                  <Text
-                    style={[
-                      styles.airlineName,
-                      { color: currentTheme.textPrimary },
-                    ]}
-                  >
-                    {tripDetails?.travelPlan?.flights?.airlineName ||
-                      "Unknown Airline"}
-                  </Text>
-                </View>
-                <View style={styles.priceWrapper}>
-                  <Text
-                    style={[
-                      styles.priceLabel,
-                      { color: currentTheme.textSecondary },
-                    ]}
-                  >
-                    Approximate Price
-                  </Text>
-                  <Text
-                    style={[styles.price, { color: currentTheme.alternate }]}
-                  >
-                    ~${tripDetails?.travelPlan?.flights?.flightPrice || "N/A"}
-                  </Text>
-                </View>
+          <View
+            style={[
+              styles.flightContainer,
+              { backgroundColor: currentTheme.accentBackground },
+            ]}
+          >
+            <View style={styles.flightInfo}>
+              <View style={styles.airlineWrapper}>
+                <Text
+                  style={[
+                    styles.airlineName,
+                    { color: currentTheme.textPrimary },
+                  ]}
+                >
+                  {tripDetails?.travelPlan?.flights?.airlineName ||
+                    "Unknown Airline"}
+                </Text>
+              </View>
+              <View style={styles.priceWrapper}>
+                <Text
+                  style={[
+                    styles.priceLabel,
+                    { color: currentTheme.textSecondary },
+                  ]}
+                >
+                  Approximate Price
+                </Text>
+                <Text style={[styles.price, { color: currentTheme.alternate }]}>
+                  ~${tripDetails?.travelPlan?.flights?.flightPrice || "N/A"}
+                </Text>
               </View>
             </View>
           </View>
@@ -368,7 +376,7 @@ const RecommendedTripDetails: React.FC = () => {
   );
 };
 
-export const styles = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -382,18 +390,9 @@ export const styles = StyleSheet.create({
     fontFamily: "outfit-medium",
     fontSize: 18,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
   imageContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
     height: height * 0.5,
+    width: "100%",
   },
   image: {
     width: "100%",
@@ -403,7 +402,7 @@ export const styles = StyleSheet.create({
     padding: 24,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    marginTop: height * 0.45,
+    marginTop: -30,
     flex: 1,
   },
   headerContainer: {
@@ -415,9 +414,9 @@ export const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   tripMetaContainer: {
-    flexDirection: "column",
+    flexDirection: "row",
     marginBottom: 25,
-    gap: 10,
+    gap: 15,
   },
   tripMetaItem: {
     flexDirection: "row",
@@ -425,18 +424,17 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
-    flexWrap: "wrap",
   },
   tripMetaText: {
     fontFamily: "outfit-medium",
     fontSize: 16,
     marginLeft: 8,
-    flex: 1,
-  },
-  flightInfoContainer: {
-    marginBottom: 25,
   },
   flightContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 25,
     padding: 20,
     borderRadius: 20,
     borderWidth: 1,
@@ -448,6 +446,7 @@ export const styles = StyleSheet.create({
     elevation: 2,
   },
   flightInfo: {
+    flex: 1,
     gap: 8,
   },
   airlineWrapper: {
@@ -495,21 +494,6 @@ export const styles = StyleSheet.create({
     width: 44,
     alignItems: "center",
     justifyContent: "center",
-  },
-  imageOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  overlayTitle: {
-    fontSize: 24,
-    fontFamily: "outfit-bold",
-    color: "white",
   },
 });
 

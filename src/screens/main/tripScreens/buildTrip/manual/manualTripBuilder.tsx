@@ -14,7 +14,10 @@ import {
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTheme } from "../../../../../context/themeContext";
-import { CreateTripContext } from "../../../../../context/createTripContext";
+import {
+  CreateTripContext,
+  useTrip,
+} from "../../../../../context/createTripContext";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../../../firebase.config";
 import { doc, setDoc, collection } from "firebase/firestore";
 import { MaterialIcons, Ionicons, FontAwesome5 } from "@expo/vector-icons";
@@ -30,8 +33,7 @@ type ManualTripBuilderNavigationProp = NativeStackNavigationProp<
 const ManualTripBuilder: React.FC = () => {
   const navigation = useNavigation<ManualTripBuilderNavigationProp>();
   const { currentTheme } = useTheme();
-  const tripContext = useContext(CreateTripContext);
-  const tripData = tripContext?.tripData || {};
+  const { tripData, setTripData } = useTrip();
   const [loading, setLoading] = useState(false);
 
   const sections = [

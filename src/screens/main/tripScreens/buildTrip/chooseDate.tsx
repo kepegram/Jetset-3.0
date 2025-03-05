@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   StatusBar,
 } from "react-native";
-import React, { useContext, useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../../../navigation/appNav";
 import { useNavigation } from "@react-navigation/native";
@@ -16,7 +16,7 @@ import { useTheme } from "../../../../context/themeContext";
 import { MainButton } from "../../../../components/ui/button";
 import { Ionicons } from "@expo/vector-icons";
 import CalendarPicker from "react-native-calendar-picker";
-import { CreateTripContext } from "../../../../context/createTripContext";
+import { useTrip } from "../../../../context/createTripContext";
 import moment, { Moment } from "moment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
@@ -31,8 +31,7 @@ type ChooseDateNavigationProp = StackNavigationProp<
 const ChooseDate: React.FC = () => {
   const navigation = useNavigation<ChooseDateNavigationProp>();
   const { currentTheme } = useTheme();
-  const { tripData = {}, setTripData = () => {} } =
-    useContext(CreateTripContext) || {};
+  const { tripData, setTripData } = useTrip();
   const [startDate, setStartDate] = useState<Moment | null>(null);
   const [endDate, setEndDate] = useState<Moment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -120,9 +119,9 @@ const ChooseDate: React.FC = () => {
     // Update trip data with selected dates
     setTripData({
       ...tripData,
-      startDate,
-      endDate,
-      totalNoOfDays,
+      startDate: startDate?.toDate(),
+      endDate: endDate?.toDate(),
+      totalNoOfDays: endDate?.diff(startDate, "days") + 1,
     });
 
     navigation.navigate("WhosGoing");
@@ -362,6 +361,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
+    height: 140,
   },
   dateRangeDisplay: {
     flexDirection: "row",
@@ -431,16 +431,23 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   emptyDateRange: {
-    flexDirection: "row",
+    height: 140,
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
     padding: 16,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
   emptyDateRangeText: {
     fontSize: 16,
     fontFamily: "outfit-medium",
     color: "#707070",
-    marginLeft: 8,
+    marginTop: 8,
+    textAlign: "center",
   },
   calendarContainer: {
     backgroundColor: "#FFFFFF",

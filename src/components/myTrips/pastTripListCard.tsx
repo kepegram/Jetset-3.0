@@ -19,12 +19,14 @@ type NavigationProp = NativeStackNavigationProp<
   "TripDetails"
 >;
 
+interface SimpleTripData {
+  tripData: any;
+  tripPlan: any;
+  id: string;
+}
+
 interface PastTripListCardProps {
-  trip: {
-    tripData: string;
-    tripPlan: string;
-    id: string;
-  };
+  trip: SimpleTripData;
 }
 
 const PastTripListCard: React.FC<PastTripListCardProps> = ({ trip }) => {

@@ -48,6 +48,7 @@ interface InputFieldProps {
   autoCapitalize?: "none" | "sentences";
   editable?: boolean;
   testID?: string;
+  maxLength?: number;
 }
 
 interface PasswordFieldProps {
@@ -119,10 +120,38 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync }) => {
 
   const navigation = useNavigation<SignUpScreenNavigationProp>();
 
-  const isFormValid = username && email && password && confirmPassword;
+  const USERNAME_MIN_LENGTH = 3;
+  const USERNAME_MAX_LENGTH = 20;
+
+  const validateUsername = (username: string) => {
+    if (username.length < USERNAME_MIN_LENGTH) {
+      return `Username must be at least ${USERNAME_MIN_LENGTH} characters`;
+    }
+    if (username.length > USERNAME_MAX_LENGTH) {
+      return `Username cannot exceed ${USERNAME_MAX_LENGTH} characters`;
+    }
+    // Only allow letters, numbers, and underscores
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      return "Username can only contain letters, numbers, and underscores";
+    }
+    return null;
+  };
+
+  const isFormValid =
+    username &&
+    email &&
+    password &&
+    confirmPassword &&
+    !validateUsername(username);
 
   const handleSignUp = async () => {
     setErrorMessage(null);
+
+    const usernameError = validateUsername(username);
+    if (usernameError) {
+      setErrorMessage(usernameError);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setErrorMessage("Passwords do not match");
@@ -237,12 +266,15 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync }) => {
         <View testID="signup-form" style={styles.signUpContainer}>
           <InputField
             testID="signup-username-input"
-            label="Username"
+            label={`Username (${USERNAME_MIN_LENGTH}-${USERNAME_MAX_LENGTH} characters)`}
             placeholder="johndoe123"
             value={username}
-            onChangeText={setUsername}
+            onChangeText={(text) =>
+              setUsername(text.slice(0, USERNAME_MAX_LENGTH))
+            }
             editable={!loading}
             autoCapitalize="none"
+            maxLength={USERNAME_MAX_LENGTH}
           />
 
           <InputField

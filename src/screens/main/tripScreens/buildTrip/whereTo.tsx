@@ -22,7 +22,11 @@ import {
   GooglePlaceDetail,
   GooglePlacesAutocomplete,
 } from "react-native-google-places-autocomplete";
-import { CreateTripContext } from "../../../../context/createTripContext";
+import {
+  CreateTripContext,
+  useTrip,
+  LocationInfo as ContextLocationInfo,
+} from "../../../../context/createTripContext";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { MainButton } from "../../../../components/ui/button";
 
@@ -36,17 +40,6 @@ interface ExtendedGooglePlaceDetail extends GooglePlaceDetail {
     width: number;
     html_attributions: string[];
   }>;
-}
-
-// Interface for storing location information
-interface LocationInfo {
-  name: string;
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
-  photoRef?: string | null;
-  url?: string;
 }
 
 // Interface for Google Places Autocomplete data
@@ -116,8 +109,9 @@ const WhereTo: React.FC = () => {
     const photoReference = details.photos?.[0]?.photo_reference || null;
 
     // Create location info object with place details
-    const locationInfo: LocationInfo = {
+    const locationInfo: ContextLocationInfo = {
       name: data.description,
+      place_id: details.place_id,
       coordinates: details.geometry.location,
       photoRef: photoReference,
       url: details.url,

@@ -11,7 +11,7 @@ import {
 import { useTheme } from "../../../context/themeContext";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { CreateTripContext } from "../../../context/createTripContext";
+import { CreateTripContext, useTrip } from "../../../context/createTripContext";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../navigation/appNav";
 import MapView, { Marker } from "react-native-maps";
@@ -30,6 +30,10 @@ type RouteParams = {
       latitude: number;
       longitude: number;
     };
+    placeId?: string;
+    id?: string;
+    photoRef?: string;
+    url?: string;
   };
 };
 
@@ -41,8 +45,7 @@ type PopularDestinationsScreenNavigationProp = NativeStackNavigationProp<
 const PopularDestinations: React.FC = () => {
   const { currentTheme } = useTheme();
   const route = useRoute();
-  const { tripData = {}, setTripData = () => {} } =
-    useContext(CreateTripContext) || {};
+  const { tripData, setTripData } = useTrip();
   const { destination } = route.params as RouteParams;
   const navigation = useNavigation<PopularDestinationsScreenNavigationProp>();
   const [isLoading, setIsLoading] = useState(false);
@@ -105,14 +108,16 @@ const PopularDestinations: React.FC = () => {
             ...tripData,
             locationInfo: {
               name: destination.name,
+              place_id:
+                destination.placeId || destination.id || destination.name,
               coordinates: destination.geoCoordinates
                 ? {
                     lat: destination.geoCoordinates.latitude,
                     lng: destination.geoCoordinates.longitude,
                   }
                 : undefined,
-              photoRef: photoReference,
-              url: placeUrl,
+              photoRef: destination.photoRef || photoReference,
+              url: destination.url || placeUrl,
             },
             preSelectedDestination: destination.name,
           });
@@ -124,6 +129,7 @@ const PopularDestinations: React.FC = () => {
         ...tripData,
         locationInfo: {
           name: destination.name,
+          place_id: destination.placeId || destination.id || destination.name,
           coordinates: destination.geoCoordinates
             ? {
                 lat: destination.geoCoordinates.latitude,

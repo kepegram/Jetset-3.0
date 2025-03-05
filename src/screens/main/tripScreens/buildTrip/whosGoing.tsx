@@ -10,7 +10,7 @@ import React, { useContext, useEffect, useState, useRef } from "react";
 import { RootStackParamList } from "../../../../navigation/appNav";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
-import { CreateTripContext } from "../../../../context/createTripContext";
+import { useTrip } from "../../../../context/createTripContext";
 import { useTheme } from "../../../../context/themeContext";
 import { MainButton } from "../../../../components/ui/button";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -57,9 +57,8 @@ export const travelOptions: TravelOption[] = [
 const WhosGoing: React.FC = () => {
   const navigation = useNavigation<WhosGoingNavigationProp>();
   const { currentTheme } = useTheme();
-  const { tripData = {}, setTripData = () => {} } =
-    useContext(CreateTripContext) || {};
-  const [whoIsGoing, setWhoIsGoing] = useState<number>(1);
+  const { tripData, setTripData } = useTrip();
+  const [whoIsGoing, setWhoIsGoing] = useState<number>(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
 

@@ -13,7 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../../../../context/themeContext";
 import { MainButton } from "../../../../components/ui/button";
 import { Ionicons } from "@expo/vector-icons";
-import { CreateTripContext } from "../../../../context/createTripContext";
+import { useTrip } from "../../../../context/createTripContext";
 
 type MoreInfoNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -72,8 +72,7 @@ export const budgetOptions: SelectionOption[] = [
 const MoreInfo: React.FC = () => {
   const navigation = useNavigation<MoreInfoNavigationProp>();
   const { currentTheme } = useTheme();
-  const { tripData = {}, setTripData = () => {} } =
-    useContext(CreateTripContext) || {};
+  const { tripData, setTripData } = useTrip();
   const [activityLevel, setActivityLevel] = useState<string>("");
   const [budget, setBudget] = useState<string>("");
 

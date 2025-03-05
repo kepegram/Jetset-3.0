@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Dimensions,
   Pressable,
+  Image,
 } from "react-native";
 import { useTheme } from "../../../../context/themeContext";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -90,6 +91,19 @@ const CurrentTripDetails: React.FC = () => {
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.imageContainer}>
+          <Image
+            source={{
+              uri: photoRef
+                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${
+                    // @ts-ignore
+                    process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY
+                  }`
+                : "https://via.placeholder.com/800",
+            }}
+            style={styles.image}
+          />
+        </View>
         <View
           style={[
             styles.contentContainer,
@@ -178,28 +192,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   imageContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
     height: height * 0.5,
+    width: "100%",
   },
   image: {
     width: "100%",
     height: "100%",
-  },
-  backButton: {
-    marginLeft: 16,
-    padding: 8,
-    borderRadius: 25,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    height: 44,
-    width: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scrollContent: {
-    marginTop: height * 0.45,
   },
   contentContainer: {
     padding: 24,
@@ -236,6 +234,16 @@ const styles = StyleSheet.create({
     fontFamily: "outfit-medium",
     fontSize: 16,
     marginLeft: 8,
+  },
+  backButton: {
+    marginLeft: 16,
+    padding: 8,
+    borderRadius: 25,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    height: 44,
+    width: 44,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 

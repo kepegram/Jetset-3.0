@@ -14,24 +14,29 @@ import { RootStackParamList } from "../../navigation/appNav";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
+import { Trip, TripData, TripPlan } from "../../types/trip";
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "CurrentTripDetails"
 >;
 
-interface CurrentTripCardProps {
-  userTrips: Array<{
-    tripData: string;
-    tripPlan: string;
-    id: string;
-  }>;
+interface SimpleTripData {
+  tripData: TripData;
+  tripPlan: TripPlan;
+  id: string;
+  docId: string;
+  subcollection: string;
 }
 
-const CurrentTripCard: React.FC<CurrentTripCardProps> = ({ userTrips }) => {
+interface CurrentTripsCardProps {
+  userTrips: SimpleTripData[];
+}
+
+const CurrentTripsCard: React.FC<CurrentTripsCardProps> = ({ userTrips }) => {
   const { currentTheme } = useTheme();
   const navigation = useNavigation<NavigationProp>();
-  const [currentTrip, setCurrentTrip] = useState<any>(null);
+  const [currentTrip, setCurrentTrip] = useState<SimpleTripData | null>(null);
   const scaleAnim = new Animated.Value(1);
 
   const handlePressIn = () => {
@@ -51,17 +56,17 @@ const CurrentTripCard: React.FC<CurrentTripCardProps> = ({ userTrips }) => {
   useEffect(() => {
     const today = moment().startOf("day");
 
-    const findCurrentTrip = userTrips.find((trip) => {
+    const findCurrentTrip = userTrips?.find((trip) => {
       const tripData = parseData(trip.tripData);
       const startDate = moment(tripData.startDate).startOf("day");
       const endDate = moment(tripData.endDate).endOf("day");
       return startDate.isSameOrBefore(today) && endDate.isSameOrAfter(today);
     });
 
-    setCurrentTrip(findCurrentTrip);
+    setCurrentTrip(findCurrentTrip || null);
   }, [userTrips]);
 
-  const parseData = (data: string) => {
+  const parseData = (data: TripData | TripPlan | string) => {
     if (typeof data === "string") {
       try {
         return JSON.parse(data);
@@ -120,6 +125,11 @@ const CurrentTripCard: React.FC<CurrentTripCardProps> = ({ userTrips }) => {
   const endDate = moment(parsedCurrentTrip.endDate).endOf("day");
   const daysRemaining = endDate.diff(today, "days");
 
+  const photoRef =
+    parsedCurrentTrip?.locationInfo?.photoRef ||
+    parsedCurrentTrip?.photoRef ||
+    "";
+
   return (
     <Animated.View
       style={[styles.container, { transform: [{ scale: scaleAnim }] }]}
@@ -128,15 +138,16 @@ const CurrentTripCard: React.FC<CurrentTripCardProps> = ({ userTrips }) => {
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={() => {
+          const tripData = {
+            ...parsedCurrentTrip,
+            travelPlan: parsedCurrentPlan?.travelPlan || {},
+            photoRef: photoRef,
+          };
+
           navigation.navigate("CurrentTripDetails", {
-            trip: JSON.stringify({
-              ...parsedCurrentTrip,
-              travelPlan: parsedCurrentPlan?.travelPlan || {},
-            }),
-            photoRef:
-              parsedCurrentTrip?.photoRef ||
-              parsedCurrentTrip?.locationInfo?.photoRef ||
-              "",
+            trip: JSON.stringify(tripData),
+            photoRef: photoRef,
+            docId: currentTrip.docId,
           });
         }}
         style={[
@@ -146,14 +157,10 @@ const CurrentTripCard: React.FC<CurrentTripCardProps> = ({ userTrips }) => {
       >
         <Image
           source={
-            parsedCurrentTrip?.photoRef ||
-            parsedCurrentTrip?.locationInfo?.photoRef
+            photoRef
               ? {
-                  uri: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${
-                    parsedCurrentTrip?.photoRef ||
-                    parsedCurrentTrip?.locationInfo?.photoRef
-                    // @ts-ignore
-                  }&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`,
+                  // @ts-ignore
+                  uri: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photoRef}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`,
                 }
               : require("../../assets/app-imgs/placeholder.jpeg")
           }
@@ -264,4 +271,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CurrentTripCard;
+export default CurrentTripsCard;
