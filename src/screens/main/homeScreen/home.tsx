@@ -41,6 +41,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import RecommendedTripSkeleton from "../../../components/common/RecommendedTripSkeleton";
 import { useProfile } from "../../../context/profileContext";
+import { useRecommendedTrips } from "../../../context/recommendedTripsContext";
 
 // Interface for extended Google Place Details including photo information
 interface ExtendedGooglePlaceDetail extends GooglePlaceDetail {
@@ -99,19 +100,12 @@ const Home: React.FC = () => {
   const { displayName } = useProfile();
   const { tripData = {}, setTripData = () => {} } =
     useContext(CreateTripContext) || {};
-  const [recommendedTripsState, setRecommendedTripsState] =
-    useState<RecommendedTripsState>({
-      trips: [],
-      status: "idle",
-      error: null,
-      lastFetched: null,
-    });
-  const [loadingProgress, setLoadingProgress] = useState<LoadingProgress>({
-    completed: 0,
-    total: 3,
-    currentTripIndex: 0,
-    tripStatuses: ["waiting", "waiting", "waiting"],
-  });
+  const {
+    recommendedTripsState,
+    setRecommendedTripsState,
+    loadingProgress,
+    setLoadingProgress,
+  } = useRecommendedTrips();
   const [isFirstLogin, setIsFirstLogin] = useState<boolean>(false);
   const [tapCount, setTapCount] = useState<number>(0);
   const navigation = useNavigation<NavigationProp>();
@@ -166,13 +160,25 @@ const Home: React.FC = () => {
       // Set up notification listener
       const unsubscribe = checkUnreadNotifications();
 
+      // Only load trips if they haven't been loaded or if there's an error
+      if (
+        recommendedTripsState.status === "idle" ||
+        recommendedTripsState.error
+      ) {
+        loadExistingTrips();
+      }
+
       // Cleanup function
       return () => {
         if (unsubscribe) {
           unsubscribe();
         }
       };
-    }, [checkUnreadNotifications])
+    }, [
+      checkUnreadNotifications,
+      recommendedTripsState.status,
+      recommendedTripsState.error,
+    ])
   );
 
   // Generate appropriate greeting based on time of day
@@ -418,8 +424,11 @@ const Home: React.FC = () => {
     }
   };
 
-  // Modify loadExistingTrips
+  // Modify loadExistingTrips to respect loading state
   const loadExistingTrips = async () => {
+    // Don't reload if we're already loading
+    if (recommendedTripsState.status === "loading") return;
+
     try {
       const user = getAuth().currentUser;
       if (!user) {
@@ -428,6 +437,14 @@ const Home: React.FC = () => {
 
       // Check if user has ever generated trips
       await checkHasGeneratedTrips();
+
+      // If we already have trips in the state and no error, don't reload
+      if (
+        recommendedTripsState.trips.length > 0 &&
+        !recommendedTripsState.error
+      ) {
+        return;
+      }
 
       const userTripsCollection = collection(
         FIREBASE_DB,
@@ -468,7 +485,7 @@ const Home: React.FC = () => {
       console.error("Error loading trips:", error);
       setRecommendedTripsState((prev) => ({
         ...prev,
-        trips: [], // Ensure trips array is empty on error
+        trips: [], // Ensure trips array is empty
         status: "error",
         error: "Failed to load trips",
       }));
@@ -579,7 +596,7 @@ const Home: React.FC = () => {
         style={({ pressed }) => [
           styles.dontLikeButton,
           {
-            borderColor: theme.textSecondaryLight20,
+            borderColor: theme.alternate,
             opacity: pressed ? 0.8 : 1,
             transform: [{ scale: pressed ? 0.98 : 1 }],
           },
@@ -588,15 +605,10 @@ const Home: React.FC = () => {
         <Ionicons
           name="add-circle-outline"
           size={40}
-          color={theme.textSecondaryLight20}
+          color={theme.alternate}
           style={styles.createTripIcon}
         />
-        <Text
-          style={[
-            styles.dontLikeButtonText,
-            { color: theme.textSecondaryLight20 },
-          ]}
-        >
+        <Text style={[styles.dontLikeButtonText, { color: theme.alternate }]}>
           Generate New{"\n"}Adventures
         </Text>
       </Pressable>

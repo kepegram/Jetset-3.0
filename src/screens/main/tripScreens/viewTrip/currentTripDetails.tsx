@@ -1,14 +1,12 @@
+import React from "react";
 import {
   View,
   Text,
-  Image,
   ScrollView,
   StyleSheet,
   Dimensions,
   Pressable,
-  StatusBar,
 } from "react-native";
-import React, { useEffect, useState } from "react";
 import { useTheme } from "../../../../context/themeContext";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../../navigation/appNav";
@@ -35,10 +33,10 @@ const CurrentTripDetails: React.FC = () => {
   const route = useRoute();
   const { trip, photoRef } = route.params as RouteParams;
 
-  const [tripDetails, setTripDetails] = useState<any>(null);
-  const [daysLeft, setDaysLeft] = useState<number | null>(null);
+  const [tripDetails, setTripDetails] = React.useState<any>(null);
+  const [daysLeft, setDaysLeft] = React.useState<number | null>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     navigation.setOptions({
       headerShown: true,
       headerTransparent: true,
@@ -90,30 +88,8 @@ const CurrentTripDetails: React.FC = () => {
   };
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: currentTheme.background }]}
-    >
-      <StatusBar barStyle="light-content" />
-      <View style={styles.imageContainer}>
-        <Image
-          source={{
-            uri:
-              photoRef || tripDetails?.photoRef
-                ? // @ts-ignore
-                  `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${
-                    photoRef || tripDetails?.photoRef
-                    // @ts-ignore
-                  }&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
-                : "https://via.placeholder.com/800",
-          }}
-          style={styles.image}
-        />
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
         <View
           style={[
             styles.contentContainer,

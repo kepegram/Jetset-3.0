@@ -426,7 +426,6 @@ const styles = StyleSheet.create({
   button: {
     width: "100%",
     marginTop: IS_SMALL_DEVICE ? 8 : 12,
-    height: IS_SMALL_DEVICE ? 44 : 48,
     borderRadius: 25,
     backgroundColor: "#3BACE3",
     shadowColor: "#3BACE3",

@@ -1,3 +1,4 @@
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,9 +7,7 @@ import {
   StyleSheet,
   Dimensions,
   Pressable,
-  StatusBar,
 } from "react-native";
-import React, { useContext, useEffect, useState } from "react";
 import { useTheme } from "../../../context/themeContext";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -145,146 +144,142 @@ const PopularDestinations: React.FC = () => {
   };
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: currentTheme.background }]}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
-      <StatusBar barStyle="light-content" />
-
-      {/* Hero Image Section */}
-      <View style={styles.imageContainer}>
-        <Image
-          source={destination.image}
-          style={styles.image}
-          resizeMode="cover"
-        />
-      </View>
-
-      <View
-        style={[
-          styles.contentContainer,
-          { backgroundColor: currentTheme.background },
-        ]}
-      >
-        {/* Destination Title */}
-        <View style={styles.headerContainer}>
-          <View style={styles.titleContainer}>
-            <Text
-              style={[
-                styles.destinationTitle,
-                { color: currentTheme.textPrimary },
-              ]}
-            >
-              {destination.name}
-            </Text>
-          </View>
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Hero Image Section */}
+        <View style={styles.imageContainer}>
+          <Image
+            source={destination.image}
+            style={styles.image}
+            resizeMode="cover"
+          />
         </View>
 
-        {/* Best Time to Visit Card */}
-        <View style={styles.tripMetaContainer}>
-          <View
-            style={[
-              styles.tripMetaItem,
-              { backgroundColor: currentTheme.alternateLight10 },
-            ]}
-          >
-            <View style={styles.tripMetaIconContainer}>
-              <Ionicons
-                name="calendar-outline"
-                size={24}
-                color={currentTheme.alternate}
-              />
-            </View>
-            <View style={styles.tripMetaTextContainer}>
+        <View
+          style={[
+            styles.contentContainer,
+            { backgroundColor: currentTheme.background },
+          ]}
+        >
+          {/* Destination Title */}
+          <View style={styles.headerContainer}>
+            <View style={styles.titleContainer}>
               <Text
                 style={[
-                  styles.tripMetaLabel,
-                  { color: currentTheme.textSecondary },
-                ]}
-              >
-                Best Time to Visit
-              </Text>
-              <Text
-                style={[
-                  styles.tripMetaText,
+                  styles.destinationTitle,
                   { color: currentTheme.textPrimary },
                 ]}
               >
-                {destination.bestTimeToVisit}
+                {destination.name}
               </Text>
             </View>
           </View>
-        </View>
 
-        {/* Description Section */}
-        <View
-          style={[
-            styles.descriptionContainer,
-            { backgroundColor: currentTheme.accentBackgroundLight80 },
-          ]}
-        >
-          <Text
+          {/* Best Time to Visit Card */}
+          <View style={styles.tripMetaContainer}>
+            <View
+              style={[
+                styles.tripMetaItem,
+                { backgroundColor: currentTheme.alternateLight10 },
+              ]}
+            >
+              <View style={styles.tripMetaIconContainer}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={24}
+                  color={currentTheme.alternate}
+                />
+              </View>
+              <View style={styles.tripMetaTextContainer}>
+                <Text
+                  style={[
+                    styles.tripMetaLabel,
+                    { color: currentTheme.textSecondary },
+                  ]}
+                >
+                  Best Time to Visit
+                </Text>
+                <Text
+                  style={[
+                    styles.tripMetaText,
+                    { color: currentTheme.textPrimary },
+                  ]}
+                >
+                  {destination.bestTimeToVisit}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Description Section */}
+          <View
             style={[
-              styles.descriptionTitle,
-              { color: currentTheme.textPrimary },
+              styles.descriptionContainer,
+              { backgroundColor: currentTheme.accentBackgroundLight80 },
             ]}
           >
-            About
-          </Text>
-          <Text
-            style={[styles.description, { color: currentTheme.textPrimary }]}
-          >
-            {destination.description}
-          </Text>
-        </View>
-
-        {/* Map Section (if coordinates available) */}
-        {destination.geoCoordinates && (
-          <View style={styles.mapSection}>
             <Text
               style={[
                 styles.descriptionTitle,
                 { color: currentTheme.textPrimary },
               ]}
             >
-              Location
+              About
             </Text>
-            <View style={styles.mapContainer}>
-              <MapView
-                style={styles.map}
-                initialRegion={{
-                  latitude: destination.geoCoordinates.latitude,
-                  longitude: destination.geoCoordinates.longitude,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
-                }}
+            <Text
+              style={[styles.description, { color: currentTheme.textPrimary }]}
+            >
+              {destination.description}
+            </Text>
+          </View>
+
+          {/* Map Section (if coordinates available) */}
+          {destination.geoCoordinates && (
+            <View style={styles.mapSection}>
+              <Text
+                style={[
+                  styles.descriptionTitle,
+                  { color: currentTheme.textPrimary },
+                ]}
               >
-                <Marker
-                  coordinate={{
+                Location
+              </Text>
+              <View style={styles.mapContainer}>
+                <MapView
+                  style={styles.map}
+                  initialRegion={{
                     latitude: destination.geoCoordinates.latitude,
                     longitude: destination.geoCoordinates.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
                   }}
-                  title={destination.name}
-                />
-              </MapView>
+                >
+                  <Marker
+                    coordinate={{
+                      latitude: destination.geoCoordinates.latitude,
+                      longitude: destination.geoCoordinates.longitude,
+                    }}
+                    title={destination.name}
+                  />
+                </MapView>
+              </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* Start Planning Button */}
-        <MainButton
-          onPress={fetchDestinationDetails}
-          buttonText={isLoading ? "Loading..." : "Start Planning!"}
-          disabled={isLoading}
-          width="100%"
-          style={[
-            { backgroundColor: currentTheme.alternate },
-            isLoading && styles.disabledButton,
-          ]}
-        />
-      </View>
-    </ScrollView>
+          {/* Start Planning Button */}
+          <MainButton
+            onPress={fetchDestinationDetails}
+            buttonText={isLoading ? "Loading..." : "Start Planning!"}
+            disabled={isLoading}
+            width="100%"
+            style={[
+              { backgroundColor: currentTheme.alternate },
+              isLoading && styles.disabledButton,
+            ]}
+          />
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 

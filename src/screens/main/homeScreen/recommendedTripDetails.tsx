@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Dimensions,
   Pressable,
-  StatusBar,
   ScrollView,
 } from "react-native";
 import React, { useEffect, useState } from "react";
@@ -218,33 +217,21 @@ const RecommendedTripDetails: React.FC = () => {
   }
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: currentTheme.background }]}
-    >
-      <StatusBar barStyle="light-content" />
-      <View style={styles.imageContainer}>
-        <Image
-          source={{
-            uri: photoRef
-              ? // @ts-ignore
-                `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
-              : "https://via.placeholder.com/800",
-          }}
-          style={styles.image}
-        />
-      </View>
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.imageContainer}>
+          <Image
+            source={{
+              uri: photoRef
+                ? // @ts-ignore
+                  `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
+                : "https://via.placeholder.com/800",
+            }}
+            style={styles.image}
+          />
+        </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View
-          style={[
-            styles.contentContainer,
-            { backgroundColor: currentTheme.background },
-          ]}
-        >
+        <View style={styles.contentContainer}>
           <View style={styles.headerContainer}>
             <Text
               style={[

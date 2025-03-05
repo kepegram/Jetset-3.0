@@ -1,3 +1,4 @@
+import React from "react";
 import {
   View,
   Text,
@@ -12,7 +13,7 @@ import {
   Modal,
   Animated,
 } from "react-native";
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTheme } from "../../../../context/themeContext";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../../navigation/appNav";
@@ -247,15 +248,8 @@ const TripDetails: React.FC = () => {
   }
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: currentTheme.background }]}
-    >
-      <StatusBar barStyle="light-content" />
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.imageContainer}>
           <Image
             source={{

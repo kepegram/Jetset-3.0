@@ -126,9 +126,15 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   }, []);
 
   // Handler for theme changes - updates state and saves to Firestore
-  const handleSetTheme = (newTheme: Theme) => {
+  const handleSetTheme = async (newTheme: Theme) => {
+    // Update state immediately
     setTheme(newTheme);
-    saveThemeToFirestore(newTheme);
+    // Save to Firestore in the background
+    try {
+      await saveThemeToFirestore(newTheme);
+    } catch (error) {
+      console.error("Failed to save theme to Firestore:", error);
+    }
   };
 
   return (

@@ -1,3 +1,4 @@
+import React from "react";
 import {
   View,
   Text,
@@ -7,9 +8,8 @@ import {
   StyleSheet,
   Dimensions,
   Pressable,
-  StatusBar,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTheme } from "../../../../context/themeContext";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../../navigation/appNav";
@@ -106,35 +106,24 @@ const PastTripDetails: React.FC = () => {
   }
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: currentTheme.background }]}
-    >
-      <StatusBar barStyle="light-content" />
-      <View style={styles.imageContainer}>
-        <Image
-          source={{
-            uri:
-              photoRef || tripDetails?.photoRef
-                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${
-                    photoRef || tripDetails?.photoRef
-                    // @ts-ignore
-                  }&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
-                : "https://via.placeholder.com/800",
-          }}
-          style={styles.image}
-        />
-      </View>
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.imageContainer}>
+          <Image
+            source={{
+              uri:
+                photoRef || tripDetails?.photoRef
+                  ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${
+                      photoRef || tripDetails?.photoRef
+                      // @ts-ignore
+                    }&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
+                  : "https://via.placeholder.com/800",
+            }}
+            style={styles.image}
+          />
+        </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View
-          style={[
-            styles.contentContainer,
-            { backgroundColor: currentTheme.background },
-          ]}
-        >
+        <View style={styles.contentContainer}>
           <View style={styles.headerContainer}>
             <View style={styles.titleContainer}>
               <Text
@@ -230,9 +219,6 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: "100%",
-  },
-  scrollContent: {
-    marginTop: height * 0.45,
   },
   contentContainer: {
     padding: 24,

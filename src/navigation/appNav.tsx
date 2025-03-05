@@ -1,5 +1,13 @@
 import React, { useContext, useState } from "react";
-import { Alert, Image, Pressable, Text, View, Platform } from "react-native";
+import {
+  Alert,
+  Image,
+  Pressable,
+  Text,
+  View,
+  Platform,
+  ViewStyle,
+} from "react-native";
 import { useTheme } from "../context/themeContext";
 import {
   createNativeStackNavigator,
@@ -14,10 +22,13 @@ import { ProfileProvider, useProfile } from "../context/profileContext";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { CreateTripContext } from "../context/createTripContext";
+import { RecommendedTripsProvider } from "../context/recommendedTripsContext";
+
+// Import all screens
 import Home from "../screens/main/homeScreen/home";
 import RecommendedTripDetails from "../screens/main/homeScreen/recommendedTripDetails";
 import Profile from "../screens/main/userScreens/profile";
-import Edit from "../screens/main/userScreens/edit";
+import Edit from "../screens/main/userScreens/settings";
 import ChangeUsername from "../screens/main/userScreens/changeUsername";
 import ChangePassword from "../screens/main/userScreens/changePassword";
 import DeleteAccount from "../screens/main/userScreens/deleteAccount";
@@ -29,9 +40,7 @@ import CurrentTripDetails from "../screens/main/tripScreens/viewTrip/currentTrip
 import PastTripDetails from "../screens/main/tripScreens/viewTrip/pastTripDetails";
 import IteneraryDetail from "../screens/main/tripScreens/viewTrip/iteneraryDetail";
 import HotelDetail from "../screens/main/tripScreens/viewTrip/hotelDetail";
-import ManualTripBuilder from "../screens/main/tripScreens/buildTrip/manual/manualTripBuilder";
 import WhereTo from "../screens/main/tripScreens/buildTrip/whereTo";
-import ChoosePlaces from "../screens/main/tripScreens/buildTrip/choosePlaces";
 import ChooseDate from "../screens/main/tripScreens/buildTrip/chooseDate";
 import WhosGoing from "../screens/main/tripScreens/buildTrip/whosGoing";
 import MoreInfo from "../screens/main/tripScreens/buildTrip/moreInfo";
@@ -485,14 +494,15 @@ const ProfileStack: React.FC = () => {
   );
 };
 
+const RootStack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
 const HIDDEN_TAB_SCREENS = ["GenerateTrip"];
 
-const getTabBarStyle = (route: any): { display?: string } | undefined => {
+const getTabBarStyle = (route: any): ViewStyle | undefined => {
   const routeName = getFocusedRouteNameFromRoute(route) ?? "Home";
   return HIDDEN_TAB_SCREENS.includes(routeName)
-    ? { display: "none" }
+    ? { display: "none" as const }
     : undefined;
 };
 
@@ -500,7 +510,7 @@ const TabNavigator: React.FC = () => {
   const { currentTheme } = useTheme();
   const { profilePicture } = useProfile();
 
-  const tabBarDefaultStyle = {
+  const tabBarDefaultStyle: ViewStyle = {
     height: Platform.OS === "ios" ? 85 : 65,
     paddingBottom: Platform.OS === "ios" ? 25 : 10,
     paddingTop: 10,
@@ -555,115 +565,108 @@ const TabNavigator: React.FC = () => {
       <Tab.Screen
         name="Home"
         component={HomeStack}
-        options={({ route }) => {
-          const tabBarStyle = {
+        options={({ route }) => ({
+          tabBarStyle: {
             ...tabBarDefaultStyle,
             backgroundColor: currentTheme.background,
-            ...(getTabBarStyle(route) || {}),
-          };
-          return {
-            tabBarStyle,
-            tabBarIcon: ({ color, focused }) => (
-              <TabIcon
-                focused={focused}
-                color={color}
-                icon="home-filled"
-                size={34}
-                isMaterial={true}
-              />
-            ),
-          } as BottomTabNavigationOptions;
-        }}
+            ...getTabBarStyle(route),
+          } as ViewStyle,
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              focused={focused}
+              color={color}
+              icon="home-filled"
+              size={34}
+              isMaterial={true}
+            />
+          ),
+        })}
       />
       <Tab.Screen
         name="MyTrips"
         component={MyTripsStack}
-        options={({ route }) => {
-          const tabBarStyle = {
+        options={({ route }) => ({
+          tabBarStyle: {
             ...tabBarDefaultStyle,
             backgroundColor: currentTheme.background,
-            ...(getTabBarStyle(route) || {}),
-          };
-          return {
-            tabBarStyle,
-            headerShown: false,
-            tabBarIcon: ({ color, focused }) => (
-              <TabIcon
-                focused={focused}
-                color={color}
-                icon="space-dashboard"
-                size={32}
-                isMaterial={true}
-              />
-            ),
-          } as BottomTabNavigationOptions;
-        }}
+            ...getTabBarStyle(route),
+          } as ViewStyle,
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              focused={focused}
+              color={color}
+              icon="space-dashboard"
+              size={32}
+              isMaterial={true}
+            />
+          ),
+        })}
       />
       <Tab.Screen
         name="ProfileStack"
         component={ProfileStack}
-        options={({ route }) => {
-          const tabBarStyle = {
+        options={({ route }) => ({
+          tabBarStyle: {
             ...tabBarDefaultStyle,
             backgroundColor: currentTheme.background,
-            ...(getTabBarStyle(route) || {}),
-          };
-          return {
-            tabBarStyle,
-            tabBarIcon: ({ focused, color }) => (
-              <View
-                style={{
-                  padding: 4,
-                  borderRadius: 24,
-                  backgroundColor: focused
-                    ? currentTheme.alternateLight20
-                    : "transparent",
-                }}
-              >
-                {profilePicture ? (
-                  <Image
-                    source={{ uri: profilePicture }}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 16,
-                      borderColor: focused
-                        ? currentTheme.alternate
-                        : "transparent",
-                      borderWidth: 2,
-                    }}
-                  />
-                ) : (
-                  <Ionicons name="person-circle" size={38} color={color} />
-                )}
-              </View>
-            ),
-          } as BottomTabNavigationOptions;
-        }}
+            ...getTabBarStyle(route),
+          } as ViewStyle,
+          tabBarIcon: ({ focused, color }) => (
+            <View
+              style={{
+                padding: 4,
+                borderRadius: 24,
+                backgroundColor: focused
+                  ? currentTheme.alternateLight20
+                  : "transparent",
+              }}
+            >
+              {profilePicture ? (
+                <Image
+                  source={{ uri: profilePicture }}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    borderColor: focused
+                      ? currentTheme.alternate
+                      : "transparent",
+                    borderWidth: 2,
+                  }}
+                />
+              ) : (
+                <Ionicons name="person-circle" size={38} color={color} />
+              )}
+            </View>
+          ),
+        })}
       />
     </Tab.Navigator>
   );
 };
 
-const RootStack = createNativeStackNavigator<RootStackParamList>();
-
-const AppNav: React.FC = () => {
+const AppNav = () => {
+  const [tripData, setTripData] = useState({});
   const { theme } = useTheme();
-  const [tripData, setTripData] = useState<any>([]);
 
   return (
-    <ProfileProvider>
-      <CreateTripContext.Provider value={{ tripData, setTripData }}>
-        <StatusBar style={theme === "dark" ? "light" : "dark"} />
-        <RootStack.Navigator initialRouteName="App">
-          <RootStack.Screen
-            name="App"
-            component={TabNavigator}
-            options={{ headerShown: false }}
-          />
-        </RootStack.Navigator>
-      </CreateTripContext.Provider>
-    </ProfileProvider>
+    <>
+      <StatusBar style={theme === "dark" ? "light" : "dark"} />
+      <ProfileProvider>
+        <CreateTripContext.Provider value={{ tripData, setTripData }}>
+          <RecommendedTripsProvider>
+            <RootStack.Navigator initialRouteName="App">
+              <RootStack.Screen
+                name="App"
+                component={TabNavigator}
+                options={{ headerShown: false }}
+              />
+            </RootStack.Navigator>
+          </RecommendedTripsProvider>
+        </CreateTripContext.Provider>
+      </ProfileProvider>
+    </>
   );
 };
 

@@ -23,6 +23,7 @@ import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { modalStyles } from "../../../screens/onboarding/welcome/welcome";
 import Privacy from "../../../screens/onboarding/privacy/Privacy";
+import * as ImageManipulator from "expo-image-manipulator";
 
 // Navigation prop type for type safety when navigating
 type ProfileScreenNavigationProp = NativeStackNavigationProp<
@@ -40,6 +41,7 @@ const Profile: React.FC = () => {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const user = getAuth().currentUser;
   const navigation = useNavigation<ProfileScreenNavigationProp>();
@@ -91,48 +93,94 @@ const Profile: React.FC = () => {
     });
   };
 
+  // Function to compress image
+  const compressImage = async (uri: string) => {
+    try {
+      const manipResult = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 800 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      return manipResult.uri;
+    } catch (error) {
+      console.error("Error compressing image:", error);
+      throw error;
+    }
+  };
+
   // Handle profile picture selection and upload
   const handlePickImage = async () => {
-    // Request permission to access media library
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (permissionResult.granted === false) {
-      alert("Permission to access camera roll is required!");
+      Alert.alert(
+        "Permission Required",
+        "Permission to access camera roll is required!"
+      );
       return;
     }
 
-    // Launch image picker
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: "images" as ImagePicker.MediaType,
-      aspect: [4, 3],
-      quality: 1,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: "images" as ImagePicker.MediaType,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.5,
+        base64: true,
+      });
 
-    if (!result.canceled) {
-      const uri = result.assets[0].uri;
-      setProfilePicture(uri);
-
-      // Save profile picture URI to Firestore
-      if (user) {
+      if (!result.canceled) {
+        setIsUploadingImage(true);
         try {
+          if (!user?.uid) {
+            throw new Error("User not authenticated");
+          }
+
+          // Compress the image
+          const compressedResult = await ImageManipulator.manipulateAsync(
+            result.assets[0].uri,
+            [{ resize: { width: 800 } }],
+            {
+              compress: 0.5,
+              format: ImageManipulator.SaveFormat.JPEG,
+              base64: true,
+            }
+          );
+
+          // Create data URL from base64
+          const dataUrl = `data:image/jpeg;base64,${compressedResult.base64}`;
+
+          // Update Firestore with the data URL
           await setDoc(
             doc(FIREBASE_DB, "users", user.uid),
-            { profilePicture: uri },
+            { profilePicture: dataUrl },
             { merge: true }
           );
-          console.log("Profile picture updated successfully in Firestore.");
+
+          // Update local storage and state
+          await AsyncStorage.setItem("profilePicture", dataUrl);
+          setProfilePicture(dataUrl);
+
+          console.log("Profile picture updated successfully");
+          Alert.alert("Success", "Profile picture updated successfully");
         } catch (error) {
-          console.error("Failed to save profile picture to Firestore:", error);
+          console.error("Error processing image:", error);
+          Alert.alert(
+            "Error",
+            "Failed to update profile picture. Please try again."
+          );
         }
       }
-
-      // Cache profile picture locally
-      await AsyncStorage.setItem("profilePicture", uri);
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to select image. Please try again.");
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
-  // Add this new function to handle profile picture removal
+  // Handle profile picture removal
   const handleRemoveProfilePicture = () => {
     Alert.alert(
       "Remove Profile Picture",
@@ -150,11 +198,13 @@ const Profile: React.FC = () => {
               "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Default_pfp.svg/2048px-Default_pfp.svg.png";
 
             try {
-              // Update state and AsyncStorage
+              setIsUploadingImage(true);
+
+              // Update state and storage
               setProfilePicture(defaultPfp);
               await AsyncStorage.removeItem("profilePicture");
 
-              // Remove from Firestore
+              // Update Firestore
               if (user) {
                 await setDoc(
                   doc(FIREBASE_DB, "users", user.uid),
@@ -169,6 +219,8 @@ const Profile: React.FC = () => {
             } catch (error) {
               console.error("Failed to remove profile picture:", error);
               Alert.alert("Error", "Failed to remove profile picture");
+            } finally {
+              setIsUploadingImage(false);
             }
           },
         },
@@ -189,7 +241,6 @@ const Profile: React.FC = () => {
         {
           text: "OK",
           onPress: () => {
-            setTheme("light"); // Reset theme to light
             FIREBASE_AUTH.signOut();
           },
         },
@@ -382,8 +433,13 @@ const Profile: React.FC = () => {
             onPress={handleProfilePress}
             style={styles.profilePictureBackground}
           >
-            {isLoading ? (
-              <ActivityIndicator size="large" color={currentTheme.primary} />
+            {isUploadingImage ? (
+              <View style={[styles.profilePicture, styles.loadingContainer]}>
+                <ActivityIndicator
+                  size="large"
+                  color={currentTheme.alternate}
+                />
+              </View>
             ) : (
               <>
                 <Image
@@ -401,6 +457,7 @@ const Profile: React.FC = () => {
                 <Pressable
                   style={styles.editIconContainer}
                   onPress={handlePickImage}
+                  disabled={isUploadingImage}
                 >
                   <Ionicons name="pencil" size={16} color="#FFFFFF" />
                 </Pressable>
@@ -752,5 +809,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     fontFamily: "outfit-medium",
+  },
+  loadingContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.1)",
   },
 });

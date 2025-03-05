@@ -244,9 +244,11 @@ const MyTrips: React.FC = () => {
           <Text
             style={[styles.headerTitle, { color: currentTheme.textPrimary }]}
           >
-            {`${displayName?.split(" ")[0]}'s` ||
-              `${userName?.split(" ")[0]}'s` ||
-              "My"}{" "}
+            {displayName
+              ? `${displayName.split(" ")[0]}'s`
+              : userName
+              ? `${userName.split(" ")[0]}'s`
+              : "My"}{" "}
             Trips ✈️
           </Text>
           <Pressable
@@ -259,7 +261,7 @@ const MyTrips: React.FC = () => {
             <Fontisto
               name="plus-a"
               size={24}
-              color={currentTheme.background}
+              color="white"
               style={styles.addIcon}
             />
           </Pressable>

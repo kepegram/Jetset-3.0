@@ -1,3 +1,4 @@
+import React from "react";
 import {
   View,
   Text,
@@ -7,9 +8,7 @@ import {
   Image,
   ScrollView,
   Linking,
-  StatusBar,
 } from "react-native";
-import React, { useEffect } from "react";
 import { useTheme } from "../../../../context/themeContext";
 import { RootStackParamList } from "../../../../navigation/appNav";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -33,7 +32,7 @@ const IteneraryDetail: React.FC = () => {
   const route = useRoute<RouteProps>();
   const { place } = route.params;
 
-  useEffect(() => {
+  React.useEffect(() => {
     navigation.setOptions({
       headerShown: true,
       headerTransparent: true,
@@ -56,11 +55,8 @@ const IteneraryDetail: React.FC = () => {
   };
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: currentTheme.background }]}
-    >
-      <StatusBar barStyle="light-content" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.imageContainer}>
           <Image
             source={
@@ -70,6 +66,7 @@ const IteneraryDetail: React.FC = () => {
                       "https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=" +
                       place.photoRef +
                       "&key=" +
+                      // @ts-ignore
                       process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY,
                   }
                 : require("../../../../assets/app-imgs/place-placeholder.jpg")

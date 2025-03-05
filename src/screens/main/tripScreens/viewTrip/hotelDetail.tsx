@@ -1,3 +1,4 @@
+import React from "react";
 import {
   View,
   Text,
@@ -6,10 +7,8 @@ import {
   Dimensions,
   Image,
   ScrollView,
-  StatusBar,
   Linking,
 } from "react-native";
-import React, { useEffect } from "react";
 import { useTheme } from "../../../../context/themeContext";
 import { RootStackParamList } from "../../../../navigation/appNav";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -32,7 +31,7 @@ const HotelDetail: React.FC = () => {
   const route = useRoute<RouteProps>();
   const { hotel } = route.params;
 
-  useEffect(() => {
+  React.useEffect(() => {
     navigation.setOptions({
       headerShown: true,
       headerTransparent: true,
@@ -58,13 +57,8 @@ const HotelDetail: React.FC = () => {
   };
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: currentTheme.background }]}
-    >
-      <StatusBar barStyle="light-content" />
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
-      >
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.imageContainer}>
           <Image
             source={{
@@ -72,6 +66,7 @@ const HotelDetail: React.FC = () => {
                 ? "https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=" +
                   hotel.photoRef +
                   "&key=" +
+                  // @ts-ignore
                   process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY
                 : require("../../../../assets/app-imgs/place-placeholder.jpg"),
             }}

@@ -61,6 +61,11 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 
 WebBrowser.maybeCompleteAuthSession();
 
+const StatusBarWrapper = () => {
+  const { theme } = useTheme();
+  return <StatusBar style={theme === "dark" ? "light" : "dark"} />;
+};
+
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [appIsReady, setAppIsReady] = useState(false);
@@ -247,7 +252,7 @@ const App: React.FC = () => {
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <ThemeProvider>
         <NavigationContainer ref={navigationRef}>
-          <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+          <StatusBarWrapper />
           <Stack.Navigator initialRouteName="Welcome">
             {user ? (
               <Stack.Screen
