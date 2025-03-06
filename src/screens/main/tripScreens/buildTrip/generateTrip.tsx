@@ -208,8 +208,14 @@ const GenerateTrip: React.FC = () => {
       .replace(/,\s*]/g, "]") // Remove trailing commas in arrays
       .replace(/"https":\/{2}/g, '"https://') // Fix broken https URLs
       .replace(/"http":\/{2}/g, '"http://') // Fix broken http URLs
-      .replace(/Day\s+"(\d+)"/g, "Day $1") // Fix day numbering format
-      .replace(/"\s+"/g, '" "'); // Fix spaces between quotes
+      .replace(/"https"\s*:\s*\/\//g, '"https://') // Fix another variant of broken https URLs
+      .replace(/"http"\s*:\s*\/\//g, '"http://') // Fix another variant of broken http URLs
+      .replace(/Day\s*"(\d+)"/g, "Day $1") // Fix day numbering format
+      .replace(/Day\s+"(\d+)"\s*:/g, "Day $1:") // Fix day numbering format in keys
+      .replace(/"\s+"/g, '" "') // Fix spaces between quotes
+      .replace(/([^"]):\/\//g, "$1://") // Fix any remaining broken URLs
+      .replace(/([a-zA-Z0-9])":/g, '$1":') // Ensure proper spacing before colons
+      .replace(/:\s*"([^"]*)":\/{2}/g, ':"$1://'); // Fix URLs in values
 
     // Try to parse the JSON to see if it's valid
     try {
@@ -218,7 +224,9 @@ const GenerateTrip: React.FC = () => {
       // If parsing fails, try more aggressive fixes
       cleanedResponse = cleanedResponse
         .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?\s*:/g, '"$2":') // Ensure property names are quoted
-        .replace(/:\s*'([^']*)'/g, ':"$1"'); // Replace single quotes with double quotes
+        .replace(/:\s*'([^']*)'/g, ':"$1"') // Replace single quotes with double quotes
+        .replace(/([^"]):\/\//g, "$1://") // One more pass at fixing URLs
+        .replace(/:\s*"([^"]*)":\/{2}/g, ':"$1://'); // One more pass at fixing URLs in values
 
       try {
         return JSON.stringify(JSON.parse(cleanedResponse));

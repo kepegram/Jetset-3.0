@@ -43,6 +43,13 @@ import RecommendedTripSkeleton from "../../../components/common/RecommendedTripS
 import { useProfile } from "../../../context/profileContext";
 import { useRecommendedTrips } from "../../../context/recommendedTripsContext";
 import { useTrip } from "../../../context/createTripContext";
+import {
+  getUserPreferences,
+  updateUserPreferences,
+  clearUserPreferences,
+} from "../../../utils/userPreferences";
+import { UserPreferences } from "../../../types/home.types";
+import { retryWithBackoff } from "../../../utils/common.utils";
 
 // Interface for extended Google Place Details including photo information
 interface ExtendedGooglePlaceDetail extends GooglePlaceDetail {
@@ -113,6 +120,8 @@ const Home: React.FC = () => {
   const [hasGeneratedTrips, setHasGeneratedTrips] = useState<boolean>(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [hasNotifications, setHasNotifications] = useState<boolean>(false);
+  const [userPreferences, setUserPreferences] =
+    useState<UserPreferences | null>(null);
 
   // Update the checkUnreadNotifications function to use real-time updates
   const checkUnreadNotifications = useCallback(() => {
@@ -431,34 +440,38 @@ const Home: React.FC = () => {
     }
   };
 
-  // Modify useFocusEffect to check if it's the first login
+  // Update checkFirstLogin to use the new preferences system
   useFocusEffect(
     useCallback(() => {
-      const checkFirstLogin = async () => {
+      const initializeUser = async () => {
         try {
-          // For testing: Uncomment to clear storage between tests
-          // await AsyncStorage.clear();
+          const user = getAuth().currentUser;
+          if (!user) {
+            throw new Error("User not authenticated");
+          }
 
-          const hasLoggedIn = await AsyncStorage.getItem("hasLoggedInBefore");
+          const preferences = await getUserPreferences(user.uid);
+          setUserPreferences(preferences);
 
-          if (!hasLoggedIn) {
+          if (!preferences.hasCompletedOnboarding) {
+            await updateUserPreferences(user.uid, {
+              hasCompletedOnboarding: true,
+            });
             setIsFirstLogin(true);
-            // Set the flag that the user has logged in
-            await AsyncStorage.setItem("hasLoggedInBefore", "true");
           } else {
             setIsFirstLogin(false);
           }
+
+          // Load trips regardless of login state
+          loadExistingTrips();
         } catch (error) {
-          console.error("Error checking first login:", error);
+          console.error("Error initializing user:", error);
           setIsFirstLogin(false);
         }
-
-        // Load trips regardless of login state
-        loadExistingTrips();
       };
 
-      checkFirstLogin();
-    }, []) // Remove isFirstLogin from dependencies to prevent infinite loop
+      initializeUser();
+    }, [])
   );
 
   // Add this function to check if user has generated trips before
@@ -471,9 +484,8 @@ const Home: React.FC = () => {
     }
   };
 
-  // Modify loadExistingTrips to respect loading state
+  // Update loadExistingTrips with better error handling and retry logic
   const loadExistingTrips = async () => {
-    // Don't reload if we're already loading or generating new trips
     if (
       recommendedTripsState.status === "loading" ||
       loadingProgress.completed > 0
@@ -482,50 +494,41 @@ const Home: React.FC = () => {
 
     try {
       const user = getAuth().currentUser;
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      if (!user) throw new Error("User not authenticated");
 
-      // Check if user has ever generated trips
-      await checkHasGeneratedTrips();
+      // Try to load user's own trips first
+      const loadUserTrips = async () => {
+        const userTripsCollection = collection(
+          FIREBASE_DB,
+          `users/${user.uid}/suggestedTrips`
+        );
+        const userTripsSnapshot = await getDocs(userTripsCollection);
 
-      // If we already have trips in the state and no error, don't reload
-      if (
-        recommendedTripsState.trips.length > 0 &&
-        !recommendedTripsState.error
-      ) {
-        return;
-      }
-
-      const userTripsCollection = collection(
-        FIREBASE_DB,
-        `users/${user.uid}/suggestedTrips`
-      );
-
-      // Check if user has suggested trips
-      const userTripsSnapshot = await getDocs(userTripsCollection);
-
-      // If user has their own trips, use them
-      if (!userTripsSnapshot.empty) {
-        const trips: RecommendedTrip[] = [];
-        userTripsSnapshot.forEach((doc) => {
-          const tripData = doc.data();
-          trips.push({
-            id: tripData.id,
-            name: tripData.name,
-            description: tripData.description,
-            imageUrl: tripData.imageUrl,
-            photoRef:
-              tripData.photoRef === null ? undefined : tripData.photoRef,
-            tripPlan: tripData.tripPlan,
+        if (!userTripsSnapshot.empty) {
+          const trips: RecommendedTrip[] = [];
+          userTripsSnapshot.forEach((doc) => {
+            const tripData = doc.data();
+            trips.push({
+              id: tripData.id,
+              name: tripData.name,
+              description: tripData.description,
+              imageUrl: tripData.imageUrl,
+              photoRef:
+                tripData.photoRef === null ? undefined : tripData.photoRef,
+              tripPlan: tripData.tripPlan,
+            });
           });
-        });
+          return trips.sort((a, b) => a.id.localeCompare(b.id));
+        }
+        return null;
+      };
 
-        // Sort trips by ID to maintain consistent order
-        trips.sort((a, b) => a.id.localeCompare(b.id));
+      // Try to load user trips with retry logic
+      const userTrips = await retryWithBackoff(loadUserTrips, 3, 1000);
 
+      if (userTrips) {
         setRecommendedTripsState({
-          trips: trips,
+          trips: userTrips,
           status: "success",
           error: null,
           lastFetched: new Date(),
@@ -533,32 +536,37 @@ const Home: React.FC = () => {
         return;
       }
 
-      // Check if user has refreshed trips before
-      const hasRefreshed = await AsyncStorage.getItem("hasRefreshedTrips");
+      // If no user trips and user hasn't generated trips before, try loading default trips
+      if (!userPreferences?.hasGeneratedTrips) {
+        const loadDefaultTrips = async () => {
+          const defaultTripsCollection = collection(
+            FIREBASE_DB,
+            "defaultTrips"
+          );
+          const defaultTripsSnapshot = await getDocs(defaultTripsCollection);
 
-      // Only show default trips if user hasn't refreshed AND we're not generating new trips
-      if (!hasRefreshed && loadingProgress.completed === 0) {
-        // Fetch default trips from Firestore
-        const defaultTripsCollection = collection(FIREBASE_DB, "defaultTrips");
-        const defaultTripsSnapshot = await getDocs(defaultTripsCollection);
+          if (!defaultTripsSnapshot.empty) {
+            const defaultTrips: RecommendedTrip[] = [];
+            defaultTripsSnapshot.forEach((doc) => {
+              const data = doc.data();
+              defaultTrips.push({
+                id: data.id,
+                name: data.name,
+                description: data.description,
+                imageUrl: data.imageUrl,
+                photoRef: data.photoRef,
+                tripPlan: data.tripPlan,
+              } as RecommendedTrip);
+            });
+            return defaultTrips.sort((a, b) => a.id.localeCompare(b.id));
+          }
+          return null;
+        };
 
-        if (!defaultTripsSnapshot.empty) {
-          const defaultTrips: RecommendedTrip[] = [];
-          defaultTripsSnapshot.forEach((doc) => {
-            const data = doc.data();
-            defaultTrips.push({
-              id: data.id,
-              name: data.name,
-              description: data.description,
-              imageUrl: data.imageUrl,
-              photoRef: data.photoRef,
-              tripPlan: data.tripPlan,
-            } as RecommendedTrip);
-          });
+        // Try to load default trips with retry logic
+        const defaultTrips = await retryWithBackoff(loadDefaultTrips, 3, 1000);
 
-          // Sort default trips by ID to maintain consistent order
-          defaultTrips.sort((a, b) => a.id.localeCompare(b.id));
-
+        if (defaultTrips) {
           setRecommendedTripsState({
             trips: defaultTrips,
             status: "success",
@@ -569,31 +577,32 @@ const Home: React.FC = () => {
         }
       }
 
-      // If we reach here and we're not generating new trips, show empty state
-      if (loadingProgress.completed === 0) {
-        setRecommendedTripsState((prev) => ({
-          ...prev,
-          trips: [], // Ensure trips array is empty
-          status: "idle",
-          error: null,
-        }));
-      }
+      // If we reach here, show empty state
+      setRecommendedTripsState((prev) => ({
+        ...prev,
+        trips: [],
+        status: "idle",
+        error: null,
+      }));
     } catch (error) {
       console.error("Error loading trips:", error);
       setRecommendedTripsState((prev) => ({
         ...prev,
-        trips: [], // Ensure trips array is empty
+        trips: [],
         status: "error",
-        error: "Failed to load trips",
+        error: "Failed to load trips. Please try again.",
       }));
     }
   };
 
-  // Modify handleRefresh
+  // Update handleRefresh to use the new preferences system
   const handleRefresh = async () => {
     if (recommendedTripsState.status === "loading") return;
 
     try {
+      const user = getAuth().currentUser;
+      if (!user) throw new Error("User not authenticated");
+
       setRecommendedTripsState((prev) => ({
         ...prev,
         status: "loading",
@@ -606,25 +615,17 @@ const Home: React.FC = () => {
         tripStatuses: ["waiting", "waiting", "waiting"],
       });
 
-      const user = getAuth().currentUser;
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
-
-      const userTripsCollection = collection(
-        FIREBASE_DB,
-        `users/${user.uid}/suggestedTrips`
-      );
-
-      // Generate trips using the improved function
       const generatedTrips = await generateTripsWithTimeout(3);
       const validTrips = generatedTrips.filter(
         (trip): trip is RecommendedTrip => trip !== null
       );
 
-      // Even if we have just one valid trip, we should save it
       if (validTrips.length > 0) {
         const batch = writeBatch(FIREBASE_DB);
+        const userTripsCollection = collection(
+          FIREBASE_DB,
+          `users/${user.uid}/suggestedTrips`
+        );
 
         // Delete existing user trips
         const existingUserTripsSnapshot = await getDocs(userTripsCollection);
@@ -632,7 +633,7 @@ const Home: React.FC = () => {
           batch.delete(doc(userTripsCollection, document.id));
         });
 
-        // Add new trips to user's collection
+        // Add new trips
         validTrips.forEach((trip) => {
           const userTripRef = doc(userTripsCollection);
           batch.set(userTripRef, trip);
@@ -640,9 +641,21 @@ const Home: React.FC = () => {
 
         await batch.commit();
 
-        // Mark that the user has generated trips
-        await AsyncStorage.setItem("hasGeneratedTrips", "true");
-        setHasGeneratedTrips(true);
+        // Update user preferences
+        await updateUserPreferences(user.uid, {
+          hasGeneratedTrips: true,
+          lastTripsGeneration: new Date().toISOString(),
+        });
+
+        setUserPreferences((prev) =>
+          prev
+            ? {
+                ...prev,
+                hasGeneratedTrips: true,
+                lastTripsGeneration: new Date().toISOString(),
+              }
+            : null
+        );
 
         setRecommendedTripsState({
           trips: validTrips,
@@ -651,10 +664,6 @@ const Home: React.FC = () => {
           lastFetched: new Date(),
         });
 
-        await AsyncStorage.setItem("hasRefreshedTrips", "true");
-        await AsyncStorage.setItem("lastFetchTime", new Date().toISOString());
-
-        // If we got fewer than 3 trips but at least one, show a warning
         if (validTrips.length < 3) {
           console.warn(`Generated only ${validTrips.length} valid trips`);
         }
@@ -670,7 +679,7 @@ const Home: React.FC = () => {
         error:
           error instanceof Error
             ? error.message
-            : "Failed to generate trips. Please try again in a few moments.",
+            : "Failed to generate trips. Please try again.",
       }));
     }
   };
@@ -754,29 +763,32 @@ const Home: React.FC = () => {
     </View>
   );
 
-  // Hidden function to reset storage for testing
+  // Update resetStorageForTesting to handle the new preferences system
   const resetStorageForTesting = async () => {
     setTapCount((prev) => prev + 1);
 
     if (tapCount >= 7) {
-      // Reset tap count
       setTapCount(0);
-
       try {
-        // Clear AsyncStorage
-        await AsyncStorage.clear();
-        console.log("🧹 AsyncStorage cleared for testing!");
-        // Force reload
+        const user = getAuth().currentUser;
+        if (!user) throw new Error("User not authenticated");
+
+        await clearUserPreferences();
+        console.log("🧹 User preferences cleared for testing!");
+
+        const preferences = await getUserPreferences(user.uid);
+        setUserPreferences(preferences);
+        setIsFirstLogin(!preferences.hasCompletedOnboarding);
+
         loadExistingTrips();
 
-        // Show confirmation
         Alert.alert(
-          "Storage Reset",
-          "AsyncStorage has been cleared for testing. The app will treat this as a new login.",
+          "Preferences Reset",
+          "User preferences have been cleared for testing. The app will treat this as a new login.",
           [{ text: "OK" }]
         );
       } catch (error) {
-        console.error("Error resetting storage:", error);
+        console.error("Error resetting preferences:", error);
       }
     }
   };

@@ -93,6 +93,7 @@ const AllTripsView: React.FC = () => {
               tripData?.photoRef || tripData?.locationInfo?.photoRef
                 ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${
                     tripData?.photoRef || tripData?.locationInfo?.photoRef
+                    //@ts-ignore
                   }&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`
                 : "https://via.placeholder.com/400",
           }}

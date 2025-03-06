@@ -1,6 +1,12 @@
 import { GooglePlaceDetail } from "react-native-google-places-autocomplete";
 import { Theme } from "../context/themeContext";
 
+export interface UserPreferences {
+  hasCompletedOnboarding: boolean;
+  lastTripsGeneration: string | null;
+  hasGeneratedTrips: boolean;
+}
+
 export interface ExtendedGooglePlaceDetail extends GooglePlaceDetail {
   photos?: Array<{
     photo_reference: string;

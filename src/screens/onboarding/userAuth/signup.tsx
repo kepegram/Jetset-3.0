@@ -1,31 +1,32 @@
 import React, { useState } from "react";
 import {
-  StyleSheet,
-  Text,
   View,
-  TextInput,
-  Pressable,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Image,
+  ActivityIndicator,
   SafeAreaView,
   Dimensions,
+  Image,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../../../App";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
-import { doc, setDoc } from "firebase/firestore";
 import {
   createUserWithEmailAndPassword,
-  deleteUser,
   OAuthProvider,
   signInWithCredential,
 } from "firebase/auth";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
-import { RootStackParamList } from "../../../../App";
 import { AuthRequestPromptOptions, AuthSessionResult } from "expo-auth-session";
 import * as AppleAuthentication from "expo-apple-authentication";
+import { TextInput } from "react-native-gesture-handler";
+import { Ionicons, FontAwesome } from "@expo/vector-icons";
+import { doc, setDoc } from "firebase/firestore";
+import { lightTheme as theme } from "../../../theme/theme";
 import { MainButton } from "../../../components/ui/button";
 
 type SignUpScreenNavigationProp = NativeStackNavigationProp<
@@ -39,152 +40,104 @@ interface SignUpProps {
   ) => Promise<AuthSessionResult>;
 }
 
-interface InputFieldProps {
-  label: string;
-  placeholder?: string;
-  value?: string;
-  onChangeText?: (text: string) => void;
-  keyboardType?: "default" | "email-address";
-  autoCapitalize?: "none" | "sentences";
-  editable?: boolean;
-  testID?: string;
-  maxLength?: number;
-}
-
-interface PasswordFieldProps {
-  label: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  visible: boolean;
-  toggleVisible: () => void;
-  editable: boolean;
-  testID?: string;
-}
-
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-const IS_SMALL_DEVICE = SCREEN_HEIGHT < 700;
-
-const InputField: React.FC<InputFieldProps> = ({ label, ...props }) => (
-  <View style={styles.inputWrapper}>
-    <Text style={styles.inputLabel}>{label}</Text>
-    <TextInput style={styles.input} placeholderTextColor={"grey"} {...props} />
-  </View>
-);
-
-const PasswordField: React.FC<PasswordFieldProps> = ({
-  label,
-  value,
-  onChangeText,
-  visible,
-  toggleVisible,
-  editable,
-  testID,
-}) => (
-  <View style={styles.inputWrapper}>
-    <Text style={styles.inputLabel}>{label}</Text>
-    <View style={styles.passwordContainer}>
-      <TextInput
-        style={styles.input}
-        placeholder="••••••••••"
-        placeholderTextColor={"grey"}
-        value={value}
-        onChangeText={onChangeText}
-        secureTextEntry={!visible}
-        autoCapitalize="none"
-        editable={editable}
-        testID={testID}
-      />
-      <Pressable
-        style={styles.eyeIcon}
-        onPress={toggleVisible}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <Ionicons name={visible ? "eye-off" : "eye"} size={24} color={"grey"} />
-      </Pressable>
-    </View>
-  </View>
-);
+const { width, height } = Dimensions.get("window");
 
 const SignUp: React.FC<SignUpProps> = ({ promptAsync }) => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordVisible, setPasswordVisible] = useState(false);
-  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState("");
 
   const auth = FIREBASE_AUTH;
   const db = FIREBASE_DB;
 
   const navigation = useNavigation<SignUpScreenNavigationProp>();
 
-  const USERNAME_MIN_LENGTH = 3;
-  const USERNAME_MAX_LENGTH = 20;
-
   const validateUsername = (username: string) => {
-    if (username.length < USERNAME_MIN_LENGTH) {
-      return `Username must be at least ${USERNAME_MIN_LENGTH} characters`;
+    if (username.length < 3) {
+      return "Username must be at least 3 characters";
     }
-    if (username.length > USERNAME_MAX_LENGTH) {
-      return `Username cannot exceed ${USERNAME_MAX_LENGTH} characters`;
+    if (username.length > 20) {
+      return "Username must be less than 20 characters";
     }
-    // Only allow letters, numbers, and underscores
     if (!/^[a-zA-Z0-9_]+$/.test(username)) {
       return "Username can only contain letters, numbers, and underscores";
     }
     return null;
   };
 
-  const isFormValid =
-    username &&
-    email &&
-    password &&
-    confirmPassword &&
-    !validateUsername(username);
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Please enter a valid email address";
+    }
+    return null;
+  };
+
+  const validatePassword = (password: string) => {
+    if (password.length < 8) {
+      return "Password must be at least 8 characters";
+    }
+    return null;
+  };
 
   const handleSignUp = async () => {
-    setErrorMessage(null);
+    setLoading(true);
+    setError("");
 
+    // Validate inputs
     const usernameError = validateUsername(username);
     if (usernameError) {
-      setErrorMessage(usernameError);
+      setError(usernameError);
+      setLoading(false);
+      return;
+    }
+
+    const emailError = validateEmail(email);
+    if (emailError) {
+      setError(emailError);
+      setLoading(false);
+      return;
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
+      setLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
-      setErrorMessage("Passwords do not match");
+      setError("Passwords do not match");
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
     try {
-      const response = await createUserWithEmailAndPassword(
+      const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
         password
       );
-      const user = response.user;
 
-      const userRef = doc(db, "users", user.uid);
+      // Create user document in Firestore
+      const userRef = doc(db, "users", userCredential.user.uid);
       await setDoc(userRef, {
-        username: username,
-        email: email,
+        username,
+        email,
         createdAt: new Date().toISOString(),
       });
 
-      await AsyncStorage.setItem("userName", username);
-    } catch (err: any) {
-      console.error("Error signing up:", err);
-      const user = auth.currentUser;
-      if (user) {
-        await deleteUser(user);
-      }
-      if (err.code === "auth/weak-password") {
-        setErrorMessage("Please assure password is at least 6 characters.");
+      // Navigation will be handled by the auth state listener in App.tsx
+    } catch (error: any) {
+      if (error.code === "auth/email-already-in-use") {
+        setError("Email is already in use");
       } else {
-        setErrorMessage("Sign up failed. Please try again.");
+        setError(error.message.replace("Firebase: ", ""));
       }
     } finally {
       setLoading(false);
@@ -208,7 +161,7 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync }) => {
         const { identityToken, fullName, email } = credential;
 
         if (!identityToken) {
-          setErrorMessage("Authentication failed. Please try again.");
+          setError("Authentication failed. Please try again.");
           return;
         }
 
@@ -234,9 +187,9 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync }) => {
       }
     } catch (e: any) {
       if (e.code === "ERR_REQUEST_CANCELED") {
-        setErrorMessage("Cancelled Apple sign-in flow");
+        setError("Cancelled Apple sign-in flow");
       } else {
-        setErrorMessage("Error authenticating with Apple, please try again.");
+        setError("Error authenticating with Apple, please try again.");
       }
       console.error("Apple Sign-In Error:", e);
     }
@@ -247,294 +200,321 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync }) => {
   };
 
   return (
-    <SafeAreaView testID="signup-screen" style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        testID="signup-content"
-        style={[styles.contentContainer, { backgroundColor: "#F8F9FA" }]}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingView}
       >
-        <View testID="signup-header" style={styles.headerContainer}>
-          <Image
-            source={require("../../../assets/icons/adaptive-icon.png")}
-            style={styles.logo}
-          />
-          <Text testID="signup-subtitle" style={styles.subtitle}>
-            Your journey begins here
-          </Text>
-        </View>
-
-        <View testID="signup-form" style={styles.signUpContainer}>
-          <InputField
-            testID="signup-username-input"
-            label={`Username (${USERNAME_MIN_LENGTH}-${USERNAME_MAX_LENGTH} characters)`}
-            placeholder="johndoe123"
-            value={username}
-            onChangeText={(text) =>
-              setUsername(text.slice(0, USERNAME_MAX_LENGTH))
-            }
-            editable={!loading}
-            autoCapitalize="none"
-            maxLength={USERNAME_MAX_LENGTH}
-          />
-
-          <InputField
-            testID="signup-email-input"
-            label="Email"
-            placeholder="example@mail.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            editable={!loading}
-          />
-
-          <PasswordField
-            testID="signup-password-input"
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            visible={passwordVisible}
-            toggleVisible={() => setPasswordVisible(!passwordVisible)}
-            editable={!loading}
-          />
-
-          <PasswordField
-            testID="signup-confirm-password-input"
-            label="Confirm Password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            visible={confirmPasswordVisible}
-            toggleVisible={() =>
-              setConfirmPasswordVisible(!confirmPasswordVisible)
-            }
-            editable={!loading}
-          />
-
-          <MainButton
-            testID="signup-submit-button"
-            buttonText="Create Account"
-            onPress={handleSignUp}
-            disabled={loading || !isFormValid}
-            style={[styles.button, !isFormValid && { opacity: 0.5 }]}
-          />
-
-          {errorMessage && (
-            <Text testID="signup-error-message" style={styles.errorText}>
-              {errorMessage}
-            </Text>
-          )}
-        </View>
-
-        <View style={styles.dividerContainer}>
-          <View style={styles.divider} />
-          <Text style={styles.dividerText}>or continue with</Text>
-          <View style={styles.divider} />
-        </View>
-
-        <View style={styles.socialButtonsContainer}>
-          <MainButton
-            testID="google-signup-button"
-            onPress={handleGoogleSignUp}
-            backgroundColor="white"
-            textColor="black"
-            style={[styles.socialButton, { width: "100%" }]}
-            disabled={loading}
-          >
+        <View style={styles.contentContainer}>
+          <View style={styles.logoContainer}>
             <Image
-              source={require("../../../assets/app-imgs/google.png")}
-              style={styles.socialIcon}
+              source={require("../../../assets/icons/adaptive-icon.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
             />
-            <Text style={styles.socialButtonText}>Sign up with Google</Text>
-          </MainButton>
+          </View>
 
-          {Platform.OS === "ios" && (
-            <AppleAuthentication.AppleAuthenticationButton
-              testID="apple-signup-button"
-              buttonType={
-                AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP
-              }
-              buttonStyle={
-                AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE
-              }
-              cornerRadius={12}
-              style={styles.socialButton}
-              onPress={handleAppleSignIn}
-            />
-          )}
+          <View style={styles.formContainer}>
+            <Text style={styles.welcomeText}>Create Account</Text>
+
+            <View style={styles.socialButtonsContainer}>
+              <TouchableOpacity
+                style={styles.socialButton}
+                onPress={handleGoogleSignUp}
+                activeOpacity={0.8}
+              >
+                <FontAwesome name="google" size={18} color="#EA4335" />
+                <Text style={styles.socialButtonText}>
+                  Continue with Google
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.socialButton}
+                onPress={handleAppleSignIn}
+                activeOpacity={0.8}
+              >
+                <FontAwesome name="apple" size={20} color="#000" />
+                <Text style={styles.socialButtonText}>Continue with Apple</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.dividerContainer}>
+              <View style={styles.divider} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.divider} />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color={theme.textSecondary}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Username"
+                  placeholderTextColor={theme.textSecondary}
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color={theme.textSecondary}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor={theme.textSecondary}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={theme.textSecondary}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor={theme.textSecondary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeIcon}
+                >
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color={theme.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={theme.textSecondary}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm Password"
+                  placeholderTextColor={theme.textSecondary}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={styles.eyeIcon}
+                >
+                  <Ionicons
+                    name={
+                      showConfirmPassword ? "eye-off-outline" : "eye-outline"
+                    }
+                    size={20}
+                    color={theme.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            </View>
+
+            <MainButton
+              style={styles.signupButton}
+              onPress={handleSignUp}
+              disabled={loading}
+              width="100%"
+            >
+              {loading ? (
+                <ActivityIndicator color={theme.buttonText} />
+              ) : (
+                <Text style={styles.signupButtonText}>Create Account</Text>
+              )}
+            </MainButton>
+
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>Already have an account? </Text>
+              <TouchableOpacity onPress={handleLoginNavigation}>
+                <Text style={styles.loginLink}>Log In</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.termsText}>
+              By signing up, you agree to our{" "}
+              <Text style={styles.termsLink}>Terms of Service</Text> and{" "}
+              <Text style={styles.termsLink}>Privacy Policy</Text>
+            </Text>
+          </View>
         </View>
-
-        <Pressable
-          testID="login-link-button"
-          onPress={handleLoginNavigation}
-          disabled={loading}
-          style={[styles.loginLink, { opacity: loading ? 0.7 : 1 }]}
-        >
-          <Text testID="login-link-text" style={styles.loginText}>
-            Already have an account?{" "}
-            <Text style={{ fontWeight: "bold", color: "#3BACE3" }}>Log in</Text>
-          </Text>
-        </Pressable>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
-export default SignUp;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "#fff",
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   contentContainer: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === "ios" ? (IS_SMALL_DEVICE ? 8 : 16) : 8,
-  },
-  headerContainer: {
-    alignItems: "center",
-    marginBottom: IS_SMALL_DEVICE ? 12 : 16,
-  },
-  logo: {
-    width: IS_SMALL_DEVICE ? 50 : 60,
-    height: IS_SMALL_DEVICE ? 50 : 60,
-    marginBottom: IS_SMALL_DEVICE ? 4 : 8,
-  },
-  subtitle: {
-    fontSize: IS_SMALL_DEVICE ? 18 : 20,
-    fontWeight: "600",
-    color: "#1A1A1A",
-    textAlign: "center",
-    marginBottom: IS_SMALL_DEVICE ? 4 : 8,
-  },
-  signUpContainer: {
-    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
-    width: "100%",
-    maxWidth: 400,
-    alignSelf: "center",
-  },
-  inputWrapper: {
-    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
-  },
-  inputLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    marginBottom: 2,
-    color: "#4A4A4A",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  input: {
-    width: "100%",
-    height: IS_SMALL_DEVICE ? 44 : 48,
-    borderRadius: 25,
     paddingHorizontal: 16,
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-    fontSize: IS_SMALL_DEVICE ? 13 : 14,
-    color: "#1A1A1A",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  passwordContainer: {
-    position: "relative",
-    width: "100%",
-  },
-  eyeIcon: {
-    position: "absolute",
-    right: 16,
-    height: "100%",
     justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 8,
   },
-  button: {
+  logoContainer: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  logoImage: {
+    width: 70,
+    height: 70,
+  },
+  formContainer: {
     width: "100%",
-    marginTop: IS_SMALL_DEVICE ? 8 : 12,
-    borderRadius: 25,
-    backgroundColor: "#3BACE3",
-    shadowColor: "#3BACE3",
+    borderRadius: 16,
+    padding: 20,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  errorText: {
+  welcomeText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: theme.textPrimary,
+    marginBottom: 16,
     textAlign: "center",
-    marginTop: IS_SMALL_DEVICE ? 4 : 8,
-    fontSize: 11,
-    fontWeight: "500",
-    color: "#FF4D4D",
+  },
+  socialButtonsContainer: {
+    marginBottom: 12,
+  },
+  socialButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+  },
+  socialButtonText: {
+    color: theme.textPrimary,
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 10,
   },
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
+    marginVertical: 16,
   },
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E0E0E0",
+    backgroundColor: "#e9ecef",
   },
   dividerText: {
-    marginHorizontal: 12,
-    fontSize: 11,
-    fontWeight: "500",
-    color: "#4A4A4A",
+    paddingHorizontal: 15,
+    color: theme.textSecondary,
+    fontSize: 14,
   },
-  socialButtonsContainer: {
-    flexDirection: "column",
-    gap: IS_SMALL_DEVICE ? 6 : 8,
-    width: "100%",
-    maxWidth: 400,
-    alignSelf: "center",
-    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
+  inputContainer: {
+    marginBottom: 16,
   },
-  socialButton: {
-    height: IS_SMALL_DEVICE ? 44 : 48,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-    backgroundColor: "white",
+  inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    marginBottom: 12,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+    height: 48,
   },
-  socialIcon: {
-    width: 18,
-    height: 18,
+  inputIcon: {
+    marginRight: 8,
   },
-  socialButtonText: {
-    fontSize: IS_SMALL_DEVICE ? 13 : 14,
-    fontWeight: "600",
-    color: "#1A1A1A",
+  input: {
+    flex: 1,
+    color: theme.textPrimary,
+    fontSize: 16,
   },
-  loginLink: {
-    alignItems: "center",
-    marginTop: IS_SMALL_DEVICE ? 4 : 8,
+  eyeIcon: {
+    padding: 8,
   },
-  loginText: {
-    fontSize: IS_SMALL_DEVICE ? 13 : 14,
-    color: "#4A4A4A",
+  errorText: {
+    color: theme.error,
+    marginTop: 4,
+    marginBottom: 8,
+    fontSize: 14,
     textAlign: "center",
   },
+  signupButton: {
+    marginBottom: 12,
+  },
+  signupButtonText: {
+    color: theme.buttonText,
+    fontSize: 17,
+    fontWeight: "600",
+  },
+  loginContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  loginText: {
+    fontSize: 15,
+    color: theme.textSecondary,
+  },
+  loginLink: {
+    color: theme.alternate,
+    fontSize: 15,
+    fontWeight: "bold",
+  },
+  termsText: {
+    fontSize: 12,
+    textAlign: "center",
+    color: theme.textSecondary,
+  },
+  termsLink: {
+    color: theme.alternate,
+    fontWeight: "bold",
+  },
 });
+
+export default SignUp;

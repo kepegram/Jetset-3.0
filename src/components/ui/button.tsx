@@ -8,6 +8,7 @@ import {
   DimensionValue,
   StyleProp,
   View,
+  PressableProps,
 } from "react-native";
 import { useTheme } from "../../context/themeContext";
 
@@ -22,7 +23,8 @@ type ButtonProps = {
   disabled?: boolean;
   textColor?: string;
   rightIcon?: React.ReactNode;
-};
+  activeOpacity?: number;
+} & Omit<PressableProps, "onPress">;
 
 const CustomButton: React.FC<ButtonProps> = ({
   buttonText,
@@ -81,23 +83,26 @@ const MainButton: React.FC<ButtonProps> = ({
   disabled,
   textColor,
   rightIcon,
+  activeOpacity,
+  ...pressableProps
 }) => {
   const { currentTheme } = useTheme();
 
   return (
     <Pressable
       testID={testID}
-      style={[
+      style={({ pressed }) => [
         styles.mainButton,
         {
           backgroundColor: backgroundColor || currentTheme.alternate,
           width: (width as DimensionValue) || 120,
-          opacity: disabled ? 0.5 : 1,
+          opacity: disabled ? 0.5 : pressed ? activeOpacity || 0.8 : 1,
         },
         style,
       ]}
       onPress={onPress}
       disabled={disabled}
+      {...pressableProps}
     >
       {children ? (
         children

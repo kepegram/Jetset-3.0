@@ -1,20 +1,19 @@
 import React, { useState } from "react";
 import {
-  Image,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+  Image,
   ActivityIndicator,
+  SafeAreaView,
   Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../../App";
-import { Ionicons } from "@expo/vector-icons";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
 import * as AppleAuthentication from "expo-apple-authentication";
 import {
@@ -23,6 +22,9 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { AuthRequestPromptOptions, AuthSessionResult } from "expo-auth-session";
+import { TextInput } from "react-native-gesture-handler";
+import { Ionicons, FontAwesome } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../../theme/theme";
 import { MainButton } from "../../../components/ui/button";
 import { setDoc } from "firebase/firestore";
 import { doc } from "firebase/firestore";
@@ -39,31 +41,36 @@ interface LoginProps {
   ) => Promise<AuthSessionResult>;
 }
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-const IS_SMALL_DEVICE = SCREEN_HEIGHT < 700;
+const { width, height } = Dimensions.get("window");
 
 const Login: React.FC<LoginProps> = ({ promptAsync }) => {
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [passwordVisible, setPasswordVisible] = useState<boolean>(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
 
   const auth = FIREBASE_AUTH;
   const db = FIREBASE_DB;
 
   const navigation = useNavigation<LoginScreenNavigationProp>();
 
-  const isFormValid = email !== "" && password !== "";
-
   const handleLogin = async () => {
-    setErrorMessage(null);
     setLoading(true);
+    setError("");
+
     try {
+      if (email.trim() === "" || password === "") {
+        throw new Error("Please fill in all fields");
+      }
+
       await signInWithEmailAndPassword(auth, email, password);
-    } catch (err) {
-      setErrorMessage(
-        "Login failed. Incorrect username or password. Please try again."
+      // Navigation will be handled by the auth state listener in App.tsx
+    } catch (error: any) {
+      setError(
+        error.message.includes("auth/invalid-credential")
+          ? "Invalid email or password"
+          : error.message.replace("Firebase: ", "")
       );
     } finally {
       setLoading(false);
@@ -87,7 +94,7 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
         const { identityToken, fullName, email } = credential;
 
         if (!identityToken) {
-          setErrorMessage("Authentication failed. Please try again.");
+          setError("Authentication failed. Please try again.");
           return;
         }
 
@@ -113,9 +120,9 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
       }
     } catch (e: any) {
       if (e.code === "ERR_REQUEST_CANCELED") {
-        setErrorMessage("Cancelled Apple sign-in flow");
+        setError("Cancelled Apple sign-in flow");
       } else {
-        setErrorMessage("Error authenticating with Apple, please try again.");
+        setError("Error authenticating with Apple, please try again.");
       }
       console.error("Apple Sign-In Error:", e);
     }
@@ -130,351 +137,270 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      testID="login-screen"
-      style={[styles.container, { backgroundColor: "#F8F9FA" }]}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={styles.scrollContainer}>
-        <View testID="login-header" style={styles.headerContainer}>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingView}
+      >
+        <View style={styles.logoContainer}>
           <Image
             source={require("../../../assets/icons/adaptive-icon.png")}
-            style={styles.logo}
+            style={styles.logoImage}
+            resizeMode="contain"
           />
-          <Text
-            testID="login-subtitle"
-            style={[styles.subTitle, { color: "#1A1A1A" }]}
-          >
-            Welcome back, adventurer
-          </Text>
         </View>
 
-        <View testID="login-form" style={styles.loginContainer}>
-          <View style={styles.inputWrapper}>
-            <Text style={[styles.inputHeader, { color: "#4A4A4A" }]}>
-              Email
-            </Text>
-            <TextInput
-              testID="login-email-input"
-              style={[
-                styles.input,
-                {
-                  backgroundColor: "white",
-                  color: "#1A1A1A",
-                  borderColor: "#E0E0E0",
-                },
-              ]}
-              placeholder="user@example.com"
-              placeholderTextColor="gray"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!loading}
-              autoComplete="email"
-            />
+        <View style={styles.formContainer}>
+          <Text style={styles.welcomeText}>Welcome Back</Text>
+
+          {/* Social Auth Buttons */}
+          <View style={styles.socialButtonsContainer}>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={handleGoogleLogin}
+              activeOpacity={0.8}
+            >
+              <FontAwesome name="google" size={20} color="#EA4335" />
+              <Text style={styles.socialButtonText}>Continue with Google</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={handleAppleSignIn}
+              activeOpacity={0.8}
+            >
+              <FontAwesome name="apple" size={22} color="#000" />
+              <Text style={styles.socialButtonText}>Continue with Apple</Text>
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.inputWrapper}>
-            <Text style={[styles.inputHeader, { color: "#4A4A4A" }]}>
-              Password
-            </Text>
-            <View style={styles.passwordContainer}>
+          <View style={styles.dividerContainer}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.divider} />
+          </View>
+
+          {/* Email & Password Fields */}
+          <View style={styles.inputContainer}>
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="mail-outline"
+                size={20}
+                color={theme.textSecondary}
+                style={styles.inputIcon}
+              />
               <TextInput
-                testID="login-password-input"
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: "white",
-                    color: "#1A1A1A",
-                    borderColor: "#E0E0E0",
-                  },
-                ]}
-                placeholder="••••••••••"
-                placeholderTextColor="gray"
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor={theme.textSecondary}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+              />
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={20}
+                color={theme.textSecondary}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor={theme.textSecondary}
                 value={password}
                 onChangeText={setPassword}
-                secureTextEntry={!passwordVisible}
+                secureTextEntry={!showPassword}
                 autoCapitalize="none"
-                editable={!loading}
-                autoComplete="password"
               />
-              <Pressable
-                onPress={() => setPasswordVisible(!passwordVisible)}
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeIcon}
-                disabled={loading}
               >
                 <Ionicons
-                  name={passwordVisible ? "eye-off" : "eye"}
-                  size={24}
-                  color="gray"
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={20}
+                  color={theme.textSecondary}
                 />
-              </Pressable>
+              </TouchableOpacity>
             </View>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            <TouchableOpacity
+              style={styles.forgotPasswordButton}
+              onPress={handleForgotPassword}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
           </View>
 
-          <Pressable
-            testID="forgot-password-button"
-            onPress={handleForgotPassword}
-            style={styles.forgotPasswordContainer}
-            disabled={loading}
-          >
-            <Text
-              testID="forgot-password-text"
-              style={[styles.forgotPasswordText, { color: "#3BACE3" }]}
-            >
-              Forgot Password?
-            </Text>
-          </Pressable>
-
-          {loading ? (
-            <ActivityIndicator
-              size="large"
-              color="black"
-              style={styles.button}
-            />
-          ) : (
-            <MainButton
-              testID="login-submit-button"
-              buttonText="Sign In"
-              onPress={handleLogin}
-              width="100%"
-              disabled={loading || !isFormValid}
-              style={[styles.button, !isFormValid && { opacity: 0.5 }]}
-            />
-          )}
-
-          {errorMessage && (
-            <Text
-              testID="login-error-message"
-              style={[styles.errorText, { color: "#FF4D4D" }]}
-            >
-              {errorMessage}
-            </Text>
-          )}
-        </View>
-
-        <View style={styles.dividerContainer}>
-          <View style={styles.dividerContainer}>
-            <View style={[styles.divider, { backgroundColor: "#E0E0E0" }]} />
-            <Text style={[styles.dividerText, { color: "#4A4A4A" }]}>
-              or continue with
-            </Text>
-            <View style={[styles.divider, { backgroundColor: "#E0E0E0" }]} />
-          </View>
-        </View>
-
-        <View style={styles.socialIconsContainer}>
+          {/* Login Button */}
           <MainButton
-            testID="google-signin-button"
-            onPress={handleGoogleLogin}
-            backgroundColor="white"
-            textColor="black"
-            style={[styles.socialButton, { width: "100%" }]}
+            style={styles.loginButton}
+            onPress={handleLogin}
             disabled={loading}
+            activeOpacity={0.8}
+            width="100%"
           >
-            <Image
-              source={require("../../../assets/app-imgs/google.png")}
-              style={styles.socialIcon}
-            />
-            <Text style={[styles.socialButtonText, { color: "black" }]}>
-              Continue with Google
-            </Text>
+            {loading ? (
+              <ActivityIndicator color={theme.buttonText} />
+            ) : (
+              <Text style={styles.loginButtonText}>Log In</Text>
+            )}
           </MainButton>
 
-          {Platform.OS === "ios" && (
-            <AppleAuthentication.AppleAuthenticationButton
-              testID="apple-signin-button"
-              buttonType={
-                AppleAuthentication.AppleAuthenticationButtonType.CONTINUE
-              }
-              buttonStyle={
-                AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE
-              }
-              cornerRadius={12}
-              style={styles.socialButton}
-              onPress={() => handleAppleSignIn()}
-            />
-          )}
+          {/* Sign Up Link */}
+          <View style={styles.signupContainer}>
+            <Text style={styles.signupText}>Don't have an account? </Text>
+            <TouchableOpacity onPress={handleSignUpNavigation}>
+              <Text style={styles.signupLink}>Sign Up</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <Pressable
-          testID="signup-link-button"
-          onPress={handleSignUpNavigation}
-          disabled={loading}
-          style={[styles.loginLink, { opacity: loading ? 0.7 : 1 }]}
-        >
-          <Text testID="signup-link-text" style={styles.loginText}>
-            New to Jetset?{" "}
-            <Text style={{ fontWeight: "bold", color: "#3BACE3" }}>
-              Sign up here
-            </Text>
-          </Text>
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
-
-export default Login;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "#fff",
   },
-  scrollContainer: {
+  keyboardAvoidingView: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === "ios" ? (IS_SMALL_DEVICE ? 32 : 48) : 24,
-  },
-  headerContainer: {
-    alignItems: "center",
-    marginBottom: IS_SMALL_DEVICE ? 16 : 24,
-  },
-  logo: {
-    width: IS_SMALL_DEVICE ? 60 : 70,
-    height: IS_SMALL_DEVICE ? 60 : 70,
-    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
-  },
-  subTitle: {
-    fontSize: IS_SMALL_DEVICE ? 18 : 20,
-    fontWeight: "600",
-    color: "#1A1A1A",
-    textAlign: "center",
-    marginBottom: IS_SMALL_DEVICE ? 4 : 8,
-  },
-  loginContainer: {
-    width: "100%",
-    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
-  },
-  inputWrapper: {
-    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
-  },
-  inputHeader: {
-    fontSize: 11,
-    fontWeight: "600",
-    marginBottom: 2,
-    color: "#4A4A4A",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  input: {
-    width: "100%",
-    height: IS_SMALL_DEVICE ? 44 : 48,
-    borderRadius: 25,
-    paddingHorizontal: 16,
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-    fontSize: IS_SMALL_DEVICE ? 13 : 14,
-    color: "#1A1A1A",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  passwordContainer: {
-    position: "relative",
-    width: "100%",
-  },
-  eyeIcon: {
-    position: "absolute",
-    right: 16,
-    height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 8,
+    padding: 20,
   },
-  forgotPasswordContainer: {
-    alignSelf: "flex-end",
-    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
+  logoContainer: {
+    alignItems: "center",
+    marginBottom: 10,
   },
-  forgotPasswordText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#3BACE3",
+  logoImage: {
+    width: 100,
+    height: 100,
+    marginTop: -100,
   },
-  button: {
-    width: "100%",
-    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
-    borderRadius: 25,
-    backgroundColor: "#3BACE3",
-    shadowColor: "#3BACE3",
+  formContainer: {
+    width: width * 0.9,
+    borderRadius: 20,
+    padding: 25,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  errorText: {
+  welcomeText: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: theme.textPrimary,
+    marginBottom: 25,
     textAlign: "center",
-    fontSize: 11,
-    color: "#FF4D4D",
-    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
+  },
+  socialButtonsContainer: {},
+  socialButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+  },
+  socialButtonText: {
+    color: theme.textPrimary,
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 10,
   },
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
+    marginVertical: 20,
   },
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E0E0E0",
+    backgroundColor: "#e9ecef",
   },
   dividerText: {
-    marginHorizontal: 12,
-    fontSize: 11,
-    fontWeight: "500",
-    color: "#4A4A4A",
+    paddingHorizontal: 15,
+    color: theme.textSecondary,
+    fontSize: 14,
   },
-  socialIconsContainer: {
-    flexDirection: "column",
-    gap: IS_SMALL_DEVICE ? 6 : 8,
-    width: "100%",
+  inputContainer: {
+    marginBottom: 20,
   },
-  socialButton: {
-    height: IS_SMALL_DEVICE ? 44 : 48,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-    backgroundColor: "white",
+  inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    marginBottom: 15,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
   },
-  socialIcon: {
-    width: 18,
-    height: 18,
+  inputIcon: {
+    marginRight: 10,
   },
-  socialButtonText: {
-    fontSize: IS_SMALL_DEVICE ? 13 : 14,
+  input: {
+    flex: 1,
+    height: 50,
+    color: theme.textPrimary,
+    fontSize: 16,
+  },
+  eyeIcon: {
+    padding: 10,
+  },
+  errorText: {
+    color: theme.error,
+    marginTop: 5,
+    marginBottom: 10,
+    fontSize: 14,
+  },
+  forgotPasswordButton: {
+    alignSelf: "flex-end",
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: theme.alternate,
+    fontWeight: "500",
+  },
+  loginButton: {
+    marginBottom: 20,
+  },
+  loginButtonText: {
+    color: theme.buttonText,
+    fontSize: 18,
     fontWeight: "600",
-    color: "#1A1A1A",
   },
-  loginLink: {
-    alignItems: "center",
-    marginTop: IS_SMALL_DEVICE ? 4 : 8,
-    marginBottom: IS_SMALL_DEVICE ? 8 : 12,
+  signupContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
   },
-  loginText: {
-    fontSize: IS_SMALL_DEVICE ? 13 : 14,
-    color: "#4A4A4A",
-    textAlign: "center",
+  signupText: {
+    fontSize: 15,
+    color: theme.textSecondary,
+  },
+  signupLink: {
+    color: theme.alternate,
+    fontSize: 15,
+    fontWeight: "bold",
   },
 });
+
+export default Login;
