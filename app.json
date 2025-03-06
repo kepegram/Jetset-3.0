@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "sdkVersion": "52.0.0",
+    "newArchEnabled": true,
     "splash": {
       "image": "./src/assets/splash/splash-icon-light.png",
       "resizeMode": "contain",
@@ -23,9 +24,7 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": [
-          "remote-notification"
-        ]
+        "UIBackgroundModes": ["remote-notification"]
       },
       "icon": "./src/assets/icons/Light.png",
       "alternateIcons": {
@@ -33,28 +32,6 @@
         "light": "./src/assets/icons/Light.png",
         "tinted": "./src/assets/icons/Tinted.png"
       }
-    },
-    "android": {
-      "newArchEnabled": false,
-      "package": "com.pegram.jetset",
-      "googleServicesFile": "./google-services.json",
-      "buildToolsVersion": "35.0.0",
-      "compileSdkVersion": 34,
-      "targetSdkVersion": 34,
-      "minSdkVersion": 24,
-      "adaptiveIcon": {
-        "foregroundImage": "./src/assets/icons/adaptive-icon.png",
-        "monochromeImage": "./src/assets/icons/adaptive-icon.png",
-        "backgroundColor": "#ffffff",
-        "dark": {
-          "foregroundImage": "./src/assets/icons/adaptive-icon-dark.png",
-          "monochromeImage": "./src/assets/icons/adaptive-icon-dark.png",
-          "backgroundColor": "#000000"
-        }
-      }
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-apple-authentication",

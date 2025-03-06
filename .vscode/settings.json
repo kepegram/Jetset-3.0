@@ -1,0 +1,10 @@
+{
+  "typescript.validate.enable": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.disableAutomaticTypeAcquisition": false,
+  "javascript.validate.enable": true,
+  "files.exclude": {
+    "**/node_modules/**/*.ts": true
+  },
+  "typescript.validate.exclude": ["**/node_modules/**"]
+}
