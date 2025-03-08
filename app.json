@@ -57,10 +57,13 @@
         "projectId": "cf7b3e9e-07c0-457e-b3b0-d4179b54b637"
       }
     },
-    "scheme": "jetset",
+    "scheme": ["jetset", "com.kpegra1.jetset"],
     "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/cf7b3e9e-07c0-457e-b3b0-d4179b54b637"
+    },
+    "android": {
+      "package": "com.kpegra1.jetset"
     }
   }
 }

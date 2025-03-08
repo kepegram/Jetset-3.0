@@ -794,66 +794,66 @@ const Home: React.FC = () => {
   };
 
   return (
-    <View testID="home-screen" style={{ flex: 1 }}>
+    <View
+      testID="home-screen"
+      style={[styles.container, { backgroundColor: currentTheme.background }]}
+    >
       <ScrollView
         testID="home-scroll-view"
-        style={[{ backgroundColor: currentTheme.background }]}
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
       >
-        <View testID="home-header" style={styles.header}>
-          <View testID="home-image-container" style={styles.imageContainer}>
-            <Image
-              testID="home-header-image"
-              source={require("../../../assets/app-imgs/travel.jpg")}
-              style={styles.image}
-            />
-            <LinearGradient
-              colors={["rgba(0,0,0,0.1)", "rgba(0,0,0,0.7)"]}
-              style={styles.overlay}
-            />
-          </View>
-          <View testID="home-header-content" style={styles.headerContent}>
-            <View style={styles.headerTopRow}>
-              <Text
-                testID="home-greeting"
-                style={[
-                  styles.greetingText,
-                  { fontSize: getGreeting().fontSize },
-                ]}
-                onPress={resetStorageForTesting}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                {getGreeting().text}
-              </Text>
-              <Pressable
-                onPress={() => navigation.navigate("Notifications")}
-                style={({ pressed }) => [
-                  styles.notificationButton,
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Ionicons
-                  name="notifications-outline"
-                  size={32}
-                  color="white"
-                />
-                {hasNotifications && <View style={styles.notificationDot} />}
-              </Pressable>
-            </View>
-            <Text testID="home-subgreeting" style={styles.subGreetingText}>
-              Let's plan your next adventure!
+        <View style={styles.header}>
+          <View style={styles.headerTopRow}>
+            <Text
+              testID="home-greeting"
+              style={[
+                styles.greetingText,
+                {
+                  fontSize: getGreeting().fontSize,
+                  color: currentTheme.textPrimary,
+                },
+              ]}
+              onPress={resetStorageForTesting}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {getGreeting().text}
             </Text>
+            <Pressable
+              onPress={() => navigation.navigate("Notifications")}
+              style={({ pressed }) => [
+                styles.notificationButton,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Ionicons
+                name="notifications-outline"
+                size={32}
+                color={currentTheme.textPrimary}
+              />
+              {hasNotifications && (
+                <View
+                  style={[
+                    styles.notificationDot,
+                    { backgroundColor: currentTheme.error || "#FF3B30" },
+                  ]}
+                />
+              )}
+            </Pressable>
           </View>
+          <Text
+            style={[
+              styles.subGreetingText,
+              { color: currentTheme.textSecondary },
+            ]}
+          >
+            Let's plan your next adventure!
+          </Text>
         </View>
 
-        <View
-          style={[
-            styles.recommendedTripsContainer,
-            { backgroundColor: currentTheme.background },
-          ]}
-        >
+        <View style={styles.contentContainer}>
           <View testID="home-search-container" style={styles.searchContainer}>
             <GooglePlacesAutocomplete
               ref={googlePlacesRef}
@@ -966,16 +966,15 @@ const Home: React.FC = () => {
               )}
             />
           </View>
-          <View style={styles.recommendedTripsHeader}>
+
+          <View style={styles.sectionHeader}>
             <Text
-              style={[
-                styles.recommendedTripsTitle,
-                { color: currentTheme.textPrimary },
-              ]}
+              style={[styles.sectionTitle, { color: currentTheme.textPrimary }]}
             >
               Popular Destinations
             </Text>
           </View>
+
           <FlatList
             testID="popular-destinations-list"
             horizontal
@@ -993,6 +992,7 @@ const Home: React.FC = () => {
                   styles.popularDestinationContainer,
                   {
                     transform: [{ scale: pressed ? 0.95 : 1 }],
+                    backgroundColor: currentTheme.shadowBackground,
                   },
                 ]}
               >
@@ -1015,12 +1015,10 @@ const Home: React.FC = () => {
             )}
             showsHorizontalScrollIndicator={false}
           />
-          <View style={styles.recommendedTripsHeader}>
+
+          <View style={styles.sectionHeader}>
             <Text
-              style={[
-                styles.recommendedTripsTitle,
-                { color: currentTheme.textPrimary },
-              ]}
+              style={[styles.sectionTitle, { color: currentTheme.textPrimary }]}
             >
               Recommended Trips
             </Text>
@@ -1044,6 +1042,7 @@ const Home: React.FC = () => {
               />
             </Pressable>
           </View>
+
           {recommendedTripsState.status === "loading" ? (
             <FlatList
               horizontal
@@ -1229,64 +1228,35 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    width: "100%",
-    height: 280,
-    zIndex: -1,
-  },
-  imageContainer: {
-    position: "absolute",
-    top: -30,
-    left: 0,
-    right: 0,
-  },
-  image: {
-    width: "100%",
-    height: 280,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  headerContent: {
-    position: "absolute",
-    top: 65,
-    left: 20,
-    right: 20,
-  },
-  headerTopRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    width: "100%",
-  },
-  greetingText: {
-    fontSize: 28,
-    color: "white",
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
-    fontWeight: "bold",
+  scrollView: {
     flex: 1,
-    textShadowColor: "rgba(0, 0, 0, 0.75)",
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 10,
-  },
-  subGreetingText: {
-    fontSize: 18,
-    color: "white",
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
-    marginTop: 8,
-    textShadowColor: "rgba(0, 0, 0, 0.75)",
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 10,
   },
   scrollViewContent: {
     paddingBottom: 20,
   },
-  recommendedTripsContainer: {
-    width: "100%",
+  header: {
     padding: 20,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    marginTop: -120,
+    paddingTop: Platform.OS === "ios" ? 60 : 20,
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+  },
+  greetingText: {
+    fontSize: 28,
+    fontWeight: "bold",
+    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
+    flex: 1,
+  },
+  subGreetingText: {
+    fontSize: 18,
+    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
+    marginTop: 8,
+  },
+  contentContainer: {
+    padding: 20,
   },
   searchContainer: {
     marginBottom: 10,
@@ -1297,20 +1267,32 @@ const styles = StyleSheet.create({
     top: 15,
     zIndex: 1,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 15,
+    marginTop: 20,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
+  },
   popularDestinationContainer: {
     marginRight: 15,
-    marginBottom: 20,
+    padding: 20,
     borderRadius: 15,
-    overflow: "hidden",
+    width: width * 0.35,
+    height: width * 0.35,
+    justifyContent: "center",
+    alignItems: "center",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-      },
-      android: {
-        elevation: 5,
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
       },
     }),
   },
@@ -1339,26 +1321,23 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: -1, height: 1 },
     textShadowRadius: 10,
   },
-  recommendedTripsHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 20,
-    marginTop: 10,
+  notificationButton: {
+    padding: 8,
+    position: "relative",
+    marginLeft: 16,
   },
-  recommendedTripsTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
+  notificationDot: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "white",
   },
-  loadingContainer: {
-    alignItems: "center",
-    padding: 20,
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
+  spinningIcon: {
+    transform: [{ rotate: "45deg" }],
   },
   dontLikeButtonContainer: {
     justifyContent: "center",
@@ -1575,9 +1554,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
   },
-  spinningIcon: {
-    transform: [{ rotate: "45deg" }],
-  },
   recommendedTripsContent: {
     paddingRight: 20,
     paddingTop: 10,
@@ -1593,22 +1569,6 @@ const styles = StyleSheet.create({
   tripDates: {
     fontSize: 12,
     fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
-  },
-  notificationButton: {
-    padding: 8,
-    position: "relative",
-    marginLeft: 16,
-  },
-  notificationDot: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#FF3B30",
-    borderWidth: 2,
-    borderColor: "white",
   },
 });
 

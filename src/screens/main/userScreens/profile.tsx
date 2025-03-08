@@ -22,7 +22,7 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { modalStyles } from "../../../screens/onboarding/welcome/welcome";
-import Privacy from "../../../screens/onboarding/privacy/Privacy";
+import Privacy from "../../onboarding/privacy/privacy";
 import * as ImageManipulator from "expo-image-manipulator";
 
 // Navigation prop type for type safety when navigating

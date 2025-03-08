@@ -213,7 +213,7 @@ const MyTripsStack: React.FC = () => {
             style={{ padding: 4 }}
           >
             <Ionicons
-              name="arrow-back"
+              name="chevron-back"
               size={26}
               color={currentTheme.textPrimary}
             />
@@ -326,7 +326,7 @@ const MyTripsStack: React.FC = () => {
                 style={{ padding: 4 }}
               >
                 <Ionicons
-                  name="arrow-back"
+                  name="chevron-back"
                   size={26}
                   color={currentTheme.textPrimary}
                 />
@@ -414,7 +414,7 @@ const ProfileStack: React.FC = () => {
     headerLeft: () => (
       <Pressable onPress={() => navigation.goBack()}>
         <Ionicons
-          name="arrow-back"
+          name="chevron-back"
           size={28}
           color={currentTheme.textPrimary}
           style={{ marginLeft: 10 }}

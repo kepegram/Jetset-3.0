@@ -8,26 +8,39 @@ import {
   Image,
   Modal,
   Dimensions,
+  TouchableOpacity,
+  Animated as RNAnimated,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../../../App";
 import { MainButton } from "../../../components/ui/button";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { lightTheme } from "../../../theme/theme";
-import Terms from "../terms/Terms";
-import Privacy from "../privacy/Privacy";
-
-type WelcomeScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "Welcome"
->;
+import Terms from "../terms/terms";
+import Privacy from "../privacy/privacy";
+import Login from "../userAuth/login";
+import SignUp from "../userAuth/signup";
+import { AuthSessionResult } from "expo-auth-session";
 
 const Welcome: React.FC = () => {
-  const navigation = useNavigation<WelcomeScreenNavigationProp>();
   const [activeIndex, setActiveIndex] = useState(0);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [slideAnim] = useState(
+    new RNAnimated.Value(Dimensions.get("window").height)
+  );
+  const [opacityAnim] = useState(new RNAnimated.Value(0));
+  const [scaleAnim] = useState(new RNAnimated.Value(1));
+  const [translateAnim] = useState(new RNAnimated.Value(0));
+
+  const promptAsync = () =>
+    Promise.resolve({
+      type: "success" as const,
+      errorCode: null,
+      params: {},
+      authentication: null,
+      url: "",
+    } as AuthSessionResult);
 
   const facts = [
     {
@@ -59,7 +72,7 @@ const Welcome: React.FC = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveIndex((current) => (current + 1) % facts.length);
-    }, 3000); // Change fact every 3 seconds
+    }, 3000);
 
     return () => clearInterval(interval);
   }, []);
@@ -72,103 +85,183 @@ const Welcome: React.FC = () => {
     setShowPrivacy(true);
   };
 
+  const handleAuthPress = () => {
+    setShowAuthModal(true);
+    RNAnimated.parallel([
+      RNAnimated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 10,
+      }),
+      RNAnimated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      RNAnimated.spring(scaleAnim, {
+        toValue: 0.88,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 10,
+      }),
+      RNAnimated.spring(translateAnim, {
+        toValue: 30,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 10,
+      }),
+    ]).start();
+  };
+
+  const handleCloseAuthModal = () => {
+    RNAnimated.parallel([
+      RNAnimated.spring(slideAnim, {
+        toValue: Dimensions.get("window").height,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 10,
+      }),
+      RNAnimated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      RNAnimated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 10,
+      }),
+      RNAnimated.spring(translateAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 10,
+      }),
+    ]).start(() => {
+      setShowAuthModal(false);
+      // Reset all modal-related state
+      setAuthMode("login");
+    });
+  };
+
+  const handleSwitchAuthMode = (mode: "login" | "signup") => {
+    setAuthMode(mode);
+  };
+
   return (
-    <View
-      style={[
-        styles.backgroundImage,
-        { backgroundColor: lightTheme.background },
-      ]}
-    >
-      <View style={styles.slide}>
-        <View style={styles.topSection}>
-          <View style={styles.carouselContainer}>
-            <Animated.View
-              key={activeIndex}
-              entering={FadeIn.duration(800)}
-              exiting={FadeOut.duration(800)}
-              style={styles.factContainer}
-            >
-              <ImageBackground
-                source={facts[activeIndex].image}
-                style={styles.factImage}
-                imageStyle={styles.factImageStyle}
-              >
-                <View style={styles.locationContainer}>
-                  <Text style={styles.locationText}>
-                    {facts[activeIndex].location}
-                  </Text>
-                </View>
-              </ImageBackground>
-              <View style={styles.factContent}>
-                <Text style={styles.factTitle}>{facts[activeIndex].title}</Text>
-                <Text style={styles.factDescription}>
-                  {facts[activeIndex].description}
-                </Text>
+    <View style={styles.container}>
+      <View style={styles.blackBackground} />
+      <RNAnimated.View
+        style={[
+          styles.contentContainer,
+          {
+            transform: [{ scale: scaleAnim }, { translateY: translateAnim }],
+            borderRadius: scaleAnim.interpolate({
+              inputRange: [0.88, 1],
+              outputRange: [20, 0],
+            }),
+            overflow: "hidden",
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.backgroundImage,
+            { backgroundColor: lightTheme.background },
+          ]}
+        >
+          <View style={styles.slide}>
+            <View style={styles.topSection}>
+              <View style={styles.carouselContainer}>
+                <Animated.View
+                  key={activeIndex}
+                  entering={FadeIn.duration(800)}
+                  exiting={FadeOut.duration(800)}
+                  style={styles.factContainer}
+                >
+                  <ImageBackground
+                    source={facts[activeIndex].image}
+                    style={styles.factImage}
+                    imageStyle={styles.factImageStyle}
+                  >
+                    <View style={styles.locationContainer}>
+                      <Text style={styles.locationText}>
+                        {facts[activeIndex].location}
+                      </Text>
+                    </View>
+                  </ImageBackground>
+                  <View style={styles.factContent}>
+                    <Text style={styles.factTitle}>
+                      {facts[activeIndex].title}
+                    </Text>
+                    <Text style={styles.factDescription}>
+                      {facts[activeIndex].description}
+                    </Text>
+                  </View>
+                </Animated.View>
               </View>
-            </Animated.View>
-          </View>
-        </View>
+            </View>
 
-        <View style={styles.middleSection}>
-          <Image
-            source={require("../../../assets/icons/adaptive-icon.png")}
-            style={styles.logo}
-          />
-          <Animated.Text
-            entering={FadeIn.delay(500).duration(1000)}
-            style={styles.appName}
-          >
-            Jetset
-          </Animated.Text>
+            <View style={styles.middleSection}>
+              <Image
+                source={require("../../../assets/icons/adaptive-icon.png")}
+                style={styles.logo}
+              />
+              <Animated.Text
+                entering={FadeIn.delay(500).duration(1000)}
+                style={styles.appName}
+              >
+                Jetset
+              </Animated.Text>
 
-          <Animated.Text
-            entering={FadeIn.delay(1000).duration(1000)}
-            style={styles.slogan}
-          >
-            Dream. Discover. <Text style={styles.exploreText}>Explore.</Text>
-          </Animated.Text>
-        </View>
+              <Animated.Text
+                entering={FadeIn.delay(1000).duration(1000)}
+                style={styles.slogan}
+              >
+                Dream. Discover.{" "}
+                <Text style={styles.exploreText}>Explore.</Text>
+              </Animated.Text>
+            </View>
 
-        <View style={styles.bottomSection}>
-          <Animated.View
-            entering={FadeIn.delay(1500).duration(1000)}
-            style={styles.buttonContainer}
-          >
-            <MainButton
-              onPress={() => navigation.navigate("SignUp")}
-              buttonText="Sign Up"
-              style={styles.signUpButton}
-              textColor="white"
-            />
-            <MainButton
-              onPress={() => navigation.navigate("Login")}
-              buttonText="Login"
-              style={styles.altButton}
-              textColor="black"
-            />
-          </Animated.View>
+            <View style={styles.bottomSection}>
+              <Animated.View
+                entering={FadeIn.delay(1500).duration(1000)}
+                style={styles.buttonContainer}
+              >
+                <MainButton
+                  onPress={handleAuthPress}
+                  buttonText="Continue"
+                  style={styles.continueButton}
+                  textColor="white"
+                />
+              </Animated.View>
 
-          <View style={styles.termsContainer}>
-            <Text style={styles.termsText}>
-              I have read and accepted Jetset's{" "}
-            </Text>
-            <View style={styles.termsRow}>
-              <Pressable onPress={handleTermsPress}>
-                <Text style={[styles.termsText, styles.termsLink]}>
-                  Terms & Conditions
+              <View style={styles.termsContainer}>
+                <Text style={styles.termsText}>
+                  I have read and accepted Jetset's{" "}
                 </Text>
-              </Pressable>
-              <Text style={styles.termsText}>and </Text>
-              <Pressable onPress={handlePrivacyPress}>
-                <Text style={[styles.termsText, styles.termsLink]}>
-                  Privacy Policy
-                </Text>
-              </Pressable>
+                <View style={styles.termsRow}>
+                  <Pressable onPress={handleTermsPress}>
+                    <Text style={[styles.termsText, styles.termsLink]}>
+                      Terms & Conditions
+                    </Text>
+                  </Pressable>
+                  <Text style={styles.termsText}>and </Text>
+                  <Pressable onPress={handlePrivacyPress}>
+                    <Text style={[styles.termsText, styles.termsLink]}>
+                      Privacy Policy
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
             </View>
           </View>
         </View>
-      </View>
+      </RNAnimated.View>
 
+      {/* Terms and Privacy Modals */}
       <Modal
         visible={showTerms}
         animationType="slide"
@@ -196,6 +289,85 @@ const Welcome: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Auth Modal */}
+      <Modal
+        visible={showAuthModal}
+        animationType="none"
+        transparent={true}
+        onRequestClose={handleCloseAuthModal}
+        statusBarTranslucent={true}
+      >
+        <RNAnimated.View
+          style={[
+            styles.modalContainer,
+            {
+              opacity: opacityAnim,
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            },
+          ]}
+        >
+          <RNAnimated.View
+            style={[
+              styles.modalContent,
+              styles.authModalContent,
+              {
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
+            <View style={styles.authModalHeader}>
+              <Text style={styles.authModalTitle}>
+                {authMode === "login" ? "Login" : "Sign Up"}
+              </Text>
+              <TouchableOpacity
+                onPress={handleCloseAuthModal}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.authSwitchContainer}>
+              {authMode === "login" ? (
+                <View style={styles.authSwitchWrapper}>
+                  <Text style={styles.authSwitchText}>
+                    Don't have an account?{" "}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => handleSwitchAuthMode("signup")}
+                  >
+                    <Text style={styles.authSwitchLink}>Sign Up</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.authSwitchWrapper}>
+                  <Text style={styles.authSwitchText}>
+                    Already have an account?{" "}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => handleSwitchAuthMode("login")}
+                  >
+                    <Text style={styles.authSwitchLink}>Log In</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+            <View style={styles.authModalBody}>
+              {authMode === "login" ? (
+                <Login
+                  promptAsync={promptAsync}
+                  onSwitchToSignUp={() => handleSwitchAuthMode("signup")}
+                />
+              ) : (
+                <SignUp
+                  promptAsync={promptAsync}
+                  onSwitchToLogin={() => handleSwitchAuthMode("login")}
+                />
+              )}
+            </View>
+          </RNAnimated.View>
+        </RNAnimated.View>
+      </Modal>
     </View>
   );
 };
@@ -203,6 +375,18 @@ const Welcome: React.FC = () => {
 export default Welcome;
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  blackBackground: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#000",
+  },
+  contentContainer: {
+    flex: 1,
+    backgroundColor: lightTheme.background,
+  },
   backgroundImage: {
     flex: 1,
     resizeMode: "cover",
@@ -283,16 +467,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  signUpButton: {
+  continueButton: {
     backgroundColor: lightTheme.alternate,
     width: "80%",
-  },
-  altButton: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: lightTheme.alternate,
-    width: "80%",
-    alignItems: "center",
   },
   termsContainer: {
     alignItems: "center",
@@ -337,7 +514,6 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
     justifyContent: "flex-end",
   },
   modalContent: {
@@ -355,6 +531,50 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 5,
     elevation: 5,
+  },
+  authModalContent: {
+    height: Dimensions.get("window").height * 0.5,
+  },
+  authModalHeader: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 15,
+    position: "relative",
+  },
+  authModalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: lightTheme.textPrimary,
+  },
+  closeButton: {
+    position: "absolute",
+    right: 20,
+    padding: 8,
+  },
+  closeButtonText: {
+    fontSize: 20,
+    color: lightTheme.textSecondary,
+  },
+  authSwitchContainer: {
+    paddingBottom: 12,
+  },
+  authSwitchWrapper: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  authSwitchText: {
+    fontSize: 15,
+    color: lightTheme.textSecondary,
+  },
+  authSwitchLink: {
+    fontSize: 15,
+    color: lightTheme.alternate,
+    fontWeight: "bold",
+  },
+  authModalBody: {
+    flex: 1,
   },
 });
 

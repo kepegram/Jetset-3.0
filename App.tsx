@@ -1,5 +1,10 @@
 import "react-native-get-random-values";
 import React, { useEffect, useState, useCallback, useRef } from "react";
+
+// Environment variables
+const IOS_CLIENT_ID =
+  "592334619232-6mcjbp53tn18uv7p8tna5frfg2mhg2c7.apps.googleusercontent.com";
+
 import { Pressable, Platform, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -23,8 +28,8 @@ import Login from "./src/screens/onboarding/userAuth/login";
 import SignUp from "./src/screens/onboarding/userAuth/signup";
 import ForgotPassword from "./src/screens/onboarding/userAuth/forgotPassword";
 import AppNav from "./src/navigation/appNav";
-import Terms from "./src/screens/onboarding/terms/Terms";
-import Privacy from "./src/screens/onboarding/privacy/Privacy";
+import Terms from "./src/screens/onboarding/terms/terms";
+import Privacy from "./src/screens/onboarding/privacy/privacy";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { FIREBASE_DB } from "./firebase.config";
 import * as Font from "expo-font";
@@ -71,10 +76,9 @@ const App: React.FC = () => {
   const [appIsReady, setAppIsReady] = useState(false);
   const { currentTheme } = useTheme();
   const [request, response, promptAsync] = Google.useAuthRequest({
-    // @ts-ignore
-    iosClientId: process.env.EXPO_PUBLIC_IOS_CLIENT_ID,
-    // @ts-ignore
-    androidClientId: process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID,
+    iosClientId: IOS_CLIENT_ID,
+    responseType: "id_token",
+    scopes: ["profile", "email"],
   });
 
   const notificationListener = useRef<any>();
@@ -82,6 +86,44 @@ const App: React.FC = () => {
   const navigationRef = useRef<any>();
 
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    if (response?.type === "success") {
+      const { id_token } = response.params;
+      console.log("Google auth response success:", { hasToken: !!id_token });
+      if (id_token) {
+        const credential = GoogleAuthProvider.credential(id_token);
+        signInWithCredential(FIREBASE_AUTH, credential)
+          .then(async (userCredential) => {
+            console.log("Firebase auth success:", userCredential.user.email);
+            const user = userCredential.user;
+            const userRef = doc(FIREBASE_DB, "users", user.uid);
+            const userDoc = await getDoc(userRef);
+
+            if (!userDoc.exists()) {
+              console.log("Creating new user document");
+              await setDoc(userRef, {
+                username: user.displayName || "User",
+                email: user.email,
+                createdAt: new Date().toISOString(),
+                authProvider: "google",
+                photoURL: user.photoURL || null,
+              });
+            }
+          })
+          .catch((error) => {
+            console.error("Firebase auth error:", {
+              code: error.code,
+              message: error.message,
+            });
+          });
+      } else {
+        console.error("No id_token in response params:", response.params);
+      }
+    } else if (response?.type === "error") {
+      console.error("Google auth error:", response.error);
+    }
+  }, [response]);
 
   useEffect(() => {
     // Set up notification listeners
@@ -119,50 +161,6 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (response?.type === "success") {
-      const { id_token } = response.params as { id_token: string };
-      if (id_token) {
-        const credential = GoogleAuthProvider.credential(id_token);
-        signInWithCredential(FIREBASE_AUTH, credential)
-          .then(async (userCredential) => {
-            const user = userCredential.user;
-            console.log("Google sign in successful:", user.email);
-            // Save user data to Firestore
-            const userRef = doc(FIREBASE_DB, "users", user.uid);
-            const userDoc = await getDoc(userRef);
-
-            if (!userDoc.exists()) {
-              // Only create new document if it doesn't exist
-              await setDoc(userRef, {
-                username: user.displayName || "User",
-                email: user.email,
-                createdAt: new Date().toISOString(),
-                authProvider: "google",
-                photoURL: user.photoURL || null,
-              });
-              console.log("Created new user document in Firestore");
-            }
-
-            // Register for push notifications after successful sign in
-            await registerForPushNotificationsAsync();
-          })
-          .catch((error) => {
-            console.error("Error signing in with Google:", {
-              code: error.code,
-              message: error.message,
-              email: error.email,
-              credential: error.credential,
-            });
-          });
-      } else {
-        console.error("No id_token received from Google sign in");
-      }
-    } else if (response?.type === "error") {
-      console.error("Google sign in error:", response.error);
-    }
-  }, [response]);
-
-  useEffect(() => {
     async function prepare() {
       try {
         // Load fonts first
@@ -176,12 +174,35 @@ const App: React.FC = () => {
           // Keep the auth subscription active
           onAuthStateChanged(
             FIREBASE_AUTH,
-            (user) => {
+            async (user) => {
               console.log(
                 "Auth state changed:",
-                user ? "User logged in" : "No user"
+                user ? `User logged in: ${user.email}` : "No user"
               );
-              setUser(user);
+
+              if (user) {
+                // Check if user exists in Firestore
+                const userRef = doc(FIREBASE_DB, "users", user.uid);
+                const userDoc = await getDoc(userRef);
+
+                if (!userDoc.exists()) {
+                  // Create user document if it doesn't exist
+                  console.log("Creating new user document for:", user.email);
+                  await setDoc(userRef, {
+                    username:
+                      user.displayName || user.email?.split("@")[0] || "User",
+                    email: user.email,
+                    createdAt: new Date().toISOString(),
+                    emailVerified: true, // Set to true for existing auth users
+                    lastLoginAt: new Date().toISOString(),
+                  });
+                }
+
+                // Set user regardless of verification status
+                setUser(user);
+              } else {
+                setUser(null);
+              }
               resolve(true);
             },
             (error) => {

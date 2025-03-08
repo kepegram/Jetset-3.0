@@ -6,14 +6,8 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Image,
   ActivityIndicator,
-  SafeAreaView,
-  Dimensions,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../../../App";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
 import * as AppleAuthentication from "expo-apple-authentication";
 import {
@@ -29,42 +23,73 @@ import { MainButton } from "../../../components/ui/button";
 import { setDoc } from "firebase/firestore";
 import { doc } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-type LoginScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "Login"
->;
+import { GoogleAuthProvider } from "firebase/auth";
 
 interface LoginProps {
   promptAsync: (
     options?: AuthRequestPromptOptions
   ) => Promise<AuthSessionResult>;
+  onSwitchToSignUp?: () => void;
 }
 
-const { width, height } = Dimensions.get("window");
-
-const Login: React.FC<LoginProps> = ({ promptAsync }) => {
+const Login: React.FC<LoginProps> = ({ promptAsync, onSwitchToSignUp }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const auth = FIREBASE_AUTH;
   const db = FIREBASE_DB;
 
-  const navigation = useNavigation<LoginScreenNavigationProp>();
+  const validateEmail = (email: string) => {
+    if (!email) return "Email is required";
+    if (!email.includes("@")) return "Email must contain @";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Please enter a valid email address";
+    }
+    return null;
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    setEmailError(validateEmail(text));
+    setError("");
+  };
 
   const handleLogin = async () => {
     setLoading(true);
     setError("");
 
-    try {
-      if (email.trim() === "" || password === "") {
-        throw new Error("Please fill in all fields");
-      }
+    const emailValidationError = validateEmail(email);
+    if (emailValidationError) {
+      setEmailError(emailValidationError);
+      setLoading(false);
+      return;
+    }
 
-      await signInWithEmailAndPassword(auth, email, password);
+    if (password === "") {
+      setError("Password is required");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+      // Store user info in AsyncStorage for persistence
+      await AsyncStorage.multiSet([
+        ["userId", userCredential.user.uid],
+        ["userEmail", userCredential.user.email || ""],
+        ["userName", userCredential.user.displayName || email.split("@")[0]],
+      ]);
+
       // Navigation will be handled by the auth state listener in App.tsx
     } catch (error: any) {
       setError(
@@ -77,8 +102,49 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    promptAsync();
+  const handleGoogleLogin = async () => {
+    console.log("Attempting Google login...");
+    setLoading(true);
+    setError("");
+
+    try {
+      const result = await promptAsync();
+      console.log("Google auth result:", result);
+
+      if (result?.type !== "success") {
+        console.log("Google login cancelled or failed:", result);
+        setError("Google login was cancelled");
+        return;
+      }
+
+      const { id_token } = result.params;
+      if (!id_token) {
+        setError("Failed to get Google credentials");
+        return;
+      }
+
+      const credential = GoogleAuthProvider.credential(id_token);
+      const userCredential = await signInWithCredential(auth, credential);
+
+      // Store user info in AsyncStorage
+      await AsyncStorage.multiSet([
+        ["userId", userCredential.user.uid],
+        ["userEmail", userCredential.user.email || ""],
+        [
+          "userName",
+          userCredential.user.displayName ||
+            userCredential.user.email?.split("@")[0] ||
+            "User",
+        ],
+      ]);
+
+      console.log("Google login successful:", userCredential.user.email);
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      setError(error.message || "Failed to login with Google");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAppleSignIn = async () => {
@@ -128,40 +194,23 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
     }
   };
 
-  const handleForgotPassword = () => {
-    navigation.navigate("ForgotPassword");
-  };
-
-  const handleSignUpNavigation = () => {
-    navigation.navigate("SignUp");
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
-        <View style={styles.logoContainer}>
-          <Image
-            source={require("../../../assets/icons/adaptive-icon.png")}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
-        </View>
-
         <View style={styles.formContainer}>
-          <Text style={styles.welcomeText}>Welcome Back</Text>
-
-          {/* Social Auth Buttons */}
           <View style={styles.socialButtonsContainer}>
             <TouchableOpacity
               style={styles.socialButton}
-              onPress={handleGoogleLogin}
+              onPress={() => {
+                console.log("Google button pressed");
+                handleGoogleLogin();
+              }}
               activeOpacity={0.8}
             >
-              <FontAwesome name="google" size={20} color="#EA4335" />
-              <Text style={styles.socialButtonText}>Continue with Google</Text>
+              <FontAwesome name="google" size={32} color="#EA4335" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -169,8 +218,7 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
               onPress={handleAppleSignIn}
               activeOpacity={0.8}
             >
-              <FontAwesome name="apple" size={22} color="#000" />
-              <Text style={styles.socialButtonText}>Continue with Apple</Text>
+              <FontAwesome name="apple" size={36} color="#000" />
             </TouchableOpacity>
           </View>
 
@@ -180,25 +228,36 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
             <View style={styles.divider} />
           </View>
 
-          {/* Email & Password Fields */}
           <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Ionicons
-                name="mail-outline"
-                size={20}
-                color={theme.textSecondary}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor={theme.textSecondary}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-              />
+            <View style={styles.inputGroup}>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  emailError && styles.inputWrapperError,
+                ]}
+              >
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color={emailError ? theme.error : theme.textSecondary}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={[styles.input, emailError && { color: theme.error }]}
+                  placeholder="Email"
+                  placeholderTextColor={theme.textSecondary}
+                  value={email}
+                  onChangeText={handleEmailChange}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                />
+              </View>
+              <View style={styles.errorContainer}>
+                <Text style={[styles.fieldError, { color: theme.error }]}>
+                  {emailError || " "}
+                </Text>
+              </View>
             </View>
 
             <View style={styles.inputWrapper}>
@@ -230,16 +289,8 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
             </View>
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-            <TouchableOpacity
-              style={styles.forgotPasswordButton}
-              onPress={handleForgotPassword}
-            >
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
           </View>
 
-          {/* Login Button */}
           <MainButton
             style={styles.loginButton}
             onPress={handleLogin}
@@ -253,17 +304,9 @@ const Login: React.FC<LoginProps> = ({ promptAsync }) => {
               <Text style={styles.loginButtonText}>Log In</Text>
             )}
           </MainButton>
-
-          {/* Sign Up Link */}
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={handleSignUpNavigation}>
-              <Text style={styles.signupLink}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -274,62 +317,35 @@ const styles = StyleSheet.create({
   },
   keyboardAvoidingView: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     padding: 20,
   },
-  logoContainer: {
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  logoImage: {
-    width: 100,
-    height: 100,
-    marginTop: -100,
-  },
   formContainer: {
-    width: width * 0.9,
-    borderRadius: 20,
-    padding: 25,
+    width: "100%",
     backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
-  welcomeText: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: theme.textPrimary,
-    marginBottom: 25,
-    textAlign: "center",
-  },
-  socialButtonsContainer: {},
-  socialButton: {
+  socialButtonsContainer: {
     flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 8,
+    width: "100%",
+    gap: 16,
+    paddingHorizontal: 20,
+  },
+  socialButton: {
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#f8f9fa",
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
+    padding: 16,
     borderWidth: 1,
     borderColor: "#e9ecef",
-  },
-  socialButtonText: {
-    color: theme.textPrimary,
-    fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 10,
+    width: 130,
+    height: 66,
   },
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 20,
+    marginVertical: 12,
   },
   divider: {
     flex: 1,
@@ -337,69 +353,64 @@ const styles = StyleSheet.create({
     backgroundColor: "#e9ecef",
   },
   dividerText: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 12,
     color: theme.textSecondary,
     fontSize: 14,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 12,
+  },
+  inputGroup: {
+    marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f8f9fa",
     borderRadius: 12,
-    marginBottom: 15,
-    paddingHorizontal: 15,
+    marginBottom: 4,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: "#e9ecef",
+    height: 46,
   },
   inputIcon: {
     marginRight: 10,
   },
   input: {
     flex: 1,
-    height: 50,
+    height: 46,
     color: theme.textPrimary,
-    fontSize: 16,
+    fontSize: 15,
   },
   eyeIcon: {
     padding: 10,
   },
   errorText: {
     color: theme.error,
-    marginTop: 5,
-    marginBottom: 10,
     fontSize: 14,
-  },
-  forgotPasswordButton: {
-    alignSelf: "flex-end",
-  },
-  forgotPasswordText: {
-    fontSize: 14,
-    color: theme.alternate,
-    fontWeight: "500",
+    minHeight: 20,
+    marginBottom: 8,
   },
   loginButton: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   loginButtonText: {
     color: theme.buttonText,
     fontSize: 18,
     fontWeight: "600",
   },
-  signupContainer: {
-    flexDirection: "row",
+  inputWrapperError: {
+    borderColor: theme.error,
+  },
+  errorContainer: {
+    height: 20,
     justifyContent: "center",
   },
-  signupText: {
-    fontSize: 15,
-    color: theme.textSecondary,
-  },
-  signupLink: {
-    color: theme.alternate,
-    fontSize: 15,
-    fontWeight: "bold",
+  fieldError: {
+    fontSize: 12,
+    marginLeft: 4,
+    minHeight: 16,
   },
 });
 

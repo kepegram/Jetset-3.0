@@ -136,6 +136,7 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
 - **Authentication**: Firebase Auth
 - **Storage**: Firebase Cloud Storage
 - **AI Services**: Google Gemini API
+- **Email Service**: Zoho Mail SMTP
 
 ### Development Tools
 

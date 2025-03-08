@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,70 +7,161 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  SafeAreaView,
-  Dimensions,
-  Image,
+  TextInput,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../../../App";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
-import {
-  createUserWithEmailAndPassword,
-  OAuthProvider,
-  signInWithCredential,
-} from "firebase/auth";
+import { OAuthProvider, signInWithCredential } from "firebase/auth";
 import { AuthRequestPromptOptions, AuthSessionResult } from "expo-auth-session";
-import * as AppleAuthentication from "expo-apple-authentication";
-import { TextInput } from "react-native-gesture-handler";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import { lightTheme as theme } from "../../../theme/theme";
 import { MainButton } from "../../../components/ui/button";
-
-type SignUpScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "SignUp"
->;
+import * as AppleAuthentication from "expo-apple-authentication";
+import { GoogleAuthProvider } from "firebase/auth";
 
 interface SignUpProps {
   promptAsync: (
     options?: AuthRequestPromptOptions
   ) => Promise<AuthSessionResult>;
+  onSwitchToLogin?: () => void;
 }
 
-const { width, height } = Dimensions.get("window");
-
-const SignUp: React.FC<SignUpProps> = ({ promptAsync }) => {
-  const [username, setUsername] = useState("");
+const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [showVerification, setShowVerification] = useState(false);
+  const [tempUserId, setTempUserId] = useState<string>("");
+  const [verificationCode, setVerificationCode] = useState([
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+  const [resendDisabled, setResendDisabled] = useState(false);
+  const [countdown, setCountdown] = useState(30);
+  const inputRefs = useRef<(TextInput | null)[]>([]);
 
-  const auth = FIREBASE_AUTH;
-  const db = FIREBASE_DB;
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendDisabled && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    } else if (countdown === 0) {
+      setResendDisabled(false);
+      setCountdown(30);
+    }
+    return () => clearInterval(timer);
+  }, [resendDisabled, countdown]);
 
-  const navigation = useNavigation<SignUpScreenNavigationProp>();
+  const handleCodeChange = (text: string, index: number) => {
+    if (text.length > 1) {
+      text = text[text.length - 1];
+    }
 
-  const validateUsername = (username: string) => {
-    if (username.length < 3) {
-      return "Username must be at least 3 characters";
+    const newCode = [...verificationCode];
+    newCode[index] = text;
+    setVerificationCode(newCode);
+
+    if (text !== "" && index < 5) {
+      inputRefs.current[index + 1]?.focus();
     }
-    if (username.length > 20) {
-      return "Username must be less than 20 characters";
-    }
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-      return "Username can only contain letters, numbers, and underscores";
-    }
-    return null;
   };
 
+  const handleKeyPress = (e: any, index: number) => {
+    if (
+      e.nativeEvent.key === "Backspace" &&
+      index > 0 &&
+      verificationCode[index] === ""
+    ) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!verificationCode.join("") || verificationCode.join("").length !== 6) {
+      setError("Please enter a valid 6-digit code");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const verificationRef = doc(FIREBASE_DB, "verificationCodes", tempUserId);
+      const verificationDoc = await getDoc(verificationRef);
+
+      if (!verificationDoc.exists()) {
+        setError("Verification code has expired. Please try again.");
+        return;
+      }
+
+      const data = verificationDoc.data();
+      const now = new Date();
+      const expiresAt = new Date(data.expiresAt);
+
+      if (now > expiresAt) {
+        setError("Verification code has expired. Please try again.");
+        return;
+      }
+
+      if (data.attempts >= 3) {
+        setError("Too many attempts. Please request a new code.");
+        return;
+      }
+
+      if (data.code === verificationCode.join("")) {
+        // Update verification status
+        await updateDoc(verificationRef, {
+          verified: true,
+        });
+
+        // Create a new user document with a unique ID
+        const userDocRef = doc(FIREBASE_DB, "users", tempUserId);
+        await setDoc(userDocRef, {
+          email: email.toLowerCase(),
+          username: getDisplayName(email),
+          createdAt: new Date().toISOString(),
+          emailVerified: true,
+          lastLoginAt: new Date().toISOString(),
+        });
+
+        // Store essential user data in AsyncStorage
+        await AsyncStorage.multiSet([
+          ["userId", tempUserId],
+          ["userEmail", email.toLowerCase()],
+          ["userName", getDisplayName(email)],
+        ]);
+
+        // Show success message and redirect to login
+        alert("Email verified successfully! Please log in with your email.");
+        if (onSwitchToLogin) {
+          onSwitchToLogin();
+        }
+      } else {
+        await updateDoc(verificationRef, {
+          attempts: data.attempts + 1,
+        });
+        setError("Invalid verification code. Please try again.");
+      }
+    } catch (error: any) {
+      console.error("Verification error:", error);
+      setError("Failed to verify code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const auth = FIREBASE_AUTH;
+
   const validateEmail = (email: string) => {
+    if (!email) return "Email is required";
+    if (!email.includes("@")) return "Email must contain @";
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return "Please enter a valid email address";
@@ -78,74 +169,116 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync }) => {
     return null;
   };
 
-  const validatePassword = (password: string) => {
-    if (password.length < 8) {
-      return "Password must be at least 8 characters";
-    }
-    return null;
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    setEmailError(validateEmail(text));
+  };
+
+  const getDisplayName = (email: string) => {
+    return email.split("@")[0];
+  };
+
+  const generateVerificationCode = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
   const handleSignUp = async () => {
     setLoading(true);
     setError("");
 
-    // Validate inputs
-    const usernameError = validateUsername(username);
-    if (usernameError) {
-      setError(usernameError);
-      setLoading(false);
-      return;
-    }
-
-    const emailError = validateEmail(email);
-    if (emailError) {
-      setError(emailError);
-      setLoading(false);
-      return;
-    }
-
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      setError(passwordError);
-      setLoading(false);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
+    const emailValidationError = validateEmail(email);
+    if (emailValidationError) {
+      setEmailError(emailValidationError);
       setLoading(false);
       return;
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      const verificationCode = generateVerificationCode();
+      const newTempUserId = Math.random().toString(36).substring(2);
+      setTempUserId(newTempUserId);
 
-      // Create user document in Firestore
-      const userRef = doc(db, "users", userCredential.user.uid);
-      await setDoc(userRef, {
-        username,
-        email,
+      const verificationRef = doc(
+        FIREBASE_DB,
+        "verificationCodes",
+        newTempUserId
+      );
+      await setDoc(verificationRef, {
+        code: verificationCode,
+        email: email.trim(),
         createdAt: new Date().toISOString(),
+        attempts: 0,
+        verified: false,
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       });
 
-      // Navigation will be handled by the auth state listener in App.tsx
+      setShowVerification(true);
+      console.log("Verification code for testing:", verificationCode);
     } catch (error: any) {
-      if (error.code === "auth/email-already-in-use") {
-        setError("Email is already in use");
-      } else {
-        setError(error.message.replace("Firebase: ", ""));
-      }
+      setError(error.message.replace("Firebase: ", ""));
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleSignUp = async () => {
-    promptAsync();
+    console.log("Attempting Google signup...");
+    setLoading(true);
+    setError("");
+
+    try {
+      const result = await promptAsync();
+      console.log("Google auth result:", result);
+
+      if (result?.type !== "success") {
+        console.log("Google signup cancelled or failed:", result);
+        setError("Google signup was cancelled");
+        return;
+      }
+
+      const { id_token } = result.params;
+      if (!id_token) {
+        setError("Failed to get Google credentials");
+        return;
+      }
+
+      const credential = GoogleAuthProvider.credential(id_token);
+      const userCredential = await signInWithCredential(auth, credential);
+
+      // Create or update user document in Firestore
+      const userRef = doc(FIREBASE_DB, "users", userCredential.user.uid);
+      await setDoc(
+        userRef,
+        {
+          username: userCredential.user.displayName || "User",
+          email: userCredential.user.email,
+          createdAt: new Date().toISOString(),
+          authProvider: "google",
+          photoURL: userCredential.user.photoURL || null,
+          emailVerified: true,
+        },
+        { merge: true }
+      );
+
+      // Store user info in AsyncStorage
+      await AsyncStorage.multiSet([
+        ["userId", userCredential.user.uid],
+        ["userEmail", userCredential.user.email || ""],
+        [
+          "userName",
+          userCredential.user.displayName ||
+            userCredential.user.email?.split("@")[0] ||
+            "User",
+        ],
+      ]);
+
+      console.log("Google signup successful:", userCredential.user.email);
+    } catch (error: any) {
+      console.error("Google signup error:", error);
+      setError(error.message || "Failed to sign up with Google");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAppleSignIn = async () => {
@@ -172,7 +305,7 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync }) => {
 
         const authResult = await signInWithCredential(auth, appleCredential);
 
-        const userRef = doc(db, "users", authResult.user.uid);
+        const userRef = doc(FIREBASE_DB, "users", authResult.user.uid);
         await setDoc(
           userRef,
           {
@@ -195,183 +328,181 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync }) => {
     }
   };
 
-  const handleLoginNavigation = () => {
-    navigation.navigate("Login");
-  };
+  if (showVerification) {
+    return (
+      <View style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardAvoidingView}
+        >
+          <View style={styles.verificationContainer}>
+            <View style={styles.header}>
+              <TouchableOpacity
+                onPress={() => setShowVerification(false)}
+                style={styles.backButton}
+              >
+                <Ionicons
+                  name="arrow-back"
+                  size={24}
+                  color={theme.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.verificationContent}>
+              <Text style={styles.title}>Verify your email</Text>
+              <Text style={styles.description}>
+                Enter the 6-digit code sent to{"\n"}
+                <Text style={styles.emailText}>{email}</Text>
+              </Text>
+
+              <View style={styles.codeContainer}>
+                {verificationCode.map((digit, index) => (
+                  <TextInput
+                    key={index}
+                    ref={(ref) => (inputRefs.current[index] = ref)}
+                    style={[
+                      styles.codeInput,
+                      digit && styles.codeInputFilled,
+                      error && styles.codeInputError,
+                    ]}
+                    value={digit}
+                    onChangeText={(text) => handleCodeChange(text, index)}
+                    onKeyPress={(e) => handleKeyPress(e, index)}
+                    keyboardType="number-pad"
+                    maxLength={1}
+                    selectTextOnFocus
+                  />
+                ))}
+              </View>
+
+              {error && <Text style={styles.errorText}>{error}</Text>}
+
+              <View style={styles.resendContainer}>
+                <Text style={styles.resendText}>
+                  Didn't receive the code?{" "}
+                  <Text
+                    style={[
+                      styles.resendButton,
+                      resendDisabled && styles.resendButtonDisabled,
+                    ]}
+                    onPress={resendDisabled ? undefined : handleSignUp}
+                  >
+                    {resendDisabled ? `Resend in ${countdown}s` : "Resend code"}
+                  </Text>
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.verifyButtonContainer}>
+              <MainButton
+                style={styles.verifyButton}
+                onPress={handleVerifyCode}
+                disabled={loading || verificationCode.some((digit) => !digit)}
+                width="100%"
+              >
+                {loading ? (
+                  <ActivityIndicator color={theme.buttonText} />
+                ) : (
+                  <Text style={styles.buttonText}>Verify Email</Text>
+                )}
+              </MainButton>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
-        <View style={styles.contentContainer}>
-          <View style={styles.logoContainer}>
-            <Image
-              source={require("../../../assets/icons/adaptive-icon.png")}
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
+        <View style={styles.formContainer}>
+          <View style={styles.socialButtonsContainer}>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={handleGoogleSignUp}
+              activeOpacity={0.8}
+            >
+              <FontAwesome name="google" size={32} color="#EA4335" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={handleAppleSignIn}
+              activeOpacity={0.8}
+            >
+              <FontAwesome name="apple" size={36} color="#000" />
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.formContainer}>
-            <Text style={styles.welcomeText}>Create Account</Text>
+          <View style={styles.dividerContainer}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.divider} />
+          </View>
 
-            <View style={styles.socialButtonsContainer}>
-              <TouchableOpacity
-                style={styles.socialButton}
-                onPress={handleGoogleSignUp}
-                activeOpacity={0.8}
+          <View style={styles.inputContainer}>
+            <View style={styles.inputGroup}>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  emailError && styles.inputWrapperError,
+                ]}
               >
-                <FontAwesome name="google" size={18} color="#EA4335" />
-                <Text style={styles.socialButtonText}>
-                  Continue with Google
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.socialButton}
-                onPress={handleAppleSignIn}
-                activeOpacity={0.8}
-              >
-                <FontAwesome name="apple" size={20} color="#000" />
-                <Text style={styles.socialButtonText}>Continue with Apple</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.dividerContainer}>
-              <View style={styles.divider} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.divider} />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <View style={styles.inputWrapper}>
-                <Ionicons
-                  name="person-outline"
-                  size={20}
-                  color={theme.textSecondary}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Username"
-                  placeholderTextColor={theme.textSecondary}
-                  value={username}
-                  onChangeText={setUsername}
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <View style={styles.inputWrapper}>
                 <Ionicons
                   name="mail-outline"
                   size={20}
-                  color={theme.textSecondary}
+                  color={emailError ? theme.error : theme.textSecondary}
                   style={styles.inputIcon}
                 />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, emailError && { color: theme.error }]}
                   placeholder="Email"
                   placeholderTextColor={theme.textSecondary}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={handleEmailChange}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
                 />
               </View>
-
-              <View style={styles.inputWrapper}>
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={20}
-                  color={theme.textSecondary}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor={theme.textSecondary}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIcon}
-                >
-                  <Ionicons
-                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                    size={20}
-                    color={theme.textSecondary}
-                  />
-                </TouchableOpacity>
+              <View style={styles.errorContainer}>
+                <Text style={[styles.fieldError, { color: theme.error }]}>
+                  {emailError || " "}
+                </Text>
               </View>
-
-              <View style={styles.inputWrapper}>
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={20}
-                  color={theme.textSecondary}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirm Password"
-                  placeholderTextColor={theme.textSecondary}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry={!showConfirmPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  style={styles.eyeIcon}
-                >
-                  <Ionicons
-                    name={
-                      showConfirmPassword ? "eye-off-outline" : "eye-outline"
-                    }
-                    size={20}
-                    color={theme.textSecondary}
-                  />
-                </TouchableOpacity>
-              </View>
-
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
             </View>
 
-            <MainButton
-              style={styles.signupButton}
-              onPress={handleSignUp}
-              disabled={loading}
-              width="100%"
-            >
-              {loading ? (
-                <ActivityIndicator color={theme.buttonText} />
-              ) : (
-                <Text style={styles.signupButtonText}>Create Account</Text>
-              )}
-            </MainButton>
-
-            <View style={styles.loginContainer}>
-              <Text style={styles.loginText}>Already have an account? </Text>
-              <TouchableOpacity onPress={handleLoginNavigation}>
-                <Text style={styles.loginLink}>Log In</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.termsText}>
-              By signing up, you agree to our{" "}
-              <Text style={styles.termsLink}>Terms of Service</Text> and{" "}
-              <Text style={styles.termsLink}>Privacy Policy</Text>
-            </Text>
+            {error && !emailError ? (
+              <Text style={styles.errorText}>{error}</Text>
+            ) : null}
           </View>
+
+          <MainButton
+            style={styles.signupButton}
+            onPress={handleSignUp}
+            disabled={loading}
+            width="100%"
+          >
+            {loading ? (
+              <ActivityIndicator color={theme.buttonText} />
+            ) : (
+              <Text style={styles.signupButtonText}>Continue with Email</Text>
+            )}
+          </MainButton>
+
+          <Text style={styles.termsText}>
+            By signing up, you agree to our{" "}
+            <Text style={styles.termsLink}>Terms of Service</Text> and{" "}
+            <Text style={styles.termsLink}>Privacy Policy</Text>
+          </Text>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -382,65 +513,35 @@ const styles = StyleSheet.create({
   },
   keyboardAvoidingView: {
     flex: 1,
-  },
-  contentContainer: {
-    flex: 1,
-    paddingHorizontal: 16,
-    justifyContent: "center",
-  },
-  logoContainer: {
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  logoImage: {
-    width: 70,
-    height: 70,
+    padding: 20,
   },
   formContainer: {
     width: "100%",
-    borderRadius: 16,
-    padding: 20,
     backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: theme.textPrimary,
-    marginBottom: 16,
-    textAlign: "center",
   },
   socialButtonsContainer: {
-    marginBottom: 12,
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 8,
+    width: "100%",
+    gap: 16,
+    paddingHorizontal: 20,
   },
   socialButton: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#f8f9fa",
     borderRadius: 12,
-    padding: 12,
-    marginBottom: 10,
+    padding: 16,
     borderWidth: 1,
     borderColor: "#e9ecef",
-  },
-  socialButtonText: {
-    color: theme.textPrimary,
-    fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 10,
+    width: 130,
+    height: 66,
   },
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 16,
+    marginVertical: 12,
   },
   divider: {
     flex: 1,
@@ -448,23 +549,30 @@ const styles = StyleSheet.create({
     backgroundColor: "#e9ecef",
   },
   dividerText: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 12,
     color: theme.textSecondary,
     fontSize: 14,
   },
   inputContainer: {
-    marginBottom: 16,
+    width: "100%",
+    marginBottom: 5,
+  },
+  inputGroup: {
+    marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f8f9fa",
     borderRadius: 12,
-    marginBottom: 12,
-    paddingHorizontal: 15,
+    marginBottom: 4,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: "#e9ecef",
-    height: 48,
+    height: 46,
+  },
+  inputWrapperError: {
+    borderColor: theme.error,
   },
   inputIcon: {
     marginRight: 8,
@@ -472,17 +580,23 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: theme.textPrimary,
-    fontSize: 16,
+    fontSize: 15,
   },
-  eyeIcon: {
-    padding: 8,
+  errorContainer: {
+    height: 20,
+    justifyContent: "center",
+  },
+  fieldError: {
+    fontSize: 12,
+    marginLeft: 4,
+    color: theme.error,
+    minHeight: 16,
   },
   errorText: {
     color: theme.error,
-    marginTop: 4,
-    marginBottom: 8,
     fontSize: 14,
     textAlign: "center",
+    marginBottom: 16,
   },
   signupButton: {
     marginBottom: 12,
@@ -492,20 +606,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "600",
   },
-  loginContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  loginText: {
-    fontSize: 15,
-    color: theme.textSecondary,
-  },
-  loginLink: {
-    color: theme.alternate,
-    fontSize: 15,
-    fontWeight: "bold",
-  },
   termsText: {
     fontSize: 12,
     textAlign: "center",
@@ -514,6 +614,96 @@ const styles = StyleSheet.create({
   termsLink: {
     color: theme.alternate,
     fontWeight: "bold",
+  },
+  verificationContainer: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  verificationContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  backButton: {
+    padding: 8,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: theme.textPrimary,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  description: {
+    fontSize: 15,
+    color: theme.textSecondary,
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  emailText: {
+    color: theme.textPrimary,
+    fontWeight: "600",
+  },
+  codeContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+    gap: 8,
+  },
+  codeInput: {
+    width: 45,
+    height: 52,
+    borderWidth: 1.5,
+    borderRadius: 12,
+    textAlign: "center",
+    fontSize: 22,
+    fontWeight: "600",
+    backgroundColor: "#f8f9fa",
+    borderColor: "#e9ecef",
+    color: theme.textPrimary,
+  },
+  codeInputFilled: {
+    borderColor: theme.alternate,
+    backgroundColor: "#fff",
+  },
+  codeInputError: {
+    borderColor: theme.error,
+    backgroundColor: "#fff",
+  },
+  resendContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  resendText: {
+    fontSize: 14,
+    color: theme.textSecondary,
+  },
+  resendButton: {
+    color: theme.alternate,
+    fontWeight: "600",
+  },
+  resendButtonDisabled: {
+    color: theme.textSecondary,
+    opacity: 0.6,
+  },
+  verifyButtonContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  verifyButton: {
+    width: "100%",
+  },
+  buttonText: {
+    color: theme.buttonText,
+    fontSize: 17,
+    fontWeight: "600",
   },
 });
 
