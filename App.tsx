@@ -4,6 +4,8 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 // Environment variables
 const IOS_CLIENT_ID =
   "592334619232-6mcjbp53tn18uv7p8tna5frfg2mhg2c7.apps.googleusercontent.com";
+const WEB_CLIENT_ID =
+  "592334619232-vgts79qalu42vpg1dpa0sgg86q79ti2c.apps.googleusercontent.com";
 
 import { Pressable, Platform, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
@@ -79,6 +81,7 @@ const App: React.FC = () => {
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     iosClientId: IOS_CLIENT_ID,
+    webClientId: WEB_CLIENT_ID,
     redirectUri: makeRedirectUri({
       scheme: "jetset",
       path: "oauth2redirect/google",
