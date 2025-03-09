@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -111,34 +112,13 @@ const Login: React.FC<LoginProps> = ({ promptAsync, onSwitchToSignUp }) => {
       const result = await promptAsync();
       console.log("Google auth result:", result);
 
-      if (result?.type !== "success") {
-        console.log("Google login cancelled or failed:", result);
-        setError("Google login was cancelled");
+      if (result.type !== "success") {
+        setError("Google login was cancelled or failed");
         return;
       }
 
-      const { id_token } = result.params;
-      if (!id_token) {
-        setError("Failed to get Google credentials");
-        return;
-      }
-
-      const credential = GoogleAuthProvider.credential(id_token);
-      const userCredential = await signInWithCredential(auth, credential);
-
-      // Store user info in AsyncStorage
-      await AsyncStorage.multiSet([
-        ["userId", userCredential.user.uid],
-        ["userEmail", userCredential.user.email || ""],
-        [
-          "userName",
-          userCredential.user.displayName ||
-            userCredential.user.email?.split("@")[0] ||
-            "User",
-        ],
-      ]);
-
-      console.log("Google login successful:", userCredential.user.email);
+      // The parent App component will handle the token exchange
+      console.log("Google login successful!");
     } catch (error: any) {
       console.error("Google login error:", error);
       setError(error.message || "Failed to login with Google");

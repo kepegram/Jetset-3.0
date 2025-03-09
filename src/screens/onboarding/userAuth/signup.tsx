@@ -8,6 +8,7 @@ import {
   Platform,
   ActivityIndicator,
   TextInput,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
@@ -230,49 +231,13 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
       const result = await promptAsync();
       console.log("Google auth result:", result);
 
-      if (result?.type !== "success") {
-        console.log("Google signup cancelled or failed:", result);
-        setError("Google signup was cancelled");
+      if (result.type !== "success") {
+        setError("Google signup was cancelled or failed");
         return;
       }
 
-      const { id_token } = result.params;
-      if (!id_token) {
-        setError("Failed to get Google credentials");
-        return;
-      }
-
-      const credential = GoogleAuthProvider.credential(id_token);
-      const userCredential = await signInWithCredential(auth, credential);
-
-      // Create or update user document in Firestore
-      const userRef = doc(FIREBASE_DB, "users", userCredential.user.uid);
-      await setDoc(
-        userRef,
-        {
-          username: userCredential.user.displayName || "User",
-          email: userCredential.user.email,
-          createdAt: new Date().toISOString(),
-          authProvider: "google",
-          photoURL: userCredential.user.photoURL || null,
-          emailVerified: true,
-        },
-        { merge: true }
-      );
-
-      // Store user info in AsyncStorage
-      await AsyncStorage.multiSet([
-        ["userId", userCredential.user.uid],
-        ["userEmail", userCredential.user.email || ""],
-        [
-          "userName",
-          userCredential.user.displayName ||
-            userCredential.user.email?.split("@")[0] ||
-            "User",
-        ],
-      ]);
-
-      console.log("Google signup successful:", userCredential.user.email);
+      // The parent App component will handle the token exchange
+      console.log("Google signup successful!");
     } catch (error: any) {
       console.error("Google signup error:", error);
       setError(error.message || "Failed to sign up with Google");

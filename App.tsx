@@ -34,6 +34,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { FIREBASE_DB } from "./firebase.config";
 import * as Font from "expo-font";
 import { registerForPushNotificationsAsync } from "./src/utils/notifications";
+import { makeRedirectUri } from "expo-auth-session";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -75,9 +76,13 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [appIsReady, setAppIsReady] = useState(false);
   const { currentTheme } = useTheme();
+
   const [request, response, promptAsync] = Google.useAuthRequest({
     iosClientId: IOS_CLIENT_ID,
-    responseType: "id_token",
+    redirectUri: makeRedirectUri({
+      scheme: "jetset",
+      path: "oauth2redirect/google",
+    }),
     scopes: ["profile", "email"],
   });
 
@@ -89,39 +94,24 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (response?.type === "success") {
+      console.log("Google auth response:", response);
+
       const { id_token } = response.params;
-      console.log("Google auth response success:", { hasToken: !!id_token });
+      console.log("Has ID token:", !!id_token);
+
       if (id_token) {
+        // Process the token with Firebase
         const credential = GoogleAuthProvider.credential(id_token);
         signInWithCredential(FIREBASE_AUTH, credential)
-          .then(async (userCredential) => {
-            console.log("Firebase auth success:", userCredential.user.email);
-            const user = userCredential.user;
-            const userRef = doc(FIREBASE_DB, "users", user.uid);
-            const userDoc = await getDoc(userRef);
-
-            if (!userDoc.exists()) {
-              console.log("Creating new user document");
-              await setDoc(userRef, {
-                username: user.displayName || "User",
-                email: user.email,
-                createdAt: new Date().toISOString(),
-                authProvider: "google",
-                photoURL: user.photoURL || null,
-              });
-            }
+          .then((result) => {
+            console.log("Firebase auth success:", result.user.email);
           })
           .catch((error) => {
-            console.error("Firebase auth error:", {
-              code: error.code,
-              message: error.message,
-            });
+            console.error("Firebase auth error:", error);
           });
-      } else {
-        console.error("No id_token in response params:", response.params);
       }
-    } else if (response?.type === "error") {
-      console.error("Google auth error:", response.error);
+    } else if (response) {
+      console.error("Google auth error or cancel:", response);
     }
   }, [response]);
 
@@ -189,17 +179,13 @@ const App: React.FC = () => {
                   // Create user document if it doesn't exist
                   console.log("Creating new user document for:", user.email);
                   await setDoc(userRef, {
-                    username:
-                      user.displayName || user.email?.split("@")[0] || "User",
+                    username: user.displayName || "User",
                     email: user.email,
                     createdAt: new Date().toISOString(),
-                    emailVerified: true, // Set to true for existing auth users
-                    lastLoginAt: new Date().toISOString(),
+                    authProvider: "google",
+                    photoURL: user.photoURL || null,
                   });
                 }
-
-                // Set user regardless of verification status
-                setUser(user);
               } else {
                 setUser(null);
               }

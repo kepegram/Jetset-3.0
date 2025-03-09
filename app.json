@@ -24,7 +24,16 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": ["remote-notification"],
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.592334619232-6mcjbp53tn18uv7p8tna5frfg2mhg2c7",
+              "com.kpegra1.jetset",
+              "jetset"
+            ]
+          }
+        ]
       },
       "icon": "./src/assets/icons/Light.png",
       "alternateIcons": {
@@ -57,7 +66,7 @@
         "projectId": "cf7b3e9e-07c0-457e-b3b0-d4179b54b637"
       }
     },
-    "scheme": ["jetset", "com.kpegra1.jetset"],
+    "scheme": "jetset",
     "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/cf7b3e9e-07c0-457e-b3b0-d4179b54b637"
