@@ -166,7 +166,15 @@ const ChooseDate: React.FC = () => {
             </Text>
 
             {/* Date Range Summary Card */}
-            <View style={styles.dateRangeSummaryCard}>
+            <View
+              style={[
+                styles.dateRangeSummaryCard,
+                {
+                  backgroundColor: currentTheme.background,
+                  shadowColor: currentTheme.textPrimary,
+                },
+              ]}
+            >
               {startDate && endDate ? (
                 <>
                   <View style={styles.dateRangeDisplay}>
@@ -250,7 +258,12 @@ const ChooseDate: React.FC = () => {
                     size={24}
                     color={currentTheme.alternate}
                   />
-                  <Text style={styles.emptyDateRangeText}>
+                  <Text
+                    style={[
+                      styles.emptyDateRangeText,
+                      { color: currentTheme.textSecondary },
+                    ]}
+                  >
                     Select your travel dates
                   </Text>
                 </View>
@@ -266,7 +279,7 @@ const ChooseDate: React.FC = () => {
               initialDate={startDate?.toDate() || new Date()}
               selectedStartDate={startDate?.toDate()}
               selectedEndDate={endDate?.toDate()}
-              todayBackgroundColor="#F0F0F0"
+              todayBackgroundColor={currentTheme.alternate}
               todayTextStyle={{ color: currentTheme.alternate }}
               selectedRangeStyle={{
                 backgroundColor: currentTheme.alternateLight30,
@@ -279,30 +292,35 @@ const ChooseDate: React.FC = () => {
                 fontWeight: "600",
               }}
               textStyle={{
-                color: "#000000",
-                fontFamily: "outfit",
+                color: currentTheme.textPrimary,
                 fontSize: 14,
               }}
               dayLabels={["S", "M", "T", "W", "T", "F", "S"]}
               monthTitleStyle={{
-                color: "#000000",
+                color: currentTheme.textPrimary,
                 fontSize: 16,
                 fontWeight: "700",
-                fontFamily: "outfit-bold",
               }}
               yearTitleStyle={{
-                color: "#000000",
+                color: currentTheme.textPrimary,
                 fontSize: 16,
                 fontWeight: "700",
-                fontFamily: "outfit-bold",
               }}
               previousComponent={
-                <Ionicons name="chevron-back" size={24} color="#505050" />
+                <Ionicons
+                  name="chevron-back"
+                  size={24}
+                  color={currentTheme.textPrimary}
+                />
               }
               nextComponent={
-                <Ionicons name="chevron-forward" size={24} color="#505050" />
+                <Ionicons
+                  name="chevron-forward"
+                  size={24}
+                  color={currentTheme.textPrimary}
+                />
               }
-              disabledDatesTextStyle={{ color: "#CCCCCC" }}
+              disabledDatesTextStyle={{ color: currentTheme.textSecondary }}
               width={width - 48}
               scaleFactor={375}
               enableSwipe={true}
@@ -349,14 +367,11 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 32,
-    fontFamily: "outfit-bold",
     marginBottom: 20,
   },
   dateRangeSummaryCard: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
@@ -444,16 +459,12 @@ const styles = StyleSheet.create({
   },
   emptyDateRangeText: {
     fontSize: 16,
-    fontFamily: "outfit-medium",
-    color: "#707070",
     marginTop: 8,
     textAlign: "center",
   },
   calendarContainer: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,

@@ -55,26 +55,30 @@ const PlaceCard: React.FC<PlaceCardProps> = ({ place, onPhotoRefReady }) => {
     card: {
       marginVertical: 10,
       borderRadius: 15,
-      overflow: 'hidden',
+      overflow: "hidden",
     },
     imageContainer: {
       height: 200, // Adjust height as needed
     },
     image: {
-      width: '100%',
-      height: '100%',
+      width: "100%",
+      height: "100%",
     },
     contentContainer: {
       padding: 15,
     },
-    // ... rest of the styles
+    placeName: {
+      fontSize: 20,
+      color: currentTheme.textPrimary,
+    },
+    placeLocation: {
+      fontSize: 14,
+      color: currentTheme.textSecondary,
+    },
   });
 
   return (
-    <Pressable
-      onPress={handlePress}
-      style={styles.card}
-    >
+    <Pressable onPress={handlePress} style={styles.card}>
       <View style={styles.imageContainer}>
         <Image
           source={
@@ -92,25 +96,9 @@ const PlaceCard: React.FC<PlaceCardProps> = ({ place, onPhotoRefReady }) => {
         />
       </View>
       <View style={styles.contentContainer}>
-        <Text
-          style={{
-            fontFamily: "outfit-bold",
-            fontSize: 20,
-            color: currentTheme.textPrimary,
-          }}
-        >
-          {place?.placeName}
-        </Text>
+        <Text style={styles.placeName}>{place?.placeName}</Text>
         <View style={{ marginTop: 5 }} />
-        <Text
-          style={{
-            fontFamily: "outfit",
-            fontSize: 14,
-            color: currentTheme.textSecondary,
-          }}
-        >
-          {place.placeDetails}
-        </Text>
+        <Text style={styles.placeLocation}>{place.placeDetails}</Text>
       </View>
     </Pressable>
   );

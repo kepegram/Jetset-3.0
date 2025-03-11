@@ -79,7 +79,6 @@ const HotelCard: React.FC<HotelCardProps> = ({ item }) => {
         >
           <Text
             style={{
-              fontFamily: "outfit-medium",
               fontSize: 17,
               color: currentTheme.textPrimary,
             }}
@@ -97,7 +96,6 @@ const HotelCard: React.FC<HotelCardProps> = ({ item }) => {
           >
             <Text
               style={{
-                fontFamily: "outfit",
                 color: currentTheme.textSecondary,
               }}
             >
@@ -105,7 +103,6 @@ const HotelCard: React.FC<HotelCardProps> = ({ item }) => {
             </Text>
             <Text
               style={{
-                fontFamily: "outfit",
                 color: currentTheme.textSecondary,
               }}
             >

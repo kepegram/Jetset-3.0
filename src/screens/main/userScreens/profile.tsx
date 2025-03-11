@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Modal,
   Animated,
+  Dimensions,
 } from "react-native";
 import React, { useCallback, useState, useRef, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -401,7 +402,7 @@ const Profile: React.FC = () => {
       >
         <Animated.View
           style={[
-            modalStyles.modalContainer,
+            styles.privacyModalContainer,
             {
               opacity: fadeAnim,
               backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -410,7 +411,7 @@ const Profile: React.FC = () => {
         >
           <Animated.View
             style={[
-              modalStyles.modalContent,
+              styles.privacyModalContent,
               {
                 transform: [{ scale: scaleAnim }],
               },
@@ -651,7 +652,6 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 28,
     fontWeight: "bold",
-    fontFamily: "outfit-bold",
   },
   profileImageContainer: {
     shadowColor: "#000",
@@ -773,7 +773,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: "600",
-    fontFamily: "outfit-bold",
   },
   modalImageWrapper: {
     padding: 20,
@@ -808,11 +807,31 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 16,
     fontWeight: "500",
-    fontFamily: "outfit-medium",
   },
   loadingContainer: {
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.1)",
+  },
+  privacyModalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    justifyContent: "flex-end",
+  },
+  privacyModalContent: {
+    width: "100%",
+    height: Dimensions.get("window").height * 0.94,
+    backgroundColor: "white",
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 5,
   },
 });

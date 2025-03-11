@@ -170,12 +170,6 @@ const NotificationSettings: React.FC = () => {
       style={[styles.container, { backgroundColor: currentTheme.background }]}
     >
       <ScrollView style={styles.content}>
-        <Text
-          style={[styles.sectionTitle, { color: currentTheme.textPrimary }]}
-        >
-          Notification Preferences
-        </Text>
-
         <NotificationOption
           title="Push Notifications"
           description="Receive notifications on your device"
@@ -300,14 +294,8 @@ const NotificationSettings: React.FC = () => {
                   { backgroundColor: currentTheme.alternate },
                   { opacity: pressed ? 0.8 : 1 },
                 ]}
-                onPress={async () => {
-                  const result = await testWeatherNotifications();
-                  Alert.alert(
-                    "Weather Test Result",
-                    result.success
-                      ? "Weather notifications sent successfully! Check your device for notifications."
-                      : `Test failed: ${result.message}`
-                  );
+                onPress={() => {
+                  testWeatherNotifications();
                 }}
               >
                 <Text style={styles.testButtonText}>Test Weather Alerts</Text>
@@ -327,12 +315,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 24,
   },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: "600",
-    marginBottom: 24,
-    fontFamily: "outfit-bold",
-  },
   optionContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -349,11 +331,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     marginBottom: 4,
-    fontFamily: "outfit-medium",
   },
   optionDescription: {
     fontSize: 14,
-    fontFamily: "outfit-regular",
   },
   expandableSection: {
     marginTop: 16,
@@ -371,7 +351,6 @@ const styles = StyleSheet.create({
   expandableTitle: {
     fontSize: 18,
     fontWeight: "600",
-    fontFamily: "outfit-medium",
   },
   expandableContent: {
     padding: 16,
@@ -386,7 +365,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 8,
     marginBottom: 4,
-    fontFamily: "outfit-medium",
   },
   testButtonsContainer: {
     marginTop: 24,
@@ -401,7 +379,6 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
-    fontFamily: "outfit-medium",
   },
 });
 

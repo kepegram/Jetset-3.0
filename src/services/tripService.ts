@@ -84,7 +84,6 @@ export const fetchUserTrips = async (userId: string): Promise<any[]> => {
       const snapshot = await getDocs(tripsRef);
 
       if (snapshot.empty) {
-        console.log("No trips found for user:", userId);
         return [];
       }
 

@@ -45,7 +45,6 @@ const MyTrips: React.FC = () => {
       const trips = await fetchUserTrips(user.uid);
       setUserTrips(trips);
     } catch (error) {
-      console.error("Error loading trips:", error);
       setUserTrips([]);
     }
   }, [user]);
@@ -366,7 +365,20 @@ const MyTrips: React.FC = () => {
                     {totalPastTrips > ITEMS_TO_SHOW && (
                       <Pressable
                         style={styles.seeMoreButton}
-                        onPress={() => console.log("See all past trips")}
+                        onPress={() => {
+                          const pastTrips = userTrips.filter((trip) =>
+                            moment(trip.tripData.endDate).isBefore(
+                              moment(),
+                              "day"
+                            )
+                          );
+                          if (pastTrips.length > 0) {
+                            navigation.navigate("AllTripsView", {
+                              trips: JSON.stringify(pastTrips),
+                              type: "past",
+                            });
+                          }
+                        }}
                       >
                         <Text
                           style={[

@@ -187,17 +187,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     marginBottom: 10,
-    fontFamily: "outfit-bold",
   },
   dayText: {
-    fontFamily: "outfit-medium",
     fontSize: 17,
     marginTop: 10,
     marginBottom: 10,
   },
   errorText: {
     fontSize: 18,
-    fontFamily: "outfit",
     marginBottom: 10,
   },
   mapButtonContainer: {

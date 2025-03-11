@@ -1,4 +1,4 @@
-import { View, Text, FlatList } from "react-native";
+import { View, Text, FlatList, StyleSheet } from "react-native";
 import React, { useState } from "react";
 import HotelCard from "./hotelCard";
 import { useTheme } from "../../context/themeContext";
@@ -28,21 +28,20 @@ const HotelList: React.FC<HotelListProps> = ({ hotelList }) => {
     }));
   };
 
+  const styles = StyleSheet.create({
+    title: {
+      fontSize: 20,
+      color: currentTheme.textPrimary,
+    },
+  });
+
   return (
     <View
       style={{
         marginTop: 10,
       }}
     >
-      <Text
-        style={{
-          fontFamily: "outfit-bold",
-          fontSize: 20,
-          color: currentTheme.textPrimary,
-        }}
-      >
-        🏨 Places to Stay
-      </Text>
+      <Text style={styles.title}>🏨 Places to Stay</Text>
 
       <FlatList
         data={hotelList}

@@ -10,10 +10,9 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import React, { useState, useContext, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../../../context/themeContext";
-import { CreateTripContext } from "../../../context/createTripContext";
 import { getAuth } from "firebase/auth";
 import {
   doc,
@@ -117,7 +116,6 @@ const Home: React.FC = () => {
   const [tapCount, setTapCount] = useState<number>(0);
   const navigation = useNavigation<NavigationProp>();
   const googlePlacesRef = useRef<any>(null);
-  const [hasGeneratedTrips, setHasGeneratedTrips] = useState<boolean>(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [hasNotifications, setHasNotifications] = useState<boolean>(false);
   const [userPreferences, setUserPreferences] =
@@ -474,16 +472,6 @@ const Home: React.FC = () => {
     }, [])
   );
 
-  // Add this function to check if user has generated trips before
-  const checkHasGeneratedTrips = async () => {
-    try {
-      const hasGenerated = await AsyncStorage.getItem("hasGeneratedTrips");
-      setHasGeneratedTrips(!!hasGenerated);
-    } catch (error) {
-      console.error("Error checking generated trips status:", error);
-    }
-  };
-
   // Update loadExistingTrips with better error handling and retry logic
   const loadExistingTrips = async () => {
     if (
@@ -798,428 +786,425 @@ const Home: React.FC = () => {
       testID="home-screen"
       style={[styles.container, { backgroundColor: currentTheme.background }]}
     >
-      <ScrollView
-        testID="home-scroll-view"
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollViewContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <View style={styles.headerTopRow}>
-            <Text
-              testID="home-greeting"
-              style={[
-                styles.greetingText,
-                {
-                  fontSize: getGreeting().fontSize,
-                  color: currentTheme.textPrimary,
-                },
-              ]}
-              onPress={resetStorageForTesting}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-            >
-              {getGreeting().text}
-            </Text>
-            <Pressable
-              onPress={() => navigation.navigate("Notifications")}
-              style={({ pressed }) => [
-                styles.notificationButton,
-                { opacity: pressed ? 0.7 : 1 },
-              ]}
-            >
-              <Ionicons
-                name="notifications-outline"
-                size={32}
-                color={currentTheme.textPrimary}
-              />
-              {hasNotifications && (
-                <View
-                  style={[
-                    styles.notificationDot,
-                    { backgroundColor: currentTheme.error || "#FF3B30" },
-                  ]}
-                />
-              )}
-            </Pressable>
-          </View>
+      <View style={styles.header}>
+        <View style={styles.headerTopRow}>
           <Text
+            testID="home-greeting"
             style={[
-              styles.subGreetingText,
-              { color: currentTheme.textSecondary },
+              styles.greetingText,
+              {
+                fontSize: getGreeting().fontSize,
+                color: currentTheme.textPrimary,
+              },
+            ]}
+            onPress={resetStorageForTesting}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            {getGreeting().text}
+          </Text>
+          <Pressable
+            onPress={() => navigation.navigate("Notifications")}
+            style={({ pressed }) => [
+              styles.notificationButton,
+              { opacity: pressed ? 0.7 : 1 },
             ]}
           >
-            Let's plan your next adventure!
+            <Ionicons
+              name="notifications-outline"
+              size={32}
+              color={currentTheme.textPrimary}
+            />
+            {hasNotifications && (
+              <View
+                style={[
+                  styles.notificationDot,
+                  { backgroundColor: currentTheme.error || "#FF3B30" },
+                ]}
+              />
+            )}
+          </Pressable>
+        </View>
+        <Text
+          style={[
+            styles.subGreetingText,
+            { color: currentTheme.textSecondary },
+          ]}
+        >
+          Let's plan your next adventure!
+        </Text>
+      </View>
+
+      <View style={styles.contentContainer}>
+        <View testID="home-search-container" style={styles.searchContainer}>
+          <GooglePlacesAutocomplete
+            ref={googlePlacesRef}
+            placeholder="Where would you like to go?"
+            textInputProps={{
+              placeholderTextColor: currentTheme.textSecondary,
+              selectionColor: currentTheme.alternate,
+            }}
+            fetchDetails={true}
+            onPress={(
+              data,
+              details: ExtendedGooglePlaceDetail | null = null
+            ) => {
+              if (details) {
+                const photoReference =
+                  details.photos?.[0]?.photo_reference || null;
+                setTripData({
+                  locationInfo: {
+                    name: data.description,
+                    coordinates: details.geometry.location,
+                    photoRef: photoReference ?? undefined,
+                    url: details.url,
+                    place_id: details.place_id,
+                  },
+                });
+                // Clear input
+                if (googlePlacesRef.current) {
+                  googlePlacesRef.current.clear();
+                }
+                // @ts-ignore - Nested navigation type issue
+                navigation.navigate("MyTrips", {
+                  screen: "ChooseDate",
+                });
+              }
+            }}
+            query={{
+              // @ts-ignore
+              key: process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY,
+              language: "en",
+            }}
+            styles={{
+              container: {
+                flex: 0,
+              },
+              textInputContainer: {
+                backgroundColor: "transparent",
+              },
+              textInput: {
+                height: 55,
+                borderRadius: 15,
+                paddingHorizontal: 45,
+                fontSize: 16,
+                fontFamily:
+                  Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
+                backgroundColor: currentTheme.shadowBackground,
+                ...Platform.select({
+                  ios: {
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                  },
+                  android: {
+                    elevation: 3,
+                  },
+                }),
+              },
+              listView: {
+                backgroundColor: currentTheme.accentBackground,
+                borderRadius: 12,
+                marginTop: 10,
+                marginHorizontal: 0,
+                elevation: 3,
+                shadowColor: "#000",
+                shadowOpacity: 0.1,
+                shadowOffset: { width: 0, height: 2 },
+                shadowRadius: 4,
+              },
+              row: {
+                backgroundColor: currentTheme.accentBackground,
+                padding: 15,
+                height: "auto",
+                minHeight: 50,
+              },
+              separator: {
+                backgroundColor: `${currentTheme.textSecondary}20`,
+                height: 1,
+              },
+              description: {
+                color: currentTheme.textPrimary,
+                fontSize: 16,
+              },
+              poweredContainer: {
+                backgroundColor: currentTheme.accentBackground,
+                borderTopWidth: 1,
+                borderColor: `${currentTheme.textSecondary}20`,
+              },
+              powered: {
+                tintColor: currentTheme.textSecondary,
+              },
+            }}
+            renderLeftButton={() => (
+              <View style={styles.searchIcon}>
+                <Ionicons
+                  name="search"
+                  size={24}
+                  color={currentTheme.textSecondary}
+                />
+              </View>
+            )}
+          />
+        </View>
+
+        <View style={[styles.sectionHeader, { marginTop: 10 }]}>
+          <Text
+            style={[styles.sectionTitle, { color: currentTheme.textPrimary }]}
+          >
+            Popular Destinations
           </Text>
         </View>
 
-        <View style={styles.contentContainer}>
-          <View testID="home-search-container" style={styles.searchContainer}>
-            <GooglePlacesAutocomplete
-              ref={googlePlacesRef}
-              placeholder="Where would you like to go?"
-              textInputProps={{
-                placeholderTextColor: currentTheme.textSecondary,
-                selectionColor: currentTheme.alternate,
-              }}
-              fetchDetails={true}
-              onPress={(
-                data,
-                details: ExtendedGooglePlaceDetail | null = null
-              ) => {
-                if (details) {
-                  const photoReference =
-                    details.photos?.[0]?.photo_reference || null;
-                  setTripData({
-                    locationInfo: {
-                      name: data.description,
-                      coordinates: details.geometry.location,
-                      photoRef: photoReference ?? undefined,
-                      url: details.url,
-                      place_id: details.place_id,
-                    },
-                  });
-                  // Clear input
-                  if (googlePlacesRef.current) {
-                    googlePlacesRef.current.clear();
-                  }
-                  // @ts-ignore - Nested navigation type issue
-                  navigation.navigate("MyTrips", {
-                    screen: "ChooseDate",
-                  });
-                }
-              }}
-              query={{
-                // @ts-ignore
-                key: process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY,
-                language: "en",
-              }}
-              styles={{
-                container: {
-                  flex: 0,
-                },
-                textInputContainer: {
-                  backgroundColor: "transparent",
-                },
-                textInput: {
-                  height: 55,
-                  borderRadius: 15,
-                  paddingHorizontal: 45,
-                  fontSize: 16,
-                  fontFamily:
-                    Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
-                  backgroundColor: currentTheme.shadowBackground,
-                  ...Platform.select({
-                    ios: {
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 4,
-                    },
-                    android: {
-                      elevation: 3,
-                    },
-                  }),
-                },
-                listView: {
-                  backgroundColor: currentTheme.accentBackground,
-                  borderRadius: 12,
-                  marginTop: 10,
-                  marginHorizontal: 0,
-                  elevation: 3,
-                  shadowColor: "#000",
-                  shadowOpacity: 0.1,
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowRadius: 4,
-                },
-                row: {
-                  backgroundColor: currentTheme.accentBackground,
-                  padding: 15,
-                  height: "auto",
-                  minHeight: 50,
-                },
-                separator: {
-                  backgroundColor: `${currentTheme.textSecondary}20`,
-                  height: 1,
-                },
-                description: {
-                  color: currentTheme.textPrimary,
-                  fontSize: 16,
-                },
-                poweredContainer: {
-                  backgroundColor: currentTheme.accentBackground,
-                  borderTopWidth: 1,
-                  borderColor: `${currentTheme.textSecondary}20`,
-                },
-                powered: {
-                  tintColor: currentTheme.textSecondary,
-                },
-              }}
-              renderLeftButton={() => (
-                <View style={styles.searchIcon}>
-                  <Ionicons
-                    name="search"
-                    size={24}
-                    color={currentTheme.textSecondary}
-                  />
-                </View>
-              )}
-            />
-          </View>
-
-          <View style={styles.sectionHeader}>
-            <Text
-              style={[styles.sectionTitle, { color: currentTheme.textPrimary }]}
-            >
-              Popular Destinations
-            </Text>
-          </View>
-
-          <FlatList
-            testID="popular-destinations-list"
-            horizontal
-            data={popularDestinations}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <Pressable
-                testID={`destination-item-${item.id}`}
-                onPress={() => {
-                  navigation.navigate("PopularDestinations", {
-                    destination: item,
-                  });
-                }}
-                style={({ pressed }) => [
-                  styles.popularDestinationContainer,
-                  {
-                    transform: [{ scale: pressed ? 0.95 : 1 }],
-                    backgroundColor: currentTheme.shadowBackground,
-                  },
-                ]}
-              >
-                <Image
-                  testID={`destination-image-${item.id}`}
-                  source={item.image}
-                  style={styles.popularDestinationImage}
-                />
-                <LinearGradient
-                  colors={["transparent", "rgba(0,0,0,0.7)"]}
-                  style={styles.popularDestinationGradient}
-                />
-                <Text
-                  testID={`destination-name-${item.id}`}
-                  style={styles.popularDestinationText}
-                >
-                  {item.name.split(",")[0]}
-                </Text>
-              </Pressable>
-            )}
-            showsHorizontalScrollIndicator={false}
-          />
-
-          <View style={styles.sectionHeader}>
-            <Text
-              style={[styles.sectionTitle, { color: currentTheme.textPrimary }]}
-            >
-              Recommended Trips
-            </Text>
+        <FlatList
+          testID="popular-destinations-list"
+          horizontal
+          data={popularDestinations}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
             <Pressable
-              onPress={handleRefresh}
-              disabled={recommendedTripsState.status === "loading"}
-              style={({ pressed }) => ({
-                opacity: pressed ? 0.7 : 1,
-                transform: [{ scale: pressed ? 0.95 : 1 }],
-              })}
-            >
-              <Ionicons
-                name="refresh"
-                size={28}
-                color={currentTheme.textPrimary}
-                style={
-                  recommendedTripsState.status === "loading"
-                    ? styles.spinningIcon
-                    : undefined
-                }
-              />
-            </Pressable>
-          </View>
-
-          {recommendedTripsState.status === "loading" ? (
-            <FlatList
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.recommendedTripsContent}
-              data={[0, 1, 2]}
-              keyExtractor={(index) => `skeleton-${index}`}
-              renderItem={({ item: index }) => (
-                <RecommendedTripSkeleton
-                  key={index}
-                  loadingProgress={
-                    loadingProgress.currentTripIndex === index
-                      ? loadingProgress.completed % 1
-                      : loadingProgress.tripStatuses[index] === "completed"
-                      ? 1
-                      : 0
-                  }
-                  isFirstCard={index === 0}
-                  status={loadingProgress.tripStatuses[index]}
-                  currentlyGenerating={
-                    loadingProgress.currentTripIndex === index
-                  }
-                  tripNumber={index + 1}
-                />
-              )}
-            />
-          ) : recommendedTripsState.status === "error" ? (
-            <ErrorTripsState
-              onRetry={handleRefresh}
-              theme={currentTheme}
-              error={recommendedTripsState.error || ""}
-            />
-          ) : recommendedTripsState.trips.length > 0 ? (
-            <FlatList
-              testID="recommended-trips-list"
-              horizontal
-              data={[
-                ...recommendedTripsState.trips,
-                { id: "dont-like-button" },
+              testID={`destination-item-${item.id}`}
+              onPress={() => {
+                navigation.navigate("PopularDestinations", {
+                  destination: item,
+                });
+              }}
+              style={({ pressed }) => [
+                styles.popularDestinationContainer,
+                {
+                  transform: [{ scale: pressed ? 0.95 : 1 }],
+                  backgroundColor: currentTheme.shadowBackground,
+                },
               ]}
-              keyExtractor={(trip) => trip.id}
-              renderItem={({ item: trip }) => {
-                if (trip.id === "dont-like-button") {
-                  return (
-                    <View style={styles.dontLikeButtonContainer}>
-                      <Pressable
-                        onPress={() => navigation.navigate("WhereTo")}
-                        style={({ pressed }) => [
-                          styles.dontLikeButton,
-                          {
-                            borderColor: currentTheme.alternate,
-                            opacity: pressed ? 0.8 : 1,
-                            transform: [{ scale: pressed ? 0.98 : 1 }],
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name="add-circle-outline"
-                          size={40}
-                          color={currentTheme.alternate}
-                          style={styles.createTripIcon}
-                        />
-                        <Text
-                          style={[
-                            styles.dontLikeButtonText,
-                            { color: currentTheme.alternate },
-                          ]}
-                        >
-                          Create Your Own{"\n"}Adventure
-                        </Text>
-                      </Pressable>
-                    </View>
-                  );
-                } else if (isRecommendedTrip(trip)) {
-                  return (
+            >
+              <Image
+                testID={`destination-image-${item.id}`}
+                source={item.image}
+                style={styles.popularDestinationImage}
+              />
+              <LinearGradient
+                colors={["transparent", "rgba(0,0,0,0.7)"]}
+                style={styles.popularDestinationGradient}
+              />
+              <Text
+                testID={`destination-name-${item.id}`}
+                style={styles.popularDestinationText}
+              >
+                {item.name.split(",")[0]}
+              </Text>
+            </Pressable>
+          )}
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          snapToAlignment="center"
+          snapToInterval={width * 0.35 + 15}
+        />
+
+        <View style={styles.sectionHeader}>
+          <Text
+            style={[styles.sectionTitle, { color: currentTheme.textPrimary }]}
+          >
+            Recommended Trips
+          </Text>
+          <Pressable
+            onPress={handleRefresh}
+            disabled={recommendedTripsState.status === "loading"}
+            style={({ pressed }) => ({
+              opacity: pressed ? 0.7 : 1,
+              transform: [{ scale: pressed ? 0.95 : 1 }],
+            })}
+          >
+            <Ionicons
+              name="refresh"
+              size={28}
+              color={currentTheme.textPrimary}
+              style={
+                recommendedTripsState.status === "loading"
+                  ? styles.spinningIcon
+                  : undefined
+              }
+            />
+          </Pressable>
+        </View>
+
+        {recommendedTripsState.status === "loading" ? (
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.recommendedTripsContent}
+            data={[0, 1, 2]}
+            keyExtractor={(index) => `skeleton-${index}`}
+            decelerationRate="fast"
+            snapToAlignment="center"
+            snapToInterval={width * 0.6 + 20}
+            renderItem={({ item: index }) => (
+              <RecommendedTripSkeleton
+                key={index}
+                loadingProgress={
+                  loadingProgress.currentTripIndex === index
+                    ? loadingProgress.completed % 1
+                    : loadingProgress.tripStatuses[index] === "completed"
+                    ? 1
+                    : 0
+                }
+                isFirstCard={index === 0}
+                status={loadingProgress.tripStatuses[index]}
+                currentlyGenerating={loadingProgress.currentTripIndex === index}
+                tripNumber={index + 1}
+              />
+            )}
+          />
+        ) : recommendedTripsState.status === "error" ? (
+          <ErrorTripsState
+            onRetry={handleRefresh}
+            theme={currentTheme}
+            error={recommendedTripsState.error || ""}
+          />
+        ) : recommendedTripsState.trips.length > 0 ? (
+          <FlatList
+            testID="recommended-trips-list"
+            horizontal
+            data={[...recommendedTripsState.trips, { id: "dont-like-button" }]}
+            keyExtractor={(trip) => trip.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.recommendedTripsContent}
+            decelerationRate="fast"
+            snapToAlignment="center"
+            snapToInterval={width * 0.6 + 20}
+            renderItem={({ item: trip }) => {
+              if (trip.id === "dont-like-button") {
+                return (
+                  <View style={styles.dontLikeButtonContainer}>
                     <Pressable
-                      testID={`trip-card-${trip.id}`}
-                      onPress={() => {
-                        navigation.navigate("RecommendedTripDetails", {
-                          trip: JSON.stringify(trip.tripPlan),
-                          photoRef: trip.photoRef ?? "",
-                        });
-                      }}
+                      onPress={() => navigation.navigate("WhereTo")}
                       style={({ pressed }) => [
-                        styles.tripCard,
+                        styles.dontLikeButton,
                         {
+                          borderColor: currentTheme.alternate,
+                          opacity: pressed ? 0.8 : 1,
                           transform: [{ scale: pressed ? 0.98 : 1 }],
-                          backgroundColor: currentTheme.shadowBackground,
                         },
                       ]}
                     >
-                      {trip.photoRef && (
-                        <View style={styles.tripImageContainer}>
-                          <Image
-                            testID={`trip-image-${trip.id}`}
-                            source={{
-                              // @ts-ignore
-                              uri: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${trip.photoRef}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`,
-                            }}
-                            style={styles.tripImage}
-                          />
-                          <LinearGradient
-                            colors={["transparent", "rgba(0,0,0,0.7)"]}
-                            style={styles.tripImageGradient}
-                          />
-                        </View>
-                      )}
-                      <View style={styles.tripInfoContainer}>
-                        <Ionicons
-                          name="location-outline"
-                          size={20}
-                          color={currentTheme.textPrimary}
-                          style={styles.tripLocationIcon}
-                        />
-                        <View style={styles.tripTextContainer}>
-                          <Text
-                            testID={`trip-name-${trip.id}`}
-                            style={[
-                              styles.tripName,
-                              { color: currentTheme.textPrimary },
-                            ]}
-                            numberOfLines={1}
-                            ellipsizeMode="tail"
-                          >
-                            {trip.name}
-                          </Text>
-                          <Text
-                            testID={`trip-description-${trip.id}`}
-                            style={[
-                              styles.tripDescription,
-                              { color: currentTheme.textSecondary },
-                            ]}
-                            numberOfLines={2}
-                            ellipsizeMode="tail"
-                          >
-                            {trip.description}
-                          </Text>
-                          {trip.tripPlan.travelPlan.dates && (
-                            <View style={styles.tripDatesContainer}>
-                              <Ionicons
-                                name="calendar-outline"
-                                size={14}
-                                color={currentTheme.textSecondary}
-                                style={styles.tripDateIcon}
-                              />
-                              <Text
-                                testID={`trip-dates-${trip.id}`}
-                                style={[
-                                  styles.tripDates,
-                                  { color: currentTheme.textSecondary },
-                                ]}
-                              >
-                                {new Date(
-                                  trip.tripPlan.travelPlan.dates.startDate
-                                ).toLocaleDateString()}{" "}
-                                -{" "}
-                                {new Date(
-                                  trip.tripPlan.travelPlan.dates.endDate
-                                ).toLocaleDateString()}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                      </View>
+                      <Ionicons
+                        name="add-circle-outline"
+                        size={40}
+                        color={currentTheme.alternate}
+                        style={styles.createTripIcon}
+                      />
+                      <Text
+                        style={[
+                          styles.dontLikeButtonText,
+                          { color: currentTheme.alternate },
+                        ]}
+                      >
+                        Create Your Own{"\n"}Adventure
+                      </Text>
                     </Pressable>
-                  );
-                }
-                return null;
-              }}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.recommendedTripsContent}
-            />
-          ) : (
-            <EmptyTripsState onRetry={handleRefresh} theme={currentTheme} />
-          )}
-        </View>
-      </ScrollView>
+                  </View>
+                );
+              } else if (isRecommendedTrip(trip)) {
+                return (
+                  <Pressable
+                    testID={`trip-card-${trip.id}`}
+                    onPress={() => {
+                      navigation.navigate("RecommendedTripDetails", {
+                        trip: JSON.stringify(trip.tripPlan),
+                        photoRef: trip.photoRef ?? "",
+                      });
+                    }}
+                    style={({ pressed }) => [
+                      styles.tripCard,
+                      {
+                        transform: [{ scale: pressed ? 0.98 : 1 }],
+                        backgroundColor: currentTheme.shadowBackground,
+                      },
+                    ]}
+                  >
+                    {trip.photoRef && (
+                      <View style={styles.tripImageContainer}>
+                        <Image
+                          testID={`trip-image-${trip.id}`}
+                          source={{
+                            // @ts-ignore
+                            uri: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${trip.photoRef}&key=${process.env.EXPO_PUBLIC_GOOGLE_MAP_KEY}`,
+                          }}
+                          style={styles.tripImage}
+                        />
+                        <LinearGradient
+                          colors={["transparent", "rgba(0,0,0,0.7)"]}
+                          style={styles.tripImageGradient}
+                        />
+                      </View>
+                    )}
+                    <View style={styles.tripInfoContainer}>
+                      <Ionicons
+                        name="location-outline"
+                        size={20}
+                        color={currentTheme.textPrimary}
+                        style={styles.tripLocationIcon}
+                      />
+                      <View style={styles.tripTextContainer}>
+                        <Text
+                          testID={`trip-name-${trip.id}`}
+                          style={[
+                            styles.tripName,
+                            { color: currentTheme.textPrimary },
+                          ]}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {trip.name}
+                        </Text>
+                        <Text
+                          testID={`trip-description-${trip.id}`}
+                          style={[
+                            styles.tripDescription,
+                            { color: currentTheme.textSecondary },
+                          ]}
+                          numberOfLines={2}
+                          ellipsizeMode="tail"
+                        >
+                          {trip.description}
+                        </Text>
+                        {trip.tripPlan.travelPlan.dates && (
+                          <View style={styles.tripDatesContainer}>
+                            <Ionicons
+                              name="calendar-outline"
+                              size={14}
+                              color={currentTheme.textSecondary}
+                              style={styles.tripDateIcon}
+                            />
+                            <Text
+                              testID={`trip-dates-${trip.id}`}
+                              style={[
+                                styles.tripDates,
+                                { color: currentTheme.textSecondary },
+                              ]}
+                            >
+                              {new Date(
+                                trip.tripPlan.travelPlan.dates.startDate
+                              ).toLocaleDateString()}{" "}
+                              -{" "}
+                              {new Date(
+                                trip.tripPlan.travelPlan.dates.endDate
+                              ).toLocaleDateString()}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              }
+              return null;
+            }}
+          />
+        ) : (
+          <EmptyTripsState onRetry={handleRefresh} theme={currentTheme} />
+        )}
+      </View>
     </View>
   );
 };
@@ -1236,7 +1221,8 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    paddingTop: Platform.OS === "ios" ? 60 : 20,
+    paddingTop: Platform.OS === "ios" ? 50 : 20,
+    paddingBottom: 5,
   },
   headerTopRow: {
     flexDirection: "row",
@@ -1253,13 +1239,14 @@ const styles = StyleSheet.create({
   subGreetingText: {
     fontSize: 18,
     fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
-    marginTop: 8,
+    marginBottom: 15,
   },
   contentContainer: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 0,
   },
   searchContainer: {
-    marginBottom: 10,
+    marginBottom: 5,
   },
   searchIcon: {
     position: "absolute",
@@ -1271,8 +1258,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 15,
-    marginTop: 20,
+    marginBottom: 10,
+    marginTop: 15,
   },
   sectionTitle: {
     fontSize: 24,
@@ -1402,7 +1389,7 @@ const styles = StyleSheet.create({
   },
   tripImage: {
     width: "100%",
-    height: width * 0.6,
+    height: width * 0.55,
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
   },
@@ -1569,6 +1556,10 @@ const styles = StyleSheet.create({
   tripDates: {
     fontSize: 12,
     fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
+  },
+  listContainer: {
+    paddingRight: 20,
+    paddingTop: 10,
   },
 });
 

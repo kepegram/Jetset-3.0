@@ -487,7 +487,7 @@ const ProfileStack: React.FC = () => {
         component={NotificationSettings}
         options={({ navigation }) => ({
           ...screenOptions({ navigation }),
-          title: "Notifications",
+          title: "Notification Settings",
         })}
       />
     </RootStack.Navigator>

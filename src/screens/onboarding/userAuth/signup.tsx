@@ -8,6 +8,8 @@ import {
   Platform,
   ActivityIndicator,
   TextInput,
+  Image,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
@@ -32,9 +34,14 @@ interface SignUpProps {
     options?: AuthRequestPromptOptions
   ) => Promise<AuthSessionResult>;
   onSwitchToLogin?: () => void;
+  onAuthSuccess?: () => Promise<void>;
 }
 
-const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
+const SignUp: React.FC<SignUpProps> = ({
+  promptAsync,
+  onSwitchToLogin,
+  onAuthSuccess,
+}) => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -147,10 +154,8 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
           ["userName", getDisplayName(email)],
         ]);
 
-        // Show success message and redirect to login
-        alert("Email verified successfully! Please log in with your email.");
-        if (navigation) {
-          navigation.navigate("Login");
+        if (onAuthSuccess) {
+          await onAuthSuccess();
         }
       } else {
         await updateDoc(verificationRef, {
@@ -180,7 +185,11 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
 
   const handleEmailChange = (text: string) => {
     setEmail(text);
-    setEmailError(validateEmail(text));
+    const validationError = validateEmail(text);
+    setEmailError(validationError);
+    if (validationError) {
+      Alert.alert("Invalid Email", validationError);
+    }
   };
 
   const getDisplayName = (email: string) => {
@@ -197,7 +206,7 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
 
     const emailValidationError = validateEmail(email);
     if (emailValidationError) {
-      setEmailError(emailValidationError);
+      Alert.alert("Invalid Email", emailValidationError);
       setLoading(false);
       return;
     }
@@ -224,7 +233,7 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
       setShowVerification(true);
       console.log("Verification code for testing:", verificationCode);
     } catch (error: any) {
-      setError(error.message.replace("Firebase: ", ""));
+      Alert.alert("Signup Error", error.message.replace("Firebase: ", ""));
     } finally {
       setLoading(false);
     }
@@ -389,7 +398,11 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
               onPress={handleGoogleSignUp}
               activeOpacity={0.8}
             >
-              <FontAwesome name="google" size={32} color="#EA4335" />
+              <Image
+                source={require("../../../assets/app-imgs/google.png")}
+                style={styles.googleIcon}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -397,7 +410,7 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
               onPress={handleAppleSignIn}
               activeOpacity={0.8}
             >
-              <FontAwesome name="apple" size={36} color="#000" />
+              <FontAwesome name="apple" size={32} color="#000" />
             </TouchableOpacity>
           </View>
 
@@ -418,11 +431,11 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
                 <Ionicons
                   name="mail-outline"
                   size={20}
-                  color={emailError ? theme.error : theme.textSecondary}
+                  color={theme.textSecondary}
                   style={styles.inputIcon}
                 />
                 <TextInput
-                  style={[styles.input, emailError && { color: theme.error }]}
+                  style={styles.input}
                   placeholder="Email"
                   placeholderTextColor={theme.textSecondary}
                   value={email}
@@ -432,22 +445,13 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
                   autoComplete="email"
                 />
               </View>
-              <View style={styles.errorContainer}>
-                <Text style={[styles.fieldError, { color: theme.error }]}>
-                  {emailError || " "}
-                </Text>
-              </View>
             </View>
-
-            {error && !emailError ? (
-              <Text style={styles.errorText}>{error}</Text>
-            ) : null}
           </View>
 
           <MainButton
             style={styles.signupButton}
             onPress={handleSignUp}
-            disabled={loading}
+            disabled={loading || !email || emailError !== null}
             width="100%"
           >
             {loading ? (
@@ -487,18 +491,23 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     width: "100%",
     gap: 16,
-    paddingHorizontal: 20,
   },
   socialButton: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f8f9fa",
-    borderRadius: 12,
+    backgroundColor: "#ffffff",
+    borderRadius: 25,
     padding: 16,
-    borderWidth: 1,
-    borderColor: "#e9ecef",
     width: 130,
     height: 66,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   dividerContainer: {
     flexDirection: "row",
@@ -517,21 +526,21 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     width: "100%",
-    marginBottom: 5,
+    marginBottom: 12,
   },
   inputGroup: {
-    marginBottom: 8,
+    marginBottom: 4,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f8f9fa",
-    borderRadius: 12,
+    borderRadius: 25,
     marginBottom: 4,
-    paddingHorizontal: 12,
+    paddingHorizontal: 15,
     borderWidth: 1,
     borderColor: "#e9ecef",
-    height: 46,
+    height: 52,
   },
   inputWrapperError: {
     borderColor: theme.error,
@@ -543,16 +552,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: theme.textPrimary,
     fontSize: 15,
-  },
-  errorContainer: {
-    height: 20,
-    justifyContent: "center",
-  },
-  fieldError: {
-    fontSize: 12,
-    marginLeft: 4,
-    color: theme.error,
-    minHeight: 16,
+    height: 52,
   },
   errorText: {
     color: theme.error,
@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
     width: 45,
     height: 52,
     borderWidth: 1.5,
-    borderRadius: 12,
+    borderRadius: 25,
     textAlign: "center",
     fontSize: 22,
     fontWeight: "600",
@@ -666,6 +666,10 @@ const styles = StyleSheet.create({
     color: theme.buttonText,
     fontSize: 17,
     fontWeight: "600",
+  },
+  googleIcon: {
+    width: 28,
+    height: 28,
   },
 });
 

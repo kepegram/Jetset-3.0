@@ -196,7 +196,6 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     marginBottom: 12,
-    fontFamily: "outfit-medium",
   },
   inputWrapper: {
     flexDirection: "row",
@@ -209,7 +208,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    fontFamily: "outfit",
   },
   buttonContainer: {
     flexDirection: "row",
@@ -226,12 +224,10 @@ const styles = StyleSheet.create({
   confirmationText: {
     textAlign: "center",
     fontSize: 16,
-    fontFamily: "outfit-medium",
   },
   errorText: {
     color: "#FF3B30",
     fontSize: 14,
     marginBottom: 16,
-    fontFamily: "outfit",
   },
 });

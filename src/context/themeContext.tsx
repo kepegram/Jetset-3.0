@@ -15,7 +15,7 @@ import { lightTheme, darkTheme } from "../theme/theme";
 export type Theme = "light" | "dark";
 
 // Define the theme object structure
-type ThemeObject = {
+export type ThemeObject = {
   background: string;
   primary: string;
   secondary: string;

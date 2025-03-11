@@ -245,7 +245,6 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     marginBottom: 12,
-    fontFamily: "outfit-medium",
   },
   inputWrapper: {
     flexDirection: "row",
@@ -258,7 +257,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    fontFamily: "outfit",
   },
   eyeIcon: {
     position: "absolute",
@@ -277,6 +275,5 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     backgroundColor: "rgba(255, 0, 0, 0.1)",
-    fontFamily: "outfit",
   },
 });

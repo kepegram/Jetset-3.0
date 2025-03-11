@@ -230,7 +230,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 4,
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
   },
   statusContainer: {
     flexDirection: "row",
@@ -246,7 +245,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 14,
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
   },
   spinningIcon: {
     transform: [{ rotate: "45deg" }],

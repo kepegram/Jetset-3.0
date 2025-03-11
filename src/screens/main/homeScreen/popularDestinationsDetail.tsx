@@ -329,7 +329,6 @@ const styles = StyleSheet.create({
   },
   destinationTitle: {
     fontSize: 32,
-    fontFamily: "outfit-bold",
     letterSpacing: 0.5,
   },
   tripMetaContainer: {

@@ -1,5 +1,5 @@
 import { GooglePlaceDetail } from "react-native-google-places-autocomplete";
-import { Theme } from "../context/themeContext";
+import { Theme, ThemeObject } from "../context/themeContext";
 
 export interface UserPreferences {
   hasCompletedOnboarding: boolean;
@@ -46,11 +46,13 @@ export interface RecommendedTripsState {
 
 export interface EmptyTripsStateProps {
   onRetry: () => void;
-  theme: Theme;
+  theme: ThemeObject;
 }
 
-export interface ErrorTripsStateProps extends EmptyTripsStateProps {
-  error: string;
+export interface ErrorTripsStateProps {
+  onRetry: () => void;
+  theme: ThemeObject;
+  error?: string;
 }
 
 export interface HomeScreenProps {

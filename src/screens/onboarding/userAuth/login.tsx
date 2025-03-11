@@ -7,6 +7,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
+  Alert,
 } from "react-native";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -29,9 +31,14 @@ interface LoginProps {
     options?: AuthRequestPromptOptions
   ) => Promise<AuthSessionResult>;
   onSwitchToSignUp?: () => void;
+  onAuthSuccess?: () => Promise<void>;
 }
 
-const Login: React.FC<LoginProps> = ({ promptAsync, onSwitchToSignUp }) => {
+const Login: React.FC<LoginProps> = ({
+  promptAsync,
+  onSwitchToSignUp,
+  onAuthSuccess,
+}) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -54,8 +61,11 @@ const Login: React.FC<LoginProps> = ({ promptAsync, onSwitchToSignUp }) => {
 
   const handleEmailChange = (text: string) => {
     setEmail(text);
-    setEmailError(validateEmail(text));
-    setError("");
+    const validationError = validateEmail(text);
+    setEmailError(validationError);
+    if (validationError) {
+      Alert.alert("Invalid Email", validationError);
+    }
   };
 
   const handleLogin = async () => {
@@ -64,13 +74,13 @@ const Login: React.FC<LoginProps> = ({ promptAsync, onSwitchToSignUp }) => {
 
     const emailValidationError = validateEmail(email);
     if (emailValidationError) {
-      setEmailError(emailValidationError);
+      Alert.alert("Invalid Email", emailValidationError);
       setLoading(false);
       return;
     }
 
     if (password === "") {
-      setError("Password is required");
+      Alert.alert("Missing Password", "Password is required");
       setLoading(false);
       return;
     }
@@ -82,16 +92,19 @@ const Login: React.FC<LoginProps> = ({ promptAsync, onSwitchToSignUp }) => {
         password
       );
 
-      // Store user info in AsyncStorage for persistence
       await AsyncStorage.multiSet([
         ["userId", userCredential.user.uid],
         ["userEmail", userCredential.user.email || ""],
         ["userName", userCredential.user.displayName || email.split("@")[0]],
       ]);
 
-      // Navigation will be handled by the auth state listener in App.tsx
+      // Wait for modal animation before navigation
+      if (onAuthSuccess) {
+        await onAuthSuccess();
+      }
     } catch (error: any) {
-      setError(
+      Alert.alert(
+        "Login Error",
         error.message.includes("auth/invalid-credential")
           ? "Invalid email or password"
           : error.message.replace("Firebase: ", "")
@@ -177,7 +190,11 @@ const Login: React.FC<LoginProps> = ({ promptAsync, onSwitchToSignUp }) => {
               }}
               activeOpacity={0.8}
             >
-              <FontAwesome name="google" size={32} color="#EA4335" />
+              <Image
+                source={require("../../../assets/app-imgs/google.png")}
+                style={styles.googleIcon}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -185,7 +202,7 @@ const Login: React.FC<LoginProps> = ({ promptAsync, onSwitchToSignUp }) => {
               onPress={handleAppleSignIn}
               activeOpacity={0.8}
             >
-              <FontAwesome name="apple" size={36} color="#000" />
+              <FontAwesome name="apple" size={32} color="#000" />
             </TouchableOpacity>
           </View>
 
@@ -206,11 +223,11 @@ const Login: React.FC<LoginProps> = ({ promptAsync, onSwitchToSignUp }) => {
                 <Ionicons
                   name="mail-outline"
                   size={20}
-                  color={emailError ? theme.error : theme.textSecondary}
+                  color={theme.textSecondary}
                   style={styles.inputIcon}
                 />
                 <TextInput
-                  style={[styles.input, emailError && { color: theme.error }]}
+                  style={styles.input}
                   placeholder="Email"
                   placeholderTextColor={theme.textSecondary}
                   value={email}
@@ -219,11 +236,6 @@ const Login: React.FC<LoginProps> = ({ promptAsync, onSwitchToSignUp }) => {
                   autoCapitalize="none"
                   autoComplete="email"
                 />
-              </View>
-              <View style={styles.errorContainer}>
-                <Text style={[styles.fieldError, { color: theme.error }]}>
-                  {emailError || " "}
-                </Text>
               </View>
             </View>
 
@@ -254,14 +266,12 @@ const Login: React.FC<LoginProps> = ({ promptAsync, onSwitchToSignUp }) => {
                 />
               </TouchableOpacity>
             </View>
-
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
           </View>
 
           <MainButton
             style={styles.loginButton}
             onPress={handleLogin}
-            disabled={loading}
+            disabled={loading || !email || emailError !== null}
             activeOpacity={0.8}
             width="100%"
           >
@@ -296,18 +306,27 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     width: "100%",
     gap: 16,
-    paddingHorizontal: 20,
   },
   socialButton: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f8f9fa",
-    borderRadius: 12,
+    backgroundColor: "#ffffff",
+    borderRadius: 25,
     padding: 16,
-    borderWidth: 1,
-    borderColor: "#e9ecef",
     width: 130,
     height: 66,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  googleIcon: {
+    width: 28,
+    height: 28,
   },
   dividerContainer: {
     flexDirection: "row",
@@ -328,25 +347,25 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   inputGroup: {
-    marginBottom: 8,
+    marginBottom: 4,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f8f9fa",
-    borderRadius: 12,
+    borderRadius: 25,
     marginBottom: 4,
-    paddingHorizontal: 12,
+    paddingHorizontal: 15,
     borderWidth: 1,
     borderColor: "#e9ecef",
-    height: 46,
+    height: 52,
   },
   inputIcon: {
     marginRight: 10,
   },
   input: {
     flex: 1,
-    height: 46,
+    height: 52,
     color: theme.textPrimary,
     fontSize: 15,
   },

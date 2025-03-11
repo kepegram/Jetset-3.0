@@ -296,12 +296,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: "outfit-bold",
     marginBottom: 10,
   },
   subTitle: {
     fontSize: 16,
-    fontFamily: "outfit",
     lineHeight: 22,
   },
   scrollContainer: {
@@ -319,14 +317,12 @@ const styles = StyleSheet.create({
   radioLabel: {
     fontSize: 16,
     marginLeft: 12,
-    fontFamily: "outfit",
   },
   textInput: {
     padding: 15,
     borderWidth: 1,
     borderRadius: 12,
     fontSize: 16,
-    fontFamily: "outfit",
     minHeight: 50,
   },
   deleteButton: {
@@ -337,7 +333,6 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     fontSize: 16,
-    fontFamily: "outfit-bold",
     color: "#FF3B30",
   },
   passwordContainer: {
@@ -354,7 +349,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 8,
     fontSize: 14,
-    fontFamily: "outfit",
   },
   loadingContainer: {
     position: "absolute",

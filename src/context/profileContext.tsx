@@ -48,26 +48,46 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (userDoc.exists()) {
           const data = userDoc.data();
-          // Prefer Firestore data over Google data
+          // Set display name
           if (data.username) {
             setDisplayNameState(data.username);
             await AsyncStorage.setItem("displayName", data.username);
           }
-          if (data.profilePicture) {
+
+          // Handle profile picture - prioritize Firestore data if it exists
+          if (
+            data.profilePicture &&
+            data.profilePicture !==
+              "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Default_pfp.svg/2048px-Default_pfp.svg.png"
+          ) {
             setProfilePictureState(data.profilePicture);
             await AsyncStorage.setItem("profilePicture", data.profilePicture);
+          } else if (provider === "google.com" && user.photoURL) {
+            // If no custom profile picture, use Google photo
+            setProfilePictureState(user.photoURL);
+            await AsyncStorage.setItem("profilePicture", user.photoURL);
+            // Update Firestore with Google photo
+            await setDoc(
+              userDocRef,
+              { profilePicture: user.photoURL },
+              { merge: true }
+            );
           }
         } else {
           // If no Firestore document exists, create one with Google data
           if (provider === "google.com") {
-            await setDoc(userDocRef, {
+            const userData = {
               username: user.displayName || "User",
               email: user.email,
-              profilePicture: user.photoURL,
+              profilePicture:
+                user.photoURL ||
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Default_pfp.svg/2048px-Default_pfp.svg.png",
               createdAt: new Date().toISOString(),
               authProvider: "google",
-            });
-            
+            };
+
+            await setDoc(userDocRef, userData);
+
             if (user.displayName) {
               setDisplayNameState(user.displayName);
               await AsyncStorage.setItem("displayName", user.displayName);

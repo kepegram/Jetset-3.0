@@ -10,6 +10,7 @@ import {
   Dimensions,
   TouchableOpacity,
   Animated as RNAnimated,
+  StatusBar,
 } from "react-native";
 import { MainButton } from "../../../components/ui/button";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
@@ -119,10 +120,15 @@ const Welcome: React.FC = () => {
                   }
                 })
                 .then(() => {
-                  navigation.reset({
-                    index: 0,
-                    routes: [{ name: "AppNav" as const }],
-                  });
+                  // First animate the modal closing
+                  handleCloseAuthModal();
+                  // Wait for animation to complete before navigating
+                  setTimeout(() => {
+                    navigation.reset({
+                      index: 0,
+                      routes: [{ name: "AppNav" as const }],
+                    });
+                  }, 400); // Slightly longer than the animation duration to ensure smooth transition
                 })
                 .catch(() => {
                   // Silent error handling
@@ -148,6 +154,7 @@ const Welcome: React.FC = () => {
 
   const handleAuthPress = () => {
     setShowAuthModal(true);
+    StatusBar.setBarStyle("light-content");
     RNAnimated.parallel([
       RNAnimated.spring(slideAnim, {
         toValue: 0,
@@ -176,34 +183,37 @@ const Welcome: React.FC = () => {
   };
 
   const handleCloseAuthModal = () => {
-    RNAnimated.parallel([
-      RNAnimated.spring(slideAnim, {
-        toValue: Dimensions.get("window").height,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 10,
-      }),
-      RNAnimated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      RNAnimated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 10,
-      }),
-      RNAnimated.spring(translateAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 10,
-      }),
-    ]).start(() => {
-      setShowAuthModal(false);
-      // Reset all modal-related state
-      setAuthMode("login");
+    StatusBar.setBarStyle("dark-content");
+    return new Promise<void>((resolve) => {
+      RNAnimated.parallel([
+        RNAnimated.spring(slideAnim, {
+          toValue: Dimensions.get("window").height,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 10,
+        }),
+        RNAnimated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        RNAnimated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 10,
+        }),
+        RNAnimated.spring(translateAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 10,
+        }),
+      ]).start(() => {
+        setShowAuthModal(false);
+        setAuthMode("login");
+        resolve();
+      });
     });
   };
 
@@ -211,8 +221,26 @@ const Welcome: React.FC = () => {
     setAuthMode(mode);
   };
 
+  const handleAuthSuccess = async () => {
+    await handleCloseAuthModal();
+    setTimeout(() => {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "AppNav" as const }],
+      });
+    }, 400);
+  };
+
+  // Add cleanup effect for status bar
+  useEffect(() => {
+    return () => {
+      StatusBar.setBarStyle("dark-content");
+    };
+  }, []);
+
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       <View style={styles.blackBackground} />
       <RNAnimated.View
         style={[
@@ -418,11 +446,13 @@ const Welcome: React.FC = () => {
                 <Login
                   promptAsync={promptAsync}
                   onSwitchToSignUp={() => handleSwitchAuthMode("signup")}
+                  onAuthSuccess={handleAuthSuccess}
                 />
               ) : (
                 <SignUp
                   promptAsync={promptAsync}
                   onSwitchToLogin={() => handleSwitchAuthMode("login")}
+                  onAuthSuccess={handleAuthSuccess}
                 />
               )}
             </View>
@@ -594,7 +624,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   authModalContent: {
-    height: Dimensions.get("window").height * 0.5,
+    height: Dimensions.get("window").height * 0.48,
   },
   authModalHeader: {
     flexDirection: "row",
@@ -618,7 +648,7 @@ const styles = StyleSheet.create({
     color: lightTheme.textSecondary,
   },
   authSwitchContainer: {
-    paddingBottom: 12,
+    paddingBottom: 0,
   },
   authSwitchWrapper: {
     flexDirection: "row",

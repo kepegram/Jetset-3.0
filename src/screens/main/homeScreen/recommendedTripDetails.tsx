@@ -387,7 +387,6 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   loadingText: {
-    fontFamily: "outfit-medium",
     fontSize: 18,
   },
   imageContainer: {

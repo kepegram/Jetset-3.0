@@ -65,7 +65,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontFamily: "outfit-bold",
     fontSize: 20,
   },
   bookButton: {
@@ -76,10 +75,8 @@ const styles = StyleSheet.create({
   },
   bookButtonText: {
     textAlign: "center",
-    fontFamily: "outfit",
   },
   infoText: {
-    fontFamily: "outfit",
     fontSize: 17,
     marginTop: 4,
   },

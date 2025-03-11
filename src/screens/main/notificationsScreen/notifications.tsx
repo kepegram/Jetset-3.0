@@ -323,7 +323,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "600",
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
   },
   notificationsList: {
     padding: 16,
@@ -360,7 +359,6 @@ const styles = StyleSheet.create({
   notificationTitle: {
     fontSize: 16,
     fontWeight: "600",
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
   },
   unreadText: {
     fontWeight: "700",
@@ -375,11 +373,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 8,
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
   },
   notificationTime: {
     fontSize: 12,
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
   },
   emptyState: {
     flex: 1,
@@ -390,7 +386,6 @@ const styles = StyleSheet.create({
   emptyStateText: {
     marginTop: 16,
     fontSize: 16,
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
   },
   deleteActionContainer: {
     width: 100,
@@ -415,7 +410,6 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 12,
     marginTop: 4,
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
     fontWeight: "500",
   },
   clearButton: {
@@ -426,7 +420,6 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 16,
     fontWeight: "500",
-    fontFamily: Platform.OS === "ios" ? "Helvetica Neue" : "sans-serif",
   },
   loadingContainer: {
     flex: 1,
