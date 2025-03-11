@@ -20,15 +20,17 @@ import { lightTheme as theme } from "../../../theme/theme";
 import { MainButton } from "../../../components/ui/button";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { GoogleAuthProvider } from "firebase/auth";
+import {
+  GoogleSignin,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
 
 interface SignUpProps {
-  promptAsync: (
-    options?: AuthRequestPromptOptions
-  ) => Promise<AuthSessionResult>;
-  onSwitchToLogin?: () => void;
+  navigation?: any;
+  route?: any;
 }
 
-const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
+const SignUp: React.FC<SignUpProps> = ({ navigation, route }) => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -141,8 +143,8 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
 
         // Show success message and redirect to login
         alert("Email verified successfully! Please log in with your email.");
-        if (onSwitchToLogin) {
-          onSwitchToLogin();
+        if (navigation) {
+          navigation.navigate("Login");
         }
       } else {
         await updateDoc(verificationRef, {
@@ -223,24 +225,38 @@ const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
   };
 
   const handleGoogleSignUp = async () => {
-    console.log("Attempting Google signup...");
+    console.log("🔍 Starting Google signup process...");
     setLoading(true);
     setError("");
 
     try {
-      const result = await promptAsync();
-      console.log("Google auth result:", result);
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      console.log("✅ Google sign in successful!", userInfo);
 
-      if (result.type !== "success") {
-        setError("Google signup was cancelled or failed");
-        return;
+      const { idToken, accessToken } = await GoogleSignin.getTokens();
+      if (!idToken) {
+        throw new Error("No ID token present");
       }
 
-      // The parent App component will handle the token exchange
-      console.log("Google signup successful!");
+      console.log("🔑 Creating Firebase credential...");
+      const credential = GoogleAuthProvider.credential(idToken, accessToken);
+      console.log("✅ Firebase credential created");
+
+      console.log("🔄 Attempting Firebase sign in...");
+      const result = await signInWithCredential(FIREBASE_AUTH, credential);
+      console.log("✅ Firebase sign in successful!");
     } catch (error: any) {
-      console.error("Google signup error:", error);
-      setError(error.message || "Failed to sign up with Google");
+      console.error("❌ Google signup error:", error);
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        setError("Sign up was cancelled");
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        setError("Sign up is already in progress");
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        setError("Play services not available");
+      } else {
+        setError(error.message || "Failed to sign up with Google");
+      }
     } finally {
       setLoading(false);
     }

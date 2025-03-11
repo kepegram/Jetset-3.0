@@ -7,7 +7,7 @@ const IOS_CLIENT_ID =
 const WEB_CLIENT_ID =
   "592334619232-vgts79qalu42vpg1dpa0sgg86q79ti2c.apps.googleusercontent.com";
 
-import { Pressable, Platform, View } from "react-native";
+import { Pressable, Platform, View, Alert } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import {
   GoogleAuthProvider,
@@ -22,9 +22,11 @@ import { useColorScheme } from "react-native";
 import { ThemeProvider, useTheme } from "./src/context/themeContext";
 import { Ionicons } from "@expo/vector-icons";
 import * as SplashScreen from "expo-splash-screen";
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
 import * as Notifications from "expo-notifications";
+import {
+  GoogleSignin,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
 import Welcome from "./src/screens/onboarding/welcome/welcome";
 import Login from "./src/screens/onboarding/userAuth/login";
 import SignUp from "./src/screens/onboarding/userAuth/signup";
@@ -36,7 +38,6 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { FIREBASE_DB } from "./firebase.config";
 import * as Font from "expo-font";
 import { registerForPushNotificationsAsync } from "./src/utils/notifications";
-import { makeRedirectUri } from "expo-auth-session";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -52,22 +53,18 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 // Configure notifications behavior
 Notifications.setNotificationHandler({
-  handleNotification: async () => {
-    return {
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-      priority: Notifications.AndroidNotificationPriority.HIGH,
-    };
-  },
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    priority: Notifications.AndroidNotificationPriority.HIGH,
+  }),
 });
 
 // Configure splash screen to stay visible
 SplashScreen.preventAutoHideAsync().catch(() => {
   /* reloading the app might trigger some race conditions, ignore them */
 });
-
-WebBrowser.maybeCompleteAuthSession();
 
 const StatusBarWrapper = () => {
   const { theme } = useTheme();
@@ -79,44 +76,21 @@ const App: React.FC = () => {
   const [appIsReady, setAppIsReady] = useState(false);
   const { currentTheme } = useTheme();
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    iosClientId: IOS_CLIENT_ID,
-    webClientId: WEB_CLIENT_ID,
-    redirectUri: makeRedirectUri({
-      scheme: "jetset",
-      path: "oauth2redirect/google",
-    }),
-    scopes: ["profile", "email"],
-  });
-
   const notificationListener = useRef<any>();
   const responseListener = useRef<any>();
   const navigationRef = useRef<any>();
 
-  const colorScheme = useColorScheme();
-
+  // Initialize Google Sign In
   useEffect(() => {
-    if (response?.type === "success") {
-      console.log("Google auth response:", response);
-
-      const { id_token } = response.params;
-      console.log("Has ID token:", !!id_token);
-
-      if (id_token) {
-        // Process the token with Firebase
-        const credential = GoogleAuthProvider.credential(id_token);
-        signInWithCredential(FIREBASE_AUTH, credential)
-          .then((result) => {
-            console.log("Firebase auth success:", result.user.email);
-          })
-          .catch((error) => {
-            console.error("Firebase auth error:", error);
-          });
-      }
-    } else if (response) {
-      console.error("Google auth error or cancel:", response);
-    }
-  }, [response]);
+    GoogleSignin.configure({
+      iosClientId:
+        "592334619232-6mcjbp53tn18uv7p8tna5frfg2mhg2c7.apps.googleusercontent.com",
+      webClientId:
+        "592334619232-vgts79qalu42vpg1dpa0sgg86q79ti2c.apps.googleusercontent.com",
+      offlineAccess: true,
+      scopes: ["profile", "email"],
+    });
+  }, []);
 
   useEffect(() => {
     // Set up notification listeners
@@ -156,62 +130,44 @@ const App: React.FC = () => {
   useEffect(() => {
     async function prepare() {
       try {
-        // Load fonts first
         await Font.loadAsync({
           ...Ionicons.font,
-          // Add any other custom fonts here
         });
 
-        // Wait for Firebase auth state
         const authPromise = new Promise((resolve) => {
-          // Keep the auth subscription active
-          onAuthStateChanged(
-            FIREBASE_AUTH,
-            async (user) => {
-              console.log(
-                "Auth state changed:",
-                user ? `User logged in: ${user.email}` : "No user"
-              );
+          onAuthStateChanged(FIREBASE_AUTH, async (user) => {
+            console.log(
+              "Auth state changed:",
+              user ? `User logged in: ${user.email}` : "No user"
+            );
 
-              if (user) {
-                // Check if user exists in Firestore
-                const userRef = doc(FIREBASE_DB, "users", user.uid);
-                const userDoc = await getDoc(userRef);
+            if (user) {
+              const userRef = doc(FIREBASE_DB, "users", user.uid);
+              const userDoc = await getDoc(userRef);
 
-                if (!userDoc.exists()) {
-                  // Create user document if it doesn't exist
-                  console.log("Creating new user document for:", user.email);
-                  await setDoc(userRef, {
-                    username: user.displayName || "User",
-                    email: user.email,
-                    createdAt: new Date().toISOString(),
-                    authProvider: "google",
-                    photoURL: user.photoURL || null,
-                  });
-                }
-              } else {
-                setUser(null);
+              if (!userDoc.exists()) {
+                console.log("Creating new user document for:", user.email);
+                await setDoc(userRef, {
+                  username: user.displayName || "User",
+                  email: user.email,
+                  createdAt: new Date().toISOString(),
+                  authProvider: "google",
+                  photoURL: user.photoURL || null,
+                });
               }
-              resolve(true);
-            },
-            (error) => {
-              console.error("Auth state error:", error);
-              resolve(true);
+              setUser(user);
+            } else {
+              setUser(null);
             }
-          );
+            resolve(true);
+          });
         });
 
-        // Add a minimum delay to prevent flash
         const minimumDelay = new Promise((resolve) =>
           setTimeout(resolve, Platform.OS === "ios" ? 2000 : 2500)
         );
 
-        // Wait for all initialization tasks
-        await Promise.all([
-          authPromise,
-          minimumDelay,
-          // Add other critical initialization promises here
-        ]);
+        await Promise.all([authPromise, minimumDelay]);
       } catch (e) {
         console.warn("Prepare error:", e);
       } finally {
@@ -225,7 +181,6 @@ const App: React.FC = () => {
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {
       try {
-        // Add a longer delay to ensure everything is truly ready
         await new Promise((resolve) => setTimeout(resolve, 500));
         await SplashScreen.hideAsync();
       } catch (e) {
@@ -277,12 +232,16 @@ const App: React.FC = () => {
                   component={Welcome}
                   options={{ headerShown: false }}
                 />
-                <Stack.Screen name="Login" options={{ headerShown: false }}>
-                  {(props) => <Login {...props} promptAsync={promptAsync} />}
-                </Stack.Screen>
-                <Stack.Screen name="SignUp" options={{ headerShown: false }}>
-                  {(props) => <SignUp {...props} promptAsync={promptAsync} />}
-                </Stack.Screen>
+                <Stack.Screen
+                  name="Login"
+                  component={Login}
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="SignUp"
+                  component={SignUp}
+                  options={{ headerShown: false }}
+                />
                 <Stack.Screen
                   name="ForgotPassword"
                   component={ForgotPassword}

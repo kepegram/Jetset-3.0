@@ -22,20 +22,6 @@
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.kpegra1.jetset",
       "googleServicesFile": "./GoogleService-Info.plist",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["remote-notification"],
-        "CFBundleURLTypes": [
-          {
-            "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.592334619232-6mcjbp53tn18uv7p8tna5frfg2mhg2c7",
-              "com.googleusercontent.apps.592334619232-vgts79qalu42vpg1dpa0sgg86q79ti2c",
-              "com.kpegra1.jetset",
-              "jetset"
-            ]
-          }
-        ]
-      },
       "icon": "./src/assets/icons/Light.png",
       "alternateIcons": {
         "dark": "./src/assets/icons/Dark.png",
@@ -44,6 +30,7 @@
       }
     },
     "plugins": [
+      "@react-native-google-signin/google-signin",
       "expo-apple-authentication",
       [
         "expo-build-properties",
