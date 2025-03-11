@@ -1,32 +1,21 @@
 import "react-native-get-random-values";
 import React, { useEffect, useState, useCallback, useRef } from "react";
-
-// Environment variables
-const IOS_CLIENT_ID =
-  "592334619232-6mcjbp53tn18uv7p8tna5frfg2mhg2c7.apps.googleusercontent.com";
-const WEB_CLIENT_ID =
-  "592334619232-vgts79qalu42vpg1dpa0sgg86q79ti2c.apps.googleusercontent.com";
-
-import { Pressable, Platform, View, Alert } from "react-native";
+import { Pressable, Platform, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import {
-  GoogleAuthProvider,
   User,
   onAuthStateChanged,
+  GoogleAuthProvider,
   signInWithCredential,
 } from "firebase/auth";
-import { NavigationContainer, useNavigation } from "@react-navigation/native";
+import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { FIREBASE_AUTH } from "./firebase.config";
-import { useColorScheme } from "react-native";
+import { FIREBASE_AUTH, FIREBASE_DB } from "./firebase.config";
 import { ThemeProvider, useTheme } from "./src/context/themeContext";
 import { Ionicons } from "@expo/vector-icons";
 import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
-import {
-  GoogleSignin,
-  statusCodes,
-} from "@react-native-google-signin/google-signin";
+import * as Google from "expo-auth-session/providers/google";
 import Welcome from "./src/screens/onboarding/welcome/welcome";
 import Login from "./src/screens/onboarding/userAuth/login";
 import SignUp from "./src/screens/onboarding/userAuth/signup";
@@ -35,7 +24,6 @@ import AppNav from "./src/navigation/appNav";
 import Terms from "./src/screens/onboarding/terms/terms";
 import Privacy from "./src/screens/onboarding/privacy/privacy";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { FIREBASE_DB } from "./firebase.config";
 import * as Font from "expo-font";
 import { registerForPushNotificationsAsync } from "./src/utils/notifications";
 
@@ -80,17 +68,63 @@ const App: React.FC = () => {
   const responseListener = useRef<any>();
   const navigationRef = useRef<any>();
 
-  // Initialize Google Sign In
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    // @ts-ignore
+    iosClientId: process.env.EXPO_PUBLIC_IOS_CLIENT_ID,
+  });
+
   useEffect(() => {
-    GoogleSignin.configure({
-      iosClientId:
-        "592334619232-6mcjbp53tn18uv7p8tna5frfg2mhg2c7.apps.googleusercontent.com",
-      webClientId:
-        "592334619232-vgts79qalu42vpg1dpa0sgg86q79ti2c.apps.googleusercontent.com",
-      offlineAccess: true,
-      scopes: ["profile", "email"],
-    });
-  }, []);
+    if (response?.type === "success" && "params" in response) {
+      const { id_token } = response.params as { id_token: string };
+
+      if (id_token) {
+        const credential = GoogleAuthProvider.credential(id_token);
+
+        signInWithCredential(FIREBASE_AUTH, credential)
+          .then((userCredential) => {
+            const user = userCredential.user;
+
+            // Force immediate user state update
+            setUser(user);
+
+            // Save user data to Firestore
+            const userRef = doc(FIREBASE_DB, "users", user.uid);
+            getDoc(userRef)
+              .then((userDoc) => {
+                if (!userDoc.exists()) {
+                  const userData = {
+                    username: user.displayName || "User",
+                    email: user.email,
+                    createdAt: new Date().toISOString(),
+                    authProvider: "google",
+                    photoURL: user.photoURL || null,
+                    lastLoginAt: new Date().toISOString(),
+                  };
+
+                  return setDoc(userRef, userData);
+                } else {
+                  return setDoc(
+                    userRef,
+                    {
+                      lastLoginAt: new Date().toISOString(),
+                    },
+                    { merge: true }
+                  );
+                }
+              })
+              .then(() => {
+                return registerForPushNotificationsAsync();
+              })
+              .catch((error) => {
+                // Silent error handling
+              });
+          })
+          .catch((error) => {
+            // Silent error handling
+          });
+      }
+    }
+  }, [response]);
 
   useEffect(() => {
     // Set up notification listeners
@@ -136,17 +170,11 @@ const App: React.FC = () => {
 
         const authPromise = new Promise((resolve) => {
           onAuthStateChanged(FIREBASE_AUTH, async (user) => {
-            console.log(
-              "Auth state changed:",
-              user ? `User logged in: ${user.email}` : "No user"
-            );
-
             if (user) {
               const userRef = doc(FIREBASE_DB, "users", user.uid);
               const userDoc = await getDoc(userRef);
 
               if (!userDoc.exists()) {
-                console.log("Creating new user document for:", user.email);
                 await setDoc(userRef, {
                   username: user.displayName || "User",
                   email: user.email,
@@ -155,6 +183,7 @@ const App: React.FC = () => {
                   photoURL: user.photoURL || null,
                 });
               }
+
               setUser(user);
             } else {
               setUser(null);
@@ -169,7 +198,7 @@ const App: React.FC = () => {
 
         await Promise.all([authPromise, minimumDelay]);
       } catch (e) {
-        console.warn("Prepare error:", e);
+        // Silent error handling
       } finally {
         setAppIsReady(true);
       }
@@ -232,16 +261,12 @@ const App: React.FC = () => {
                   component={Welcome}
                   options={{ headerShown: false }}
                 />
-                <Stack.Screen
-                  name="Login"
-                  component={Login}
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="SignUp"
-                  component={SignUp}
-                  options={{ headerShown: false }}
-                />
+                <Stack.Screen name="Login" options={{ headerShown: false }}>
+                  {(props) => <Login {...props} promptAsync={promptAsync} />}
+                </Stack.Screen>
+                <Stack.Screen name="SignUp" options={{ headerShown: false }}>
+                  {(props) => <SignUp {...props} promptAsync={promptAsync} />}
+                </Stack.Screen>
                 <Stack.Screen
                   name="ForgotPassword"
                   component={ForgotPassword}

@@ -7,7 +7,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -24,18 +23,15 @@ import { MainButton } from "../../../components/ui/button";
 import { setDoc } from "firebase/firestore";
 import { doc } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  GoogleSignin,
-  statusCodes,
-} from "@react-native-google-signin/google-signin";
-import { GoogleAuthProvider } from "firebase/auth";
 
 interface LoginProps {
-  navigation?: any;
-  route?: any;
+  promptAsync: (
+    options?: AuthRequestPromptOptions
+  ) => Promise<AuthSessionResult>;
+  onSwitchToSignUp?: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ navigation, route }) => {
+const Login: React.FC<LoginProps> = ({ promptAsync, onSwitchToSignUp }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -106,38 +102,13 @@ const Login: React.FC<LoginProps> = ({ navigation, route }) => {
   };
 
   const handleGoogleLogin = async () => {
-    console.log("🔍 Starting Google login process...");
-    setLoading(true);
-    setError("");
-
     try {
-      await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
-      console.log("✅ Google sign in successful!", userInfo);
+      setLoading(true);
+      setError("");
 
-      const { idToken, accessToken } = await GoogleSignin.getTokens();
-      if (!idToken) {
-        throw new Error("No ID token present");
-      }
-
-      console.log("🔑 Creating Firebase credential...");
-      const credential = GoogleAuthProvider.credential(idToken, accessToken);
-      console.log("✅ Firebase credential created");
-
-      console.log("🔄 Attempting Firebase sign in...");
-      const result = await signInWithCredential(FIREBASE_AUTH, credential);
-      console.log("✅ Firebase sign in successful!");
-    } catch (error: any) {
-      console.error("❌ Google login error:", error);
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        setError("Sign in was cancelled");
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        setError("Sign in is already in progress");
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        setError("Play services not available");
-      } else {
-        setError(error.message || "Failed to login with Google");
-      }
+      await promptAsync();
+    } catch (error) {
+      setError("Error signing in with Google. Please try again.");
     } finally {
       setLoading(false);
     }

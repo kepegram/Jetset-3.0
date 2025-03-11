@@ -18,7 +18,20 @@ import Terms from "../terms/terms";
 import Privacy from "../privacy/privacy";
 import Login from "../userAuth/login";
 import SignUp from "../userAuth/signup";
-import { AuthSessionResult } from "expo-auth-session";
+import * as Google from "expo-auth-session/providers/google";
+import { GoogleAuthProvider } from "firebase/auth";
+import { signInWithCredential } from "firebase/auth";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { useNavigation } from "@react-navigation/native";
+import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../../../App";
+
+// Define the navigation prop type
+type WelcomeScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "Welcome"
+>;
 
 const Welcome: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -33,14 +46,11 @@ const Welcome: React.FC = () => {
   const [scaleAnim] = useState(new RNAnimated.Value(1));
   const [translateAnim] = useState(new RNAnimated.Value(0));
 
-  const promptAsync = () =>
-    Promise.resolve({
-      type: "success" as const,
-      errorCode: null,
-      params: {},
-      authentication: null,
-      url: "",
-    } as AuthSessionResult);
+  const navigation = useNavigation<WelcomeScreenNavigationProp>();
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    iosClientId: process.env.EXPO_PUBLIC_IOS_CLIENT_ID,
+  });
 
   const facts = [
     {
@@ -76,6 +86,57 @@ const Welcome: React.FC = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (response?.type === "success" && "params" in response) {
+      const { id_token } = response.params as { id_token: string };
+
+      if (id_token) {
+        try {
+          const credential = GoogleAuthProvider.credential(id_token);
+
+          signInWithCredential(FIREBASE_AUTH, credential)
+            .then((userCredential) => {
+              const user = userCredential.user;
+
+              // Create/update user document in Firestore
+              const userRef = doc(FIREBASE_DB, "users", user.uid);
+              getDoc(userRef)
+                .then((docSnap) => {
+                  if (!docSnap.exists()) {
+                    return setDoc(userRef, {
+                      username: user.displayName || "User",
+                      email: user.email,
+                      createdAt: new Date().toISOString(),
+                      authProvider: "google",
+                      photoURL: user.photoURL || null,
+                      lastLoginAt: new Date().toISOString(),
+                    });
+                  } else {
+                    return updateDoc(userRef, {
+                      lastLoginAt: new Date().toISOString(),
+                    });
+                  }
+                })
+                .then(() => {
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: "AppNav" as const }],
+                  });
+                })
+                .catch(() => {
+                  // Silent error handling
+                });
+            })
+            .catch(() => {
+              // Silent error handling
+            });
+        } catch (error) {
+          // Silent error handling
+        }
+      }
+    }
+  }, [response, navigation]);
 
   const handleTermsPress = () => {
     setShowTerms(true);

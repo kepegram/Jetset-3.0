@@ -8,7 +8,6 @@ import {
   Platform,
   ActivityIndicator,
   TextInput,
-  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
@@ -19,18 +18,23 @@ import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import { lightTheme as theme } from "../../../theme/theme";
 import { MainButton } from "../../../components/ui/button";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { GoogleAuthProvider } from "firebase/auth";
-import {
-  GoogleSignin,
-  statusCodes,
-} from "@react-native-google-signin/google-signin";
+import { RootStackParamList } from "../../../../App";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useNavigation } from "@react-navigation/native";
+
+type SignUpScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "SignUp"
+>;
 
 interface SignUpProps {
-  navigation?: any;
-  route?: any;
+  promptAsync: (
+    options?: AuthRequestPromptOptions
+  ) => Promise<AuthSessionResult>;
+  onSwitchToLogin?: () => void;
 }
 
-const SignUp: React.FC<SignUpProps> = ({ navigation, route }) => {
+const SignUp: React.FC<SignUpProps> = ({ promptAsync, onSwitchToLogin }) => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -48,6 +52,8 @@ const SignUp: React.FC<SignUpProps> = ({ navigation, route }) => {
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(30);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+
+  const navigation = useNavigation<SignUpScreenNavigationProp>();
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -225,38 +231,13 @@ const SignUp: React.FC<SignUpProps> = ({ navigation, route }) => {
   };
 
   const handleGoogleSignUp = async () => {
-    console.log("🔍 Starting Google signup process...");
-    setLoading(true);
-    setError("");
-
     try {
-      await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
-      console.log("✅ Google sign in successful!", userInfo);
+      setLoading(true);
+      setError("");
 
-      const { idToken, accessToken } = await GoogleSignin.getTokens();
-      if (!idToken) {
-        throw new Error("No ID token present");
-      }
-
-      console.log("🔑 Creating Firebase credential...");
-      const credential = GoogleAuthProvider.credential(idToken, accessToken);
-      console.log("✅ Firebase credential created");
-
-      console.log("🔄 Attempting Firebase sign in...");
-      const result = await signInWithCredential(FIREBASE_AUTH, credential);
-      console.log("✅ Firebase sign in successful!");
-    } catch (error: any) {
-      console.error("❌ Google signup error:", error);
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        setError("Sign up was cancelled");
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        setError("Sign up is already in progress");
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        setError("Play services not available");
-      } else {
-        setError(error.message || "Failed to sign up with Google");
-      }
+      await promptAsync();
+    } catch (error) {
+      setError("Error signing up with Google. Please try again.");
     } finally {
       setLoading(false);
     }
