@@ -3,23 +3,18 @@ import {
   Text,
   TextInput,
   ActivityIndicator,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
   View,
-  Dimensions,
 } from "react-native";
 import React, { useState } from "react";
 import { FIREBASE_AUTH } from "../../../../firebase.config";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { useTheme } from "../../../context/themeContext";
+import { lightTheme as theme } from "../../../theme/theme";
 import { MainButton } from "../../../components/ui/button";
 import { Ionicons } from "@expo/vector-icons";
 
-const { width } = Dimensions.get("window");
-
 const ForgotPassword: React.FC = () => {
-  const { currentTheme } = useTheme();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
@@ -48,63 +43,37 @@ const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: currentTheme.background }]}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <View style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingView}
       >
-        <View style={styles.headerContainer}>
-          <View style={styles.iconContainer}>
-            <Ionicons
-              name="lock-closed"
-              size={40}
-              color={currentTheme.alternate}
-            />
-          </View>
-          <Text style={[styles.title, { color: currentTheme.textPrimary }]}>
-            Forgot Password?
-          </Text>
-          <Text
-            style={[styles.subtitle, { color: currentTheme.textSecondary }]}
-          >
-            Enter your email and we'll send you a link to reset your password
-          </Text>
-        </View>
-
         <View style={styles.formContainer}>
-          <Text
-            style={[styles.inputHeader, { color: currentTheme.textPrimary }]}
-          >
-            Email Address
-          </Text>
-          <View style={styles.inputWrapper}>
-            <Ionicons
-              name="mail-outline"
-              size={20}
-              color={currentTheme.textSecondary}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: currentTheme.accentBackground,
-                  color: currentTheme.textPrimary,
-                  borderColor: currentTheme.inactive,
-                },
-              ]}
-              placeholder="Enter your email"
-              placeholderTextColor={currentTheme.textSecondary}
-              value={email}
-              onChangeText={(text) => setEmail(text)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-            />
+          <View style={styles.headerContainer}>
+            <Text style={styles.subtitle}>
+              Enter your email and we'll send you a link to reset your password
+            </Text>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="mail-outline"
+                size={20}
+                color={theme.textSecondary}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor={theme.textSecondary}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+              />
+            </View>
           </View>
 
           {feedbackMessage && (
@@ -113,11 +82,11 @@ const ForgotPassword: React.FC = () => {
                 styles.feedbackMessage,
                 {
                   color: feedbackMessage.includes("Failed")
-                    ? currentTheme.error
-                    : currentTheme.alternate,
+                    ? theme.error
+                    : theme.alternate,
                   backgroundColor: feedbackMessage.includes("Failed")
-                    ? currentTheme.errorLight15
-                    : currentTheme.alternateLight15,
+                    ? theme.errorLight15
+                    : theme.alternateLight15,
                 },
               ]}
             >
@@ -125,20 +94,21 @@ const ForgotPassword: React.FC = () => {
             </Text>
           )}
 
-          <View style={styles.buttonContainer}>
+          <MainButton
+            style={styles.resetButton}
+            onPress={handlePasswordReset}
+            disabled={loading || !email}
+            width="100%"
+          >
             {loading ? (
-              <ActivityIndicator size="large" color={currentTheme.primary} />
+              <ActivityIndicator color={theme.buttonText} />
             ) : (
-              <MainButton
-                onPress={handlePasswordReset}
-                buttonText="Send Reset Link"
-                width="100%"
-              />
+              <Text style={styles.resetButtonText}>Send Reset Link</Text>
             )}
-          </View>
+          </MainButton>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -147,64 +117,57 @@ export default ForgotPassword;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#fff",
   },
-  scrollContainer: {
-    flexGrow: 1,
-    padding: 24,
-  },
-  headerContainer: {
-    marginBottom: 40,
-    alignItems: "center",
-  },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: "center",
-    maxWidth: width * 0.8,
+  keyboardAvoidingView: {
+    flex: 1,
+    padding: 20,
   },
   formContainer: {
     width: "100%",
+    backgroundColor: "#fff",
   },
-  inputHeader: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
+  headerContainer: {
+    marginBottom: 24,
+  },
+  subtitle: {
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: "center",
+    color: theme.textSecondary,
+    paddingHorizontal: 20,
+  },
+  inputContainer: {
+    width: "100%",
+    marginBottom: 16,
   },
   inputWrapper: {
-    position: "relative",
-    width: "100%",
-    marginBottom: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
+    borderRadius: 25,
+    marginBottom: 4,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+    height: 52,
   },
   inputIcon: {
-    position: "absolute",
-    left: 16,
-    top: 18,
-    zIndex: 1,
+    marginRight: 8,
   },
   input: {
-    width: "100%",
-    height: 56,
-    borderRadius: 12,
-    paddingHorizontal: 48,
-    borderWidth: 1,
-    fontSize: 16,
+    flex: 1,
+    height: 52,
+    color: theme.textPrimary,
+    fontSize: 15,
   },
-  buttonContainer: {
-    marginTop: 16,
+  resetButton: {
+    marginTop: 8,
+  },
+  resetButtonText: {
+    color: theme.buttonText,
+    fontSize: 17,
+    fontWeight: "600",
   },
   feedbackMessage: {
     marginBottom: 16,

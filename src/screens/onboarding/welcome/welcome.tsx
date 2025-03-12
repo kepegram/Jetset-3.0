@@ -11,6 +11,9 @@ import {
   TouchableOpacity,
   Animated as RNAnimated,
   StatusBar,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from "react-native";
 import { MainButton } from "../../../components/ui/button";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
@@ -19,6 +22,7 @@ import Terms from "../terms/terms";
 import Privacy from "../privacy/privacy";
 import Login from "../userAuth/login";
 import SignUp from "../userAuth/signup";
+import ForgotPassword from "../userAuth/forgotPassword";
 import * as Google from "expo-auth-session/providers/google";
 import { GoogleAuthProvider } from "firebase/auth";
 import { signInWithCredential } from "firebase/auth";
@@ -27,6 +31,7 @@ import { useNavigation } from "@react-navigation/native";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../../App";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 // Define the navigation prop type
 type WelcomeScreenNavigationProp = NativeStackNavigationProp<
@@ -34,12 +39,21 @@ type WelcomeScreenNavigationProp = NativeStackNavigationProp<
   "Welcome"
 >;
 
+// Enable LayoutAnimation for Android
+if (Platform.OS === "android") {
+  if (UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+}
+
 const Welcome: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [authMode, setAuthMode] = useState<
+    "login" | "signup" | "forgotPassword"
+  >("login");
   const [slideAnim] = useState(
     new RNAnimated.Value(Dimensions.get("window").height)
   );
@@ -217,7 +231,16 @@ const Welcome: React.FC = () => {
     });
   };
 
-  const handleSwitchAuthMode = (mode: "login" | "signup") => {
+  const handleSwitchAuthMode = (
+    mode: "login" | "signup" | "forgotPassword"
+  ) => {
+    // Configure animation
+    LayoutAnimation.configureNext({
+      duration: 300,
+      update: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+      },
+    });
     setAuthMode(mode);
   };
 
@@ -399,21 +422,45 @@ const Welcome: React.FC = () => {
           <RNAnimated.View
             style={[
               styles.modalContent,
-              styles.authModalContent,
+              authMode === "signup"
+                ? styles.signupModalContent
+                : authMode === "forgotPassword"
+                ? styles.forgotPasswordModalContent
+                : styles.loginModalContent,
               {
                 transform: [{ translateY: slideAnim }],
               },
             ]}
           >
             <View style={styles.authModalHeader}>
+              {authMode === "forgotPassword" && (
+                <TouchableOpacity
+                  onPress={() => handleSwitchAuthMode("login")}
+                  style={styles.backButton}
+                >
+                  <Ionicons
+                    name="chevron-back"
+                    size={24}
+                    color={lightTheme.textPrimary}
+                  />
+                </TouchableOpacity>
+              )}
               <Text style={styles.authModalTitle}>
-                {authMode === "login" ? "Login" : "Sign Up"}
+                {authMode === "login"
+                  ? "Login"
+                  : authMode === "signup"
+                  ? "Sign Up"
+                  : "Reset Password"}
               </Text>
               <TouchableOpacity
                 onPress={handleCloseAuthModal}
                 style={styles.closeButton}
               >
-                <Text style={styles.closeButtonText}>✕</Text>
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={lightTheme.textPrimary}
+                />
               </TouchableOpacity>
             </View>
             <View style={styles.authSwitchContainer}>
@@ -428,7 +475,7 @@ const Welcome: React.FC = () => {
                     <Text style={styles.authSwitchLink}>Sign Up</Text>
                   </TouchableOpacity>
                 </View>
-              ) : (
+              ) : authMode === "signup" ? (
                 <View style={styles.authSwitchWrapper}>
                   <Text style={styles.authSwitchText}>
                     Already have an account?{" "}
@@ -439,7 +486,7 @@ const Welcome: React.FC = () => {
                     <Text style={styles.authSwitchLink}>Log In</Text>
                   </TouchableOpacity>
                 </View>
-              )}
+              ) : null}
             </View>
             <View style={styles.authModalBody}>
               {authMode === "login" ? (
@@ -447,13 +494,18 @@ const Welcome: React.FC = () => {
                   promptAsync={promptAsync}
                   onSwitchToSignUp={() => handleSwitchAuthMode("signup")}
                   onAuthSuccess={handleAuthSuccess}
+                  onSwitchToForgotPassword={() =>
+                    handleSwitchAuthMode("forgotPassword")
+                  }
                 />
-              ) : (
+              ) : authMode === "signup" ? (
                 <SignUp
                   promptAsync={promptAsync}
                   onSwitchToLogin={() => handleSwitchAuthMode("login")}
                   onAuthSuccess={handleAuthSuccess}
                 />
+              ) : (
+                <ForgotPassword />
               )}
             </View>
           </RNAnimated.View>
@@ -609,7 +661,6 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: "100%",
-    height: Dimensions.get("window").height * 0.94,
     backgroundColor: lightTheme.background,
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
@@ -623,8 +674,14 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 5,
   },
-  authModalContent: {
-    height: Dimensions.get("window").height * 0.48,
+  loginModalContent: {
+    height: Dimensions.get("window").height * 0.5,
+  },
+  signupModalContent: {
+    height: Dimensions.get("window").height * 0.52,
+  },
+  forgotPasswordModalContent: {
+    height: Dimensions.get("window").height * 0.37,
   },
   authModalHeader: {
     flexDirection: "row",
@@ -642,10 +699,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 20,
     padding: 8,
-  },
-  closeButtonText: {
-    fontSize: 20,
-    color: lightTheme.textSecondary,
+    zIndex: 1,
   },
   authSwitchContainer: {
     paddingBottom: 0,
@@ -666,6 +720,13 @@ const styles = StyleSheet.create({
   },
   authModalBody: {
     flex: 1,
+    overflow: "hidden",
+  },
+  backButton: {
+    position: "absolute",
+    left: 20,
+    padding: 8,
+    zIndex: 1,
   },
 });
 
@@ -678,7 +739,7 @@ export const modalStyles = StyleSheet.create({
   },
   modalContent: {
     width: "100%",
-    height: Dimensions.get("window").height * 0.94,
+    height: Dimensions.get("window").height * 0.48,
     backgroundColor: lightTheme.background,
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,

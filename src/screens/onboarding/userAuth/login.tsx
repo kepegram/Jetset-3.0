@@ -32,12 +32,14 @@ interface LoginProps {
   ) => Promise<AuthSessionResult>;
   onSwitchToSignUp?: () => void;
   onAuthSuccess?: () => Promise<void>;
+  onSwitchToForgotPassword?: () => void;
 }
 
 const Login: React.FC<LoginProps> = ({
   promptAsync,
   onSwitchToSignUp,
   onAuthSuccess,
+  onSwitchToForgotPassword,
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,9 +65,6 @@ const Login: React.FC<LoginProps> = ({
     setEmail(text);
     const validationError = validateEmail(text);
     setEmailError(validationError);
-    if (validationError) {
-      Alert.alert("Invalid Email", validationError);
-    }
   };
 
   const handleLogin = async () => {
@@ -266,6 +265,12 @@ const Login: React.FC<LoginProps> = ({
                 />
               </TouchableOpacity>
             </View>
+            <TouchableOpacity
+              onPress={onSwitchToForgotPassword}
+              style={styles.forgotPasswordButton}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
           </View>
 
           <MainButton
@@ -397,6 +402,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginLeft: 4,
     minHeight: 16,
+  },
+  forgotPasswordButton: {
+    alignSelf: "flex-end",
+    marginTop: 4,
+    marginRight: 4,
+  },
+  forgotPasswordText: {
+    color: theme.alternate,
+    fontSize: 14,
+    fontWeight: "500",
   },
 });
 

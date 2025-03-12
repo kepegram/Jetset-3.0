@@ -7,8 +7,8 @@
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
-import {initializeApp} from "firebase-admin/app";
-import {FieldValue} from "firebase-admin/firestore";
+import { initializeApp } from "firebase-admin/app";
+import { FieldValue } from "firebase-admin/firestore";
 import * as functions from "firebase-functions/v1";
 import * as nodemailer from "nodemailer";
 
@@ -40,11 +40,50 @@ async function sendVerificationEmail(
   email: string,
   code: string
 ): Promise<void> {
+  const styles = {
+    container:
+      "font-family: Arial, sans-serif; max-width: 600px; " +
+      "margin: 0 auto; padding: 20px;",
+    header: "text-align: center; margin-bottom: 30px;",
+    title: "color: #3BACE3; margin-bottom: 10px;",
+    subtitle: "color: #666; font-size: 16px;",
+    codeBox:
+      "background-color: #f8f9fa; border-radius: 10px; " +
+      "padding: 30px; text-align: center; margin-bottom: 30px;",
+    codeTitle: "color: #333; margin-bottom: 20px;",
+    code:
+      "font-size: 32px; font-weight: bold; letter-spacing: 8px; " +
+      "color: #3BACE3; margin-bottom: 20px;",
+    footer: "text-align: center; color: #666; font-size: 14px;",
+    hr: "border: none; border-top: 1px solid #eee; margin: 20px 0;",
+  };
+
+  const htmlContent = `
+<div style="${styles.container}">
+  <div style="${styles.header}">
+    <h1 style="${styles.title}">Two-Factor Authentication Required</h1>
+    <p style="${styles.subtitle}">Please enter this code to complete your sign in</p>
+  </div>
+  
+  <div style="${styles.codeBox}">
+    <h2 style="${styles.codeTitle}">Your Authentication Code</h2>
+    <div style="${styles.code}">${code}</div>
+    <p style="${styles.subtitle}">This code will expire in 5 minutes</p>
+  </div>
+  
+  <div style="${styles.footer}">
+    <p>If you didn't attempt to sign in, please secure your account immediately.</p>
+    <hr style="${styles.hr}">
+    <p>© ${new Date().getFullYear()} Jetset. All rights reserved.</p>
+  </div>
+</div>`;
+
   await transporter.sendMail({
-    from: functions.config().mail.user,
+    from: `"Jetset Security" <${functions.config().mail.user}>`,
     to: email,
-    subject: "Your Verification Code",
-    text: `Your verification code is: ${code}`,
+    subject: "Jetset - Two-Factor Authentication Code",
+    text: `Your authentication code is: ${code}`,
+    html: htmlContent,
   });
 }
 
@@ -64,7 +103,7 @@ export const sendVerificationCode = functions.firestore
         emailSentTimestamp: FieldValue.serverTimestamp(),
         userId: userId,
       });
-      return {success: true};
+      return { success: true };
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
@@ -73,7 +112,7 @@ export const sendVerificationCode = functions.firestore
         emailSent: false,
         error: errorMessage,
       });
-      return {success: false, error: errorMessage};
+      return { success: false, error: errorMessage };
     }
   });
 

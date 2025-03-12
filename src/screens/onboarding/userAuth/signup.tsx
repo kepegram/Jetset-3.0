@@ -16,13 +16,17 @@ import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
 import { OAuthProvider, signInWithCredential } from "firebase/auth";
 import { AuthRequestPromptOptions, AuthSessionResult } from "expo-auth-session";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
-import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { lightTheme as theme } from "../../../theme/theme";
 import { MainButton } from "../../../components/ui/button";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { RootStackParamList } from "../../../../App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
+import {
+  fetchSignInMethodsForEmail,
+  createUserWithEmailAndPassword,
+} from "firebase/auth";
 
 type SignUpScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -43,6 +47,8 @@ const SignUp: React.FC<SignUpProps> = ({
   onAuthSuccess,
 }) => {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -59,6 +65,14 @@ const SignUp: React.FC<SignUpProps> = ({
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(30);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordRequirements, setPasswordRequirements] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false,
+  });
 
   const navigation = useNavigation<SignUpScreenNavigationProp>();
 
@@ -132,16 +146,18 @@ const SignUp: React.FC<SignUpProps> = ({
       }
 
       if (data.code === verificationCode.join("")) {
-        // Update verification status
-        await updateDoc(verificationRef, {
-          verified: true,
-        });
+        // Create the user in Firebase Auth
+        const userCredential = await createUserWithEmailAndPassword(
+          FIREBASE_AUTH,
+          data.email,
+          data.password
+        );
 
-        // Create a new user document with a unique ID
-        const userDocRef = doc(FIREBASE_DB, "users", tempUserId);
+        // Create a new user document
+        const userDocRef = doc(FIREBASE_DB, "users", userCredential.user.uid);
         await setDoc(userDocRef, {
-          email: email.toLowerCase(),
-          username: getDisplayName(email),
+          email: data.email.toLowerCase(),
+          username: getDisplayName(data.email),
           createdAt: new Date().toISOString(),
           emailVerified: true,
           lastLoginAt: new Date().toISOString(),
@@ -149,10 +165,13 @@ const SignUp: React.FC<SignUpProps> = ({
 
         // Store essential user data in AsyncStorage
         await AsyncStorage.multiSet([
-          ["userId", tempUserId],
-          ["userEmail", email.toLowerCase()],
-          ["userName", getDisplayName(email)],
+          ["userId", userCredential.user.uid],
+          ["userEmail", data.email.toLowerCase()],
+          ["userName", getDisplayName(data.email)],
         ]);
+
+        // Clean up verification document
+        await deleteDoc(verificationRef);
 
         if (onAuthSuccess) {
           await onAuthSuccess();
@@ -187,9 +206,6 @@ const SignUp: React.FC<SignUpProps> = ({
     setEmail(text);
     const validationError = validateEmail(text);
     setEmailError(validationError);
-    if (validationError) {
-      Alert.alert("Invalid Email", validationError);
-    }
   };
 
   const getDisplayName = (email: string) => {
@@ -198,6 +214,42 @@ const SignUp: React.FC<SignUpProps> = ({
 
   const generateVerificationCode = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
+  const validatePassword = (password: string) => {
+    const requirements = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    };
+
+    setPasswordRequirements(requirements);
+
+    if (!requirements.length) {
+      return "Password must be at least 8 characters long";
+    }
+    if (!requirements.uppercase) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!requirements.lowercase) {
+      return "Password must contain at least one lowercase letter";
+    }
+    if (!requirements.number) {
+      return "Password must contain at least one number";
+    }
+    if (!requirements.special) {
+      return "Password must contain at least one special character";
+    }
+
+    return null;
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    const validationError = validatePassword(text);
+    setPasswordError(validationError);
   };
 
   const handleSignUp = async () => {
@@ -211,7 +263,22 @@ const SignUp: React.FC<SignUpProps> = ({
       return;
     }
 
+    const passwordValidationError = validatePassword(password);
+    if (passwordValidationError) {
+      Alert.alert("Invalid Password", passwordValidationError);
+      setLoading(false);
+      return;
+    }
+
     try {
+      // First, check if email already exists in Firebase Auth
+      const methods = await fetchSignInMethodsForEmail(auth, email);
+      if (methods.length > 0) {
+        Alert.alert("Error", "An account with this email already exists");
+        setLoading(false);
+        return;
+      }
+
       const verificationCode = generateVerificationCode();
       const newTempUserId = Math.random().toString(36).substring(2);
       setTempUserId(newTempUserId);
@@ -224,16 +291,44 @@ const SignUp: React.FC<SignUpProps> = ({
       await setDoc(verificationRef, {
         code: verificationCode,
         email: email.trim(),
+        password: password, // We'll use this to create the account after verification
         createdAt: new Date().toISOString(),
         attempts: 0,
         verified: false,
         expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       });
 
-      setShowVerification(true);
-      console.log("Verification code for testing:", verificationCode);
+      // Wait for the email to be sent (check for emailSent field)
+      let attempts = 0;
+      const maxAttempts = 10;
+      while (attempts < maxAttempts) {
+        const docSnapshot = await getDoc(verificationRef);
+        const data = docSnapshot.data();
+
+        if (data?.emailSent === true) {
+          setShowVerification(true);
+          break;
+        } else if (data?.emailSent === false) {
+          throw new Error(
+            "Failed to send verification code. Please try again."
+          );
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        attempts++;
+      }
+
+      if (attempts >= maxAttempts) {
+        throw new Error(
+          "Verification email is taking too long. Please try again."
+        );
+      }
     } catch (error: any) {
-      Alert.alert("Signup Error", error.message.replace("Firebase: ", ""));
+      Alert.alert(
+        "Signup Error",
+        error.message || "An error occurred during signup. Please try again."
+      );
+      setShowVerification(false);
     } finally {
       setLoading(false);
     }
@@ -313,17 +408,17 @@ const SignUp: React.FC<SignUpProps> = ({
                 style={styles.backButton}
               >
                 <Ionicons
-                  name="arrow-back"
-                  size={24}
-                  color={theme.textSecondary}
+                  name="chevron-back"
+                  size={28}
+                  color={theme.textPrimary}
                 />
               </TouchableOpacity>
             </View>
 
             <View style={styles.verificationContent}>
-              <Text style={styles.title}>Verify your email</Text>
+              <Text style={styles.title}>Two-Factor Authentication</Text>
               <Text style={styles.description}>
-                Enter the 6-digit code sent to{"\n"}
+                For added security, please enter the 6-digit code sent to{"\n"}
                 <Text style={styles.emailText}>{email}</Text>
               </Text>
 
@@ -375,7 +470,7 @@ const SignUp: React.FC<SignUpProps> = ({
                 {loading ? (
                   <ActivityIndicator color={theme.buttonText} />
                 ) : (
-                  <Text style={styles.buttonText}>Verify Email</Text>
+                  <Text style={styles.buttonText}>Complete Sign Up</Text>
                 )}
               </MainButton>
             </View>
@@ -446,12 +541,92 @@ const SignUp: React.FC<SignUpProps> = ({
                 />
               </View>
             </View>
+
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={20}
+                color={theme.textSecondary}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor={theme.textSecondary}
+                value={password}
+                onChangeText={handlePasswordChange}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                <Ionicons
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={20}
+                  color={theme.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {password.length > 0 &&
+              !Object.values(passwordRequirements).every(Boolean) && (
+                <View style={styles.passwordRequirements}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      passwordRequirements.length && styles.requirementMet,
+                    ]}
+                  >
+                    • At least 8 characters
+                  </Text>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      passwordRequirements.uppercase && styles.requirementMet,
+                    ]}
+                  >
+                    • One uppercase letter
+                  </Text>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      passwordRequirements.lowercase && styles.requirementMet,
+                    ]}
+                  >
+                    • One lowercase letter
+                  </Text>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      passwordRequirements.number && styles.requirementMet,
+                    ]}
+                  >
+                    • One number
+                  </Text>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      passwordRequirements.special && styles.requirementMet,
+                    ]}
+                  >
+                    • One special character
+                  </Text>
+                </View>
+              )}
           </View>
 
           <MainButton
             style={styles.signupButton}
             onPress={handleSignUp}
-            disabled={loading || !email || emailError !== null}
+            disabled={
+              loading ||
+              !email ||
+              emailError !== null ||
+              !password ||
+              passwordError !== null
+            }
             width="100%"
           >
             {loading ? (
@@ -588,11 +763,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
   },
   backButton: {
-    padding: 8,
+    padding: 0,
   },
   title: {
     fontSize: 24,
@@ -605,7 +778,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: theme.textSecondary,
     textAlign: "center",
-    marginBottom: 24,
+    marginBottom: 14,
     lineHeight: 22,
   },
   emailText: {
@@ -620,10 +793,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   codeInput: {
-    width: 45,
-    height: 52,
+    width: 55,
+    height: 75,
     borderWidth: 1.5,
-    borderRadius: 25,
+    borderRadius: 16,
     textAlign: "center",
     fontSize: 22,
     fontWeight: "600",
@@ -670,6 +843,22 @@ const styles = StyleSheet.create({
   googleIcon: {
     width: 28,
     height: 28,
+  },
+  eyeIcon: {
+    padding: 10,
+  },
+  passwordRequirements: {
+    marginTop: 8,
+    marginBottom: 12,
+    paddingHorizontal: 15,
+  },
+  requirementText: {
+    fontSize: 13,
+    color: theme.textSecondary,
+    marginBottom: 4,
+  },
+  requirementMet: {
+    color: theme.alternate,
   },
 });
 

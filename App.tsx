@@ -89,35 +89,33 @@ const App: React.FC = () => {
 
             // Save user data to Firestore
             const userRef = doc(FIREBASE_DB, "users", user.uid);
-            getDoc(userRef)
-              .then((userDoc) => {
-                if (!userDoc.exists()) {
-                  const userData = {
-                    username: user.displayName || "User",
-                    email: user.email,
-                    createdAt: new Date().toISOString(),
-                    authProvider: "google",
-                    photoURL: user.photoURL || null,
-                    lastLoginAt: new Date().toISOString(),
-                  };
+            return getDoc(userRef).then((userDoc) => {
+              if (!userDoc.exists()) {
+                const userData = {
+                  username: user.displayName || "User",
+                  email: user.email,
+                  createdAt: new Date().toISOString(),
+                  authProvider: "google",
+                  photoURL: user.photoURL || null,
+                  lastLoginAt: new Date().toISOString(),
+                };
 
-                  return setDoc(userRef, userData);
-                } else {
-                  return setDoc(
-                    userRef,
-                    {
-                      lastLoginAt: new Date().toISOString(),
-                    },
-                    { merge: true }
+                return setDoc(userRef, userData).then(() => {
+                  // Request notification permissions right after creating new user
+                  return registerForPushNotificationsAsync().then(
+                    () => undefined
                   );
-                }
-              })
-              .then(() => {
-                return registerForPushNotificationsAsync();
-              })
-              .catch((error) => {
-                // Silent error handling
-              });
+                });
+              } else {
+                return setDoc(
+                  userRef,
+                  {
+                    lastLoginAt: new Date().toISOString(),
+                  },
+                  { merge: true }
+                );
+              }
+            });
           })
           .catch((error) => {
             // Silent error handling
@@ -182,6 +180,8 @@ const App: React.FC = () => {
                   authProvider: "google",
                   photoURL: user.photoURL || null,
                 });
+                // Request notification permissions right after creating new user
+                await registerForPushNotificationsAsync();
               }
 
               setUser(user);
