@@ -39,12 +39,14 @@ interface SignUpProps {
   ) => Promise<AuthSessionResult>;
   onSwitchToLogin?: () => void;
   onAuthSuccess?: () => Promise<void>;
+  onStartVerification?: (email: string, tempUserId: string) => void;
 }
 
 const SignUp: React.FC<SignUpProps> = ({
   promptAsync,
   onSwitchToLogin,
   onAuthSuccess,
+  onStartVerification,
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -281,7 +283,6 @@ const SignUp: React.FC<SignUpProps> = ({
 
       const verificationCode = generateVerificationCode();
       const newTempUserId = Math.random().toString(36).substring(2);
-      setTempUserId(newTempUserId);
 
       const verificationRef = doc(
         FIREBASE_DB,
@@ -291,7 +292,7 @@ const SignUp: React.FC<SignUpProps> = ({
       await setDoc(verificationRef, {
         code: verificationCode,
         email: email.trim(),
-        password: password, // We'll use this to create the account after verification
+        password: password,
         createdAt: new Date().toISOString(),
         attempts: 0,
         verified: false,
@@ -306,7 +307,9 @@ const SignUp: React.FC<SignUpProps> = ({
         const data = docSnapshot.data();
 
         if (data?.emailSent === true) {
-          setShowVerification(true);
+          if (onStartVerification) {
+            onStartVerification(email, newTempUserId);
+          }
           break;
         } else if (data?.emailSent === false) {
           throw new Error(
@@ -328,7 +331,6 @@ const SignUp: React.FC<SignUpProps> = ({
         "Signup Error",
         error.message || "An error occurred during signup. Please try again."
       );
-      setShowVerification(false);
     } finally {
       setLoading(false);
     }

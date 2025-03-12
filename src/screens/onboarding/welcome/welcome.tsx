@@ -23,6 +23,7 @@ import Privacy from "../privacy/privacy";
 import Login from "../userAuth/login";
 import SignUp from "../userAuth/signup";
 import ForgotPassword from "../userAuth/forgotPassword";
+import Verification from "../userAuth/verification";
 import * as Google from "expo-auth-session/providers/google";
 import { GoogleAuthProvider } from "firebase/auth";
 import { signInWithCredential } from "firebase/auth";
@@ -39,20 +40,13 @@ type WelcomeScreenNavigationProp = NativeStackNavigationProp<
   "Welcome"
 >;
 
-// Enable LayoutAnimation for Android
-if (Platform.OS === "android") {
-  if (UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-  }
-}
-
 const Welcome: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<
-    "login" | "signup" | "forgotPassword"
+    "login" | "signup" | "forgotPassword" | "verification"
   >("login");
   const [slideAnim] = useState(
     new RNAnimated.Value(Dimensions.get("window").height)
@@ -60,6 +54,10 @@ const Welcome: React.FC = () => {
   const [opacityAnim] = useState(new RNAnimated.Value(0));
   const [scaleAnim] = useState(new RNAnimated.Value(1));
   const [translateAnim] = useState(new RNAnimated.Value(0));
+  const [verificationData, setVerificationData] = useState<{
+    email: string;
+    tempUserId: string;
+  } | null>(null);
 
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
 
@@ -232,7 +230,7 @@ const Welcome: React.FC = () => {
   };
 
   const handleSwitchAuthMode = (
-    mode: "login" | "signup" | "forgotPassword"
+    mode: "login" | "signup" | "forgotPassword" | "verification"
   ) => {
     // Configure animation
     LayoutAnimation.configureNext({
@@ -426,6 +424,8 @@ const Welcome: React.FC = () => {
                 ? styles.signupModalContent
                 : authMode === "forgotPassword"
                 ? styles.forgotPasswordModalContent
+                : authMode === "verification"
+                ? styles.verificationModalContent
                 : styles.loginModalContent,
               {
                 transform: [{ translateY: slideAnim }],
@@ -433,9 +433,14 @@ const Welcome: React.FC = () => {
             ]}
           >
             <View style={styles.authModalHeader}>
-              {authMode === "forgotPassword" && (
+              {(authMode === "forgotPassword" ||
+                authMode === "verification") && (
                 <TouchableOpacity
-                  onPress={() => handleSwitchAuthMode("login")}
+                  onPress={() =>
+                    handleSwitchAuthMode(
+                      authMode === "forgotPassword" ? "login" : "signup"
+                    )
+                  }
                   style={styles.backButton}
                 >
                   <Ionicons
@@ -450,6 +455,8 @@ const Welcome: React.FC = () => {
                   ? "Login"
                   : authMode === "signup"
                   ? "Sign Up"
+                  : authMode === "verification"
+                  ? "Two-Factor Authentication"
                   : "Reset Password"}
               </Text>
               <TouchableOpacity
@@ -502,6 +509,20 @@ const Welcome: React.FC = () => {
                 <SignUp
                   promptAsync={promptAsync}
                   onSwitchToLogin={() => handleSwitchAuthMode("login")}
+                  onAuthSuccess={handleAuthSuccess}
+                  onStartVerification={(email, tempUserId) => {
+                    setVerificationData({ email, tempUserId });
+                    handleSwitchAuthMode("verification");
+                  }}
+                />
+              ) : authMode === "verification" && verificationData ? (
+                <Verification
+                  email={verificationData.email}
+                  tempUserId={verificationData.tempUserId}
+                  onBackToSignup={() => {
+                    setVerificationData(null);
+                    handleSwitchAuthMode("signup");
+                  }}
                   onAuthSuccess={handleAuthSuccess}
                 />
               ) : (
@@ -683,6 +704,9 @@ const styles = StyleSheet.create({
   forgotPasswordModalContent: {
     height: Dimensions.get("window").height * 0.37,
   },
+  verificationModalContent: {
+    height: Dimensions.get("window").height * 0.44,
+  },
   authModalHeader: {
     flexDirection: "row",
     justifyContent: "center",
@@ -691,7 +715,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   authModalTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
     color: lightTheme.textPrimary,
   },
@@ -727,30 +751,5 @@ const styles = StyleSheet.create({
     left: 20,
     padding: 8,
     zIndex: 1,
-  },
-});
-
-// Export the modal styles so they can be reused
-export const modalStyles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    width: "100%",
-    height: Dimensions.get("window").height * 0.48,
-    backgroundColor: lightTheme.background,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    elevation: 5,
   },
 });

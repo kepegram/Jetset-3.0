@@ -22,7 +22,6 @@ import { useTheme } from "../../../context/themeContext";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { modalStyles } from "../../../screens/onboarding/welcome/welcome";
 import Privacy from "../../onboarding/privacy/privacy";
 import * as ImageManipulator from "expo-image-manipulator";
 
