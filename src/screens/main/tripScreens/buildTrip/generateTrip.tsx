@@ -169,23 +169,6 @@ const GenerateTrip: React.FC = () => {
     console.log("AI Prompt after replacements:", prompt);
   };
 
-  const parseAIResponse = (responseText: string): TripResponse => {
-    console.log("Raw AI Response:", responseText);
-    const cleanedResponse = cleanJsonResponse(responseText);
-    console.log("Cleaned Response:", cleanedResponse);
-    try {
-      const parsed = JSON.parse(cleanedResponse);
-      if (!parsed?.travelPlan) {
-        throw new Error("Invalid AI response format");
-      }
-      return parsed;
-    } catch (error) {
-      console.error("JSON parsing error:", error);
-      console.error("Failed response:", cleanedResponse);
-      throw new Error("Failed to parse AI response");
-    }
-  };
-
   const cleanJsonResponse = (response: string): string => {
     let cleanedResponse = response.trim();
 
@@ -201,11 +184,18 @@ const GenerateTrip: React.FC = () => {
       cleanedResponse = cleanedResponse.substring(0, lastBrace + 1);
     }
 
-    // Fix common JSON issues without escaping quotes
+    // Remove any markdown code block indicators
+    cleanedResponse = cleanedResponse
+      .replace(/```json/g, "")
+      .replace(/```/g, "");
+
+    // Fix common JSON issues
     cleanedResponse = cleanedResponse
       .replace(/\n/g, " ") // Replace newlines with spaces
-      .replace(/,\s*}/g, "}") // Remove trailing commas
-      .replace(/,\s*]/g, "]") // Remove trailing commas in arrays
+      .replace(/\r/g, "") // Remove carriage returns
+      .replace(/\t/g, " ") // Replace tabs with spaces
+      .replace(/\s+/g, " ") // Normalize multiple spaces to single space
+      .replace(/,\s*([}\]])/g, "$1") // Remove trailing commas
       .replace(/"https":\/{2}/g, '"https://') // Fix broken https URLs
       .replace(/"http":\/{2}/g, '"http://') // Fix broken http URLs
       .replace(/"https"\s*:\s*\/\//g, '"https://') // Fix another variant of broken https URLs
@@ -215,24 +205,110 @@ const GenerateTrip: React.FC = () => {
       .replace(/"\s+"/g, '" "') // Fix spaces between quotes
       .replace(/([^"]):\/\//g, "$1://") // Fix any remaining broken URLs
       .replace(/([a-zA-Z0-9])":/g, '$1":') // Ensure proper spacing before colons
-      .replace(/:\s*"([^"]*)":\/{2}/g, ':"$1://'); // Fix URLs in values
+      .replace(/:\s*"([^"]*)":\/{2}/g, ':"$1://') // Fix URLs in values
+      .replace(/\\"/g, '"') // Fix escaped quotes
+      .replace(/"\s*\+\s*"/g, "") // Remove concatenation operators
+      .replace(/(["\]}])\s*([,\]}])/g, "$1$2") // Remove spaces between brackets and commas
+      .replace(/([{[,])\s*(["{[])/g, "$1$2") // Remove spaces after opening brackets
+      .replace(/undefined/g, "null") // Replace undefined with null
+      .replace(/NaN/g, "0") // Replace NaN with 0
+      .replace(/Infinity/g, "999999") // Replace Infinity with large number
+      .replace(/\u200B/g, "") // Remove zero-width spaces
+      .replace(/[\u0000-\u001F]/g, ""); // Remove control characters
 
-    // Try to parse the JSON to see if it's valid
+    // Try to parse and re-stringify to ensure valid JSON
     try {
       return JSON.stringify(JSON.parse(cleanedResponse));
     } catch (error) {
       // If parsing fails, try more aggressive fixes
-      cleanedResponse = cleanedResponse
-        .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?\s*:/g, '"$2":') // Ensure property names are quoted
-        .replace(/:\s*'([^']*)'/g, ':"$1"') // Replace single quotes with double quotes
-        .replace(/([^"]):\/\//g, "$1://") // One more pass at fixing URLs
-        .replace(/:\s*"([^"]*)":\/{2}/g, ':"$1://'); // One more pass at fixing URLs in values
+      try {
+        // Fix unquoted property names
+        cleanedResponse = cleanedResponse.replace(
+          /([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g,
+          '$1"$2":'
+        );
+
+        // Fix single quotes to double quotes
+        cleanedResponse = cleanedResponse.replace(/'/g, '"');
+
+        // Remove any BOM characters
+        cleanedResponse = cleanedResponse.replace(/^\uFEFF/, "");
+
+        // Fix missing quotes around string values
+        cleanedResponse = cleanedResponse.replace(
+          /:\s*([a-zA-Z][a-zA-Z0-9_\s-]*[a-zA-Z0-9])([,}])/g,
+          ':"$1"$2'
+        );
+
+        // Fix decimal numbers that might be using commas instead of periods
+        cleanedResponse = cleanedResponse.replace(
+          /"price":\s*"?(\d+),(\d+)"?/g,
+          '"price":$1.$2'
+        );
+
+        // Ensure all boolean values are unquoted
+        cleanedResponse = cleanedResponse
+          .replace(/"(true|false)"/g, "$1")
+          .replace(/:\s*"(true|false)"/g, ":$1");
+
+        // Fix potential issues with arrays
+        cleanedResponse = cleanedResponse
+          .replace(/\[\s*,/g, "[") // Remove leading commas in arrays
+          .replace(/,\s*,/g, ",") // Remove multiple commas
+          .replace(/,\s*]/g, "]"); // Remove trailing commas in arrays
+
+        // One final attempt to parse
+        return JSON.stringify(JSON.parse(cleanedResponse));
+      } catch (finalError) {
+        // If all parsing attempts fail, log the cleaned response and error
+        console.error("Final cleaning failed:", finalError);
+        console.error("Problematic JSON:", cleanedResponse);
+        throw new Error(
+          "Failed to parse AI response after all cleaning attempts"
+        );
+      }
+    }
+  };
+
+  const parseAIResponse = (responseText: string): TripResponse => {
+    console.log("Raw AI Response:", responseText);
+
+    try {
+      // First attempt: direct parse
+      return JSON.parse(responseText);
+    } catch (error) {
+      console.log("Direct parse failed, attempting cleaning...");
 
       try {
-        return JSON.stringify(JSON.parse(cleanedResponse));
-      } catch (error) {
-        // Return the cleaned response anyway, even though it might not parse
-        return cleanedResponse;
+        // Second attempt: clean and parse
+        const cleanedResponse = cleanJsonResponse(responseText);
+        console.log("Cleaned Response:", cleanedResponse);
+
+        const parsed = JSON.parse(cleanedResponse);
+        if (!parsed?.travelPlan) {
+          throw new Error("Invalid AI response format - missing travelPlan");
+        }
+        return parsed;
+      } catch (cleaningError) {
+        console.error("JSON parsing error:", cleaningError);
+
+        // Third attempt: try parsing just the travelPlan object if it exists
+        const travelPlanMatch = responseText.match(
+          /"travelPlan"\s*:\s*({[\s\S]*})\s*}\s*$/
+        );
+        if (travelPlanMatch) {
+          try {
+            const travelPlanJson = cleanJsonResponse(
+              `{"travelPlan":${travelPlanMatch[1]}}`
+            );
+            return JSON.parse(travelPlanJson);
+          } catch (finalError) {
+            console.error("Final parsing attempt failed:", finalError);
+            throw new Error("Failed to parse AI response after all attempts");
+          }
+        }
+
+        throw new Error("Failed to parse AI response");
       }
     }
   };

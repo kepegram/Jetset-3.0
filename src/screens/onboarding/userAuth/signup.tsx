@@ -634,7 +634,7 @@ const SignUp: React.FC<SignUpProps> = ({
             {loading ? (
               <ActivityIndicator color={theme.buttonText} />
             ) : (
-              <Text style={styles.signupButtonText}>Continue with Email</Text>
+              <Text style={styles.signupButtonText}>Sign Up</Text>
             )}
           </MainButton>
 

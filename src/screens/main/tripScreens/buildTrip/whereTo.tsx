@@ -113,7 +113,7 @@ const WhereTo: React.FC = () => {
       name: data.description,
       place_id: details.place_id,
       coordinates: details.geometry.location,
-      photoRef: photoReference,
+      photoRef: photoReference || undefined,
       url: details.url,
     };
 

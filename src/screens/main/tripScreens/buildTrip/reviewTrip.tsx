@@ -84,8 +84,13 @@ const ReviewTrip: React.FC = () => {
       switch (editingField) {
         case "destination":
           updatedTripData.locationInfo = {
-            ...updatedTripData.locationInfo,
             name: newValue.description,
+            place_id: newValue.place_id,
+            formatted_address: newValue.formatted_address,
+            types: newValue.types,
+            coordinates: newValue.coordinates,
+            photoRef: newValue.photoRef,
+            url: newValue.url,
           };
           break;
         case "dates":
@@ -171,51 +176,60 @@ const ReviewTrip: React.FC = () => {
           <View
             style={[
               styles.calendarWrapper,
-              { backgroundColor: currentTheme.alternateLight50 },
+              { backgroundColor: currentTheme.accentBackground },
             ]}
           >
             <View style={styles.dateRangeWrapper}>
               <View
                 style={[
                   styles.dateRangeContainer,
-                  { backgroundColor: currentTheme.alternateLight50 },
+                  { backgroundColor: currentTheme.secondaryLight15 },
                 ]}
               >
                 <Ionicons
                   name="calendar-outline"
-                  size={24}
+                  size={20}
                   color={currentTheme.textSecondary}
                 />
                 <Text
                   style={[
                     styles.dateRangeText,
-                    { color: currentTheme.textSecondary },
+                    { color: currentTheme.textPrimary },
                   ]}
                 >
                   {tempStartDate && tempEndDate
                     ? `${moment(tempStartDate).format("MMM D")} - ${moment(
                         tempEndDate
-                      ).format("MMM D, YYYY")} • ${moment(tempEndDate).diff(
-                        moment(tempStartDate),
-                        "days"
-                      )} nights`
+                      ).format("MMM D, YYYY")} • ${
+                        moment(tempEndDate).diff(
+                          moment(tempStartDate),
+                          "days"
+                        ) + 1
+                      } days`
                     : "Select your travel dates"}
                 </Text>
               </View>
               {(tempStartDate || tempEndDate) && (
-                <Ionicons
-                  name="refresh-outline"
-                  size={24}
-                  color={currentTheme.textSecondary}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.resetButton,
+                    {
+                      backgroundColor: pressed
+                        ? currentTheme.secondaryLight20
+                        : currentTheme.secondaryLight15,
+                    },
+                  ]}
                   onPress={() => {
                     setTempStartDate(null);
                     setTempEndDate(null);
                   }}
-                  style={[
-                    styles.resetIcon,
-                    { backgroundColor: currentTheme.alternateLight50 },
-                  ]}
-                />
+                >
+                  <Ionicons
+                    name="refresh-outline"
+                    size={20}
+                    color={currentTheme.textSecondary}
+                  />
+                </Pressable>
               )}
             </View>
 
@@ -235,43 +249,86 @@ const ReviewTrip: React.FC = () => {
               selectedStartDate={tempStartDate || undefined}
               selectedEndDate={tempEndDate || undefined}
               previousComponent={
-                <Ionicons
-                  name="chevron-back"
-                  size={34}
-                  color={currentTheme.textPrimary}
-                />
+                <View
+                  style={[
+                    styles.navButton,
+                    { backgroundColor: currentTheme.secondaryLight15 },
+                  ]}
+                >
+                  <Ionicons
+                    name="chevron-back"
+                    size={20}
+                    color={currentTheme.textSecondary}
+                  />
+                </View>
               }
               nextComponent={
-                <Ionicons
-                  name="chevron-forward"
-                  size={34}
-                  color={currentTheme.textPrimary}
-                />
+                <View
+                  style={[
+                    styles.navButton,
+                    { backgroundColor: currentTheme.secondaryLight15 },
+                  ]}
+                >
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={currentTheme.textSecondary}
+                  />
+                </View>
               }
               selectedRangeStyle={{
-                backgroundColor: currentTheme.alternateLight50,
+                backgroundColor: currentTheme.alternateLight15,
               }}
               selectedDayStyle={{
                 backgroundColor: currentTheme.alternate,
               }}
               selectedDayTextStyle={{
                 color: "#FFFFFF",
-                fontWeight: "600",
+                fontFamily: "outfit-medium",
+                fontSize: 14,
               }}
-              textStyle={{ color: currentTheme.textPrimary }}
-              dayTextStyle={{ color: currentTheme.textPrimary }}
+              textStyle={{
+                color: currentTheme.textPrimary,
+                fontFamily: "outfit",
+                fontSize: 14,
+              }}
+              todayBackgroundColor={currentTheme.secondaryLight15}
+              todayTextStyle={{
+                color: currentTheme.textPrimary,
+                fontFamily: "outfit-medium",
+              }}
+              dayLabelsWrapper={{
+                borderBottomWidth: 0,
+                borderTopWidth: 0,
+                paddingTop: 10,
+                paddingBottom: 10,
+              }}
+              customDatesStyles={[
+                {
+                  containerStyle: {
+                    borderRadius: 8,
+                    height: 35,
+                  },
+                  textStyle: {
+                    fontFamily: "outfit",
+                    color: currentTheme.textPrimary,
+                  },
+                },
+              ]}
               monthTitleStyle={{
                 color: currentTheme.textPrimary,
-                fontSize: 20,
-                fontWeight: "700",
+                fontSize: 16,
+                fontFamily: "outfit-bold",
+                paddingBottom: 10,
               }}
               yearTitleStyle={{
                 color: currentTheme.textPrimary,
-                fontSize: 20,
-                fontWeight: "700",
+                fontSize: 16,
+                fontFamily: "outfit-bold",
+                paddingBottom: 10,
               }}
-              width={Dimensions.get("window").width - 80}
-              height={380}
+              width={Dimensions.get("window").width - 64}
+              height={360}
               scaleFactor={375}
             />
           </View>
@@ -525,9 +582,7 @@ const ReviewTrip: React.FC = () => {
           {renderInfoCard(
             "📍",
             "Destination",
-            localTripData?.destinationType ||
-              localTripData?.locationInfo?.name ||
-              localTripData?.name,
+            localTripData?.locationInfo?.name || "Not specified",
             "destination"
           )}
 
@@ -543,16 +598,25 @@ const ReviewTrip: React.FC = () => {
           {renderInfoCard(
             "🚌",
             "Who is Traveling",
-            localTripData?.whoIsGoing,
+            Array.isArray(localTripData?.whoIsGoing)
+              ? (localTripData.whoIsGoing as Array<{ type: string }>)
+                  .map((p) => p.type)
+                  .join(", ")
+              : localTripData?.whoIsGoing || "Not specified",
             "travelers"
           )}
 
-          {renderInfoCard("💰", "Budget", localTripData?.budget, "budget")}
+          {renderInfoCard(
+            "💰",
+            "Budget",
+            localTripData?.budget || "Not specified",
+            "budget"
+          )}
 
           {renderInfoCard(
-            "🏃‍♂️",
+            "🏃",
             "Activity Level",
-            localTripData?.activityLevel,
+            localTripData?.activityLevel || "Not specified",
             "activity"
           )}
         </View>
@@ -738,7 +802,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    minHeight: "60%",
+    minHeight: "75%",
+    maxHeight: "90%",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -752,7 +817,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 24,
+    marginBottom: 20,
   },
   modalHeaderContent: {
     flex: 1,
@@ -775,12 +840,19 @@ const styles = StyleSheet.create({
   },
   modalBody: {
     flex: 1,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   modalFooter: {
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: "rgba(0,0,0,0.1)",
+  },
+  calendarWrapper: {
+    marginTop: 4,
+    alignItems: "center",
+    borderRadius: 16,
+    padding: 16,
+    flex: 1,
   },
   dateRangeWrapper: {
     flexDirection: "row",
@@ -788,37 +860,30 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 16,
     gap: 12,
+    width: "100%",
   },
   dateRangeContainer: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
+    padding: 12,
     borderRadius: 12,
   },
   dateRangeText: {
-    fontSize: 16,
+    fontSize: 14,
     marginLeft: 12,
-    fontWeight: "500",
-    fontFamily: "outfit",
+    fontFamily: "outfit-medium",
   },
-  resetIcon: {
+  resetButton: {
+    padding: 12,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  navButton: {
     padding: 8,
     borderRadius: 8,
-  },
-  calendarWrapper: {
-    marginTop: 16,
-    alignItems: "center",
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    marginHorizontal: 8,
   },
   optionsContainer: {
     marginTop: 16,

@@ -180,7 +180,12 @@ const ChooseDate: React.FC = () => {
                   <View style={styles.dateRangeDisplay}>
                     <View style={styles.dateBlock}>
                       <Text style={styles.dateLabel}>START</Text>
-                      <Text style={styles.dateValue}>
+                      <Text
+                        style={[
+                          styles.dateValue,
+                          { color: currentTheme.textPrimary },
+                        ]}
+                      >
                         {startDate.format("MMM DD")}
                       </Text>
                       <Text style={styles.yearValue}>
@@ -220,7 +225,12 @@ const ChooseDate: React.FC = () => {
 
                     <View style={styles.dateBlock}>
                       <Text style={styles.dateLabel}>END</Text>
-                      <Text style={styles.dateValue}>
+                      <Text
+                        style={[
+                          styles.dateValue,
+                          { color: currentTheme.textPrimary },
+                        ]}
+                      >
                         {endDate.format("MMM DD")}
                       </Text>
                       <Text style={styles.yearValue}>
@@ -396,7 +406,6 @@ const styles = StyleSheet.create({
   dateValue: {
     fontSize: 20,
     fontFamily: "outfit-bold",
-    color: "#000000",
   },
   yearValue: {
     fontSize: 14,
