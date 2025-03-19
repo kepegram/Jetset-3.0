@@ -81,6 +81,8 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
   - Secure user authentication
   - Encrypted data storage
   - Protected API communications
+  - Two-Factor Authentication (2FA)
+  - Rate limiting for security endpoints
 
 ---
 
@@ -117,6 +119,18 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
   - Photo references
   - Place recommendations
 
+### 4. **Firebase Cloud Functions**
+
+- **Authentication Security**:
+  - Two-Factor Authentication (2FA) email delivery
+  - Verification code management
+  - Secure email templates with Zoho SMTP
+- **Serverless Functions**:
+  - User verification workflows
+  - Background data processing
+  - Scheduled maintenance tasks
+  - API proxying and rate limiting
+
 ---
 
 ## 🛠️ Tech Stack
@@ -137,6 +151,7 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
 - **Storage**: Firebase Cloud Storage
 - **AI Services**: Google Gemini API
 - **Email Service**: Zoho Mail SMTP
+- **Serverless Backend**: Firebase Cloud Functions
 
 ### Development Tools
 
@@ -177,11 +192,15 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
 
 1. Clone the repository
 2. Install dependencies: `npm install`
-3. Configure environment variables:
+3. Set up Firebase Functions:
+   - Navigate to functions directory: `cd functions`
+   - Install dependencies: `npm install`
+4. Configure environment variables:
    - Firebase configuration
    - Google Maps API key
    - Gemini API key
-4. Start the development server: `expo start`
+   - Zoho Mail credentials for 2FA emails
+5. Start the development server: `expo start`
 
 ---
 
@@ -194,6 +213,94 @@ The app supports both light and dark themes with:
 - Custom fonts and typography
 - Responsive layouts
 - Animated theme transitions
+
+---
+
+## 📋 Authentication Flows
+
+The app implements a secure multi-layer authentication system:
+
+- **Primary Authentication**:
+
+  - Email/password authentication
+  - Social media login (Google, Apple)
+  - Guest mode with limited features
+
+- **Two-Factor Authentication (2FA)**:
+
+  - Email-based verification codes
+  - Time-limited secure tokens (5 minutes)
+  - Styled email templates for verification
+  - Backend powered by Firebase Cloud Functions
+
+- **Session Management**:
+  - Secure token storage
+  - Auto-renewal of expired tokens
+  - Forced re-authentication for sensitive operations
+
+---
+
+## 📈 Performance Optimization
+
+- **Lazy loading** of non-critical components
+- **Image optimization** for faster loading
+- **Memoization** of expensive computations
+- **React Native Reanimated** for fluid animations
+- **Firestore offline persistence** for reliable data access
+- **Efficient state management** with Context API
+
+---
+
+## ♿ Accessibility
+
+- Support for screen readers
+- Scalable text for different font sizes
+- Adequate color contrast ratios
+- Touch target sizing for motor impairments
+- VoiceOver and TalkBack compatibility
+
+---
+
+## 🧪 Testing & Quality Assurance
+
+- **Unit Testing**: Component and utility testing
+- **Integration Testing**: Service interaction testing
+- **End-to-End Testing**: User flow validation
+- **Manual Testing**: Real-device verification
+- **Performance Testing**: Load and stress testing
+
+---
+
+## 📊 Analytics & Monitoring
+
+- **User Engagement Tracking**:
+  - Screen navigation patterns
+  - Feature usage analytics
+  - Conversion funnels
+- **Performance Monitoring**:
+  - Startup time measurement
+  - UI responsiveness tracking
+  - API call performance
+- **Error Reporting**:
+  - Real-time crash reporting
+  - JavaScript error logging
+  - Network failure monitoring
+
+---
+
+## 🔄 Deployment
+
+- **CI/CD Pipeline**:
+  - Automated builds with EAS
+  - Testing integration
+  - Deployment to app stores
+- **App Store Deployment**:
+  - iOS App Store submission
+  - Google Play Store publishing
+- **Over-the-Air Updates**:
+  - Expo Updates integration
+  - Silent background updates
+  - Version management
 
 ---
 

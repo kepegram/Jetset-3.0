@@ -113,7 +113,12 @@ const App: React.FC = () => {
                     lastLoginAt: new Date().toISOString(),
                   },
                   { merge: true }
-                );
+                ).then(() => {
+                  // Request notification permissions after successful login for existing users
+                  return registerForPushNotificationsAsync().then(
+                    () => undefined
+                  );
+                });
               }
             });
           })
@@ -145,11 +150,6 @@ const App: React.FC = () => {
           });
         }
       });
-
-    // Request permissions on app start
-    registerForPushNotificationsAsync().catch((error) => {
-      console.log("Failed to get push token:", error);
-    });
 
     return () => {
       Notifications.removeNotificationSubscription(
