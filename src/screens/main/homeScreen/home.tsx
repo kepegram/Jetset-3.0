@@ -247,6 +247,151 @@ const Home: React.FC = () => {
   const wait = (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms));
 
+  const cleanJsonResponse = (response: string): string => {
+    let cleanedResponse = response.trim();
+
+    // Remove any text before the first {
+    const firstBrace = cleanedResponse.indexOf("{");
+    if (firstBrace !== -1) {
+      cleanedResponse = cleanedResponse.substring(firstBrace);
+    }
+
+    // Remove any text after the last }
+    const lastBrace = cleanedResponse.lastIndexOf("}");
+    if (lastBrace !== -1) {
+      cleanedResponse = cleanedResponse.substring(0, lastBrace + 1);
+    }
+
+    // Remove any markdown code block indicators
+    cleanedResponse = cleanedResponse
+      .replace(/```json/g, "")
+      .replace(/```/g, "");
+
+    // Fix common JSON issues
+    cleanedResponse = cleanedResponse
+      .replace(/\n/g, " ") // Replace newlines with spaces
+      .replace(/\r/g, "") // Remove carriage returns
+      .replace(/\t/g, " ") // Replace tabs with spaces
+      .replace(/\s+/g, " ") // Normalize multiple spaces to single space
+      .replace(/,\s*([}\]])/g, "$1") // Remove trailing commas
+      .replace(/"https":\/{2}/g, '"https://') // Fix broken https URLs
+      .replace(/"http":\/{2}/g, '"http://') // Fix broken http URLs
+      .replace(/"https"\s*:\s*\/\//g, '"https://') // Fix another variant of broken https URLs
+      .replace(/"http"\s*:\s*\/\//g, '"http://') // Fix another variant of broken http URLs
+      .replace(/Day\s*"(\d+)"/g, "Day $1") // Fix day numbering format
+      .replace(/Day\s+"(\d+)"\s*:/g, "Day $1:") // Fix day numbering format in keys
+      .replace(/"\s+"/g, '" "') // Fix spaces between quotes
+      .replace(/([^"]):\/\//g, "$1://") // Fix any remaining broken URLs
+      .replace(/([a-zA-Z0-9])":/g, '$1":') // Ensure proper spacing before colons
+      .replace(/:\s*"([^"]*)":\/{2}/g, ':"$1://') // Fix URLs in values
+      .replace(/\\"/g, '"') // Fix escaped quotes
+      .replace(/"\s*\+\s*"/g, "") // Remove concatenation operators
+      .replace(/(["\]}])\s*([,\]}])/g, "$1$2") // Remove spaces between brackets and commas
+      .replace(/([{[,])\s*(["{[])/g, "$1$2") // Remove spaces after opening brackets
+      .replace(/undefined/g, "null") // Replace undefined with null
+      .replace(/NaN/g, "0") // Replace NaN with 0
+      .replace(/Infinity/g, "999999") // Replace Infinity with large number
+      .replace(/\u200B/g, "") // Remove zero-width spaces
+      .replace(/[\u0000-\u001F]/g, ""); // Remove control characters
+
+    // Try to parse and re-stringify to ensure valid JSON
+    try {
+      return JSON.stringify(JSON.parse(cleanedResponse));
+    } catch (error) {
+      // If parsing fails, try more aggressive fixes
+      try {
+        // Fix unquoted property names
+        cleanedResponse = cleanedResponse.replace(
+          /([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g,
+          '$1"$2":'
+        );
+
+        // Fix single quotes to double quotes
+        cleanedResponse = cleanedResponse.replace(/'/g, '"');
+
+        // Remove any BOM characters
+        cleanedResponse = cleanedResponse.replace(/^\uFEFF/, "");
+
+        // Fix missing quotes around string values
+        cleanedResponse = cleanedResponse.replace(
+          /:\s*([a-zA-Z][a-zA-Z0-9_\s-]*[a-zA-Z0-9])([,}])/g,
+          ':"$1"$2'
+        );
+
+        // Fix decimal numbers that might be using commas instead of periods
+        cleanedResponse = cleanedResponse.replace(
+          /"price":\s*"?(\d+),(\d+)"?/g,
+          '"price":$1.$2'
+        );
+
+        // Ensure all boolean values are unquoted
+        cleanedResponse = cleanedResponse
+          .replace(/"(true|false)"/g, "$1")
+          .replace(/:\s*"(true|false)"/g, ":$1");
+
+        // Fix potential issues with arrays
+        cleanedResponse = cleanedResponse
+          .replace(/\[\s*,/g, "[") // Remove leading commas in arrays
+          .replace(/,\s*,/g, ",") // Remove multiple commas
+          .replace(/,\s*]/g, "]"); // Remove trailing commas in arrays
+
+        // One final attempt to parse
+        return JSON.stringify(JSON.parse(cleanedResponse));
+      } catch (finalError) {
+        // If all parsing attempts fail, log the cleaned response and error
+        console.error("Final cleaning failed:", finalError);
+        console.error("Problematic JSON:", cleanedResponse);
+        throw new Error(
+          "Failed to parse AI response after all cleaning attempts"
+        );
+      }
+    }
+  };
+
+  const parseAIResponse = (responseText: string): any => {
+    console.log("Raw AI Response:", responseText);
+
+    try {
+      // First attempt: direct parse
+      return JSON.parse(responseText);
+    } catch (error) {
+      console.log("Direct parse failed, attempting cleaning...");
+
+      try {
+        // Second attempt: clean and parse
+        const cleanedResponse = cleanJsonResponse(responseText);
+        console.log("Cleaned Response:", cleanedResponse);
+
+        const parsed = JSON.parse(cleanedResponse);
+        if (!parsed?.travelPlan) {
+          throw new Error("Invalid AI response format - missing travelPlan");
+        }
+        return parsed;
+      } catch (cleaningError) {
+        console.error("JSON parsing error:", cleaningError);
+
+        // Third attempt: try parsing just the travelPlan object if it exists
+        const travelPlanMatch = responseText.match(
+          /"travelPlan"\s*:\s*({[\s\S]*})\s*}\s*$/
+        );
+        if (travelPlanMatch) {
+          try {
+            const travelPlanJson = cleanJsonResponse(
+              `{"travelPlan":${travelPlanMatch[1]}}`
+            );
+            return JSON.parse(travelPlanJson);
+          } catch (finalError) {
+            console.error("Final parsing attempt failed:", finalError);
+            throw new Error("Failed to parse AI response after all attempts");
+          }
+        }
+
+        throw new Error("Failed to parse AI response");
+      }
+    }
+  };
+
+  // Update generateTripWithRetry to use the new parsing functions
   const generateTripWithRetry = async (
     attempt: number = 1,
     maxAttempts: number = 3,
@@ -269,43 +414,7 @@ const Home: React.FC = () => {
 
       let tripResp;
       try {
-        // First, try to extract JSON from markdown if present
-        const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        if (jsonMatch) {
-          responseText = jsonMatch[1];
-        }
-
-        // Basic cleanup first
-        let cleanedResponse = responseText
-          .trim()
-          .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Remove control characters
-          .replace(/\n/g, " ") // Remove newlines
-          .replace(/\s+/g, " "); // Normalize spaces
-
-        // Find the JSON object boundaries
-        const startIdx = cleanedResponse.indexOf("{");
-        const endIdx = cleanedResponse.lastIndexOf("}") + 1;
-
-        if (startIdx !== -1 && endIdx > startIdx) {
-          cleanedResponse = cleanedResponse.slice(startIdx, endIdx);
-        }
-
-        try {
-          // First attempt with minimal cleaning
-          tripResp = JSON.parse(cleanedResponse);
-        } catch (initialParseError) {
-          // If that fails, try more aggressive cleaning
-          cleanedResponse = cleanedResponse
-            .replace(/,(?=\s*[}\]])/g, "") // Remove trailing commas
-            .replace(/([{,])\s*([a-zA-Z0-9_]+)\s*:/g, '$1"$2":') // Quote unquoted keys
-            .replace(/:\s*'([^']*)'/g, ':"$1"') // Convert single quotes to double quotes
-            .replace(/\\(?=[^"\\])/g, "\\\\") // Escape backslashes
-            .replace(/(?<!\\)"/g, '\\"') // Escape unescaped quotes
-            .replace(/\\/g, "\\\\") // Double escape backslashes
-            .replace(/\\\\"/g, '\\"'); // Fix double escaped quotes
-
-          tripResp = JSON.parse(cleanedResponse);
-        }
+        tripResp = parseAIResponse(responseText);
       } catch (parseError) {
         console.error("Failed to parse AI response:", parseError);
         console.log("Raw response:", responseText);

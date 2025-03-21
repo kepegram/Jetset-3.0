@@ -20,7 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 import moment from "moment";
 import PlannedTrip from "../../../../components/tripDetails/plannedTrip";
 
-const { height } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -123,7 +123,12 @@ const PastTripDetails: React.FC = () => {
           />
         </View>
 
-        <View style={styles.contentContainer}>
+        <View
+          style={[
+            styles.contentContainer,
+            { backgroundColor: currentTheme.background },
+          ]}
+        >
           <View style={styles.headerContainer}>
             <View style={styles.titleContainer}>
               <Text
@@ -148,7 +153,7 @@ const PastTripDetails: React.FC = () => {
             <View
               style={[
                 styles.tripMetaItem,
-                { backgroundColor: currentTheme.alternateLight20 },
+                { backgroundColor: `${currentTheme.alternate}20` },
               ]}
             >
               <Ionicons
@@ -169,7 +174,7 @@ const PastTripDetails: React.FC = () => {
             <View
               style={[
                 styles.tripMetaItem,
-                { backgroundColor: currentTheme.alternateLight20 },
+                { backgroundColor: `${currentTheme.alternate}20` },
               ]}
             >
               <Ionicons
@@ -210,11 +215,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   imageContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
     height: height * 0.5,
+    width: "100%",
   },
   image: {
     width: "100%",
@@ -225,6 +227,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     marginTop: -30,
+    flex: 1,
   },
   headerContainer: {
     marginBottom: 20,
@@ -248,7 +251,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
     borderRadius: 12,
   },
   tripMetaText: {

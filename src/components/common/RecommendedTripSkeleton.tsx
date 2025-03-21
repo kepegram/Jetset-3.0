@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   tripCard: {
     borderRadius: 15,
     width: width * 0.6,
-    height: width * 0.8,
+    height: width * 0.75,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   },
   imageArea: {
     width: "100%",
-    height: width * 0.6,
+    height: width * 0.55,
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
   },

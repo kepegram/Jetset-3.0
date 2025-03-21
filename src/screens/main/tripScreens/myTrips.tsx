@@ -14,6 +14,7 @@ import {
   ScrollView,
   Animated,
   RefreshControl,
+  Dimensions,
 } from "react-native";
 import { Fontisto } from "@expo/vector-icons";
 import moment from "moment";
@@ -36,6 +37,11 @@ const MyTrips: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<MyTripsScreenNavigationProp>();
   const ITEMS_TO_SHOW = 6;
+  const { width } = Dimensions.get("window");
+  const UPCOMING_TRIP_WIDTH = width * 0.7; // 70% of screen width
+  const UPCOMING_TRIP_SPACING = 15; // Spacing between cards
+  const UPCOMING_TRIP_SNAP_INTERVAL =
+    UPCOMING_TRIP_WIDTH + UPCOMING_TRIP_SPACING;
 
   const user = FIREBASE_AUTH.currentUser;
 
@@ -247,13 +253,21 @@ const MyTrips: React.FC = () => {
                     data={sortedUpcomingTrips}
                     horizontal
                     renderItem={({ item }) => (
-                      <View style={styles.upcomingTripCard}>
+                      <View
+                        style={[
+                          styles.upcomingTripCard,
+                          { width: UPCOMING_TRIP_WIDTH },
+                        ]}
+                      >
                         <UpcomingTripsCard userTrips={[item]} />
                       </View>
                     )}
                     keyExtractor={(item) => item.id}
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.upcomingTripsContainer}
+                    decelerationRate="fast"
+                    snapToInterval={UPCOMING_TRIP_SNAP_INTERVAL}
+                    snapToAlignment="center"
                     ListFooterComponent={() =>
                       totalUpcomingTrips > ITEMS_TO_SHOW ? (
                         <Pressable

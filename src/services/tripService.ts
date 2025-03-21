@@ -87,8 +87,6 @@ export const fetchUserTrips = async (userId: string): Promise<any[]> => {
         return [];
       }
 
-      console.log(`Found ${snapshot.docs.length} trips for user:`, userId);
-
       const allTrips = await Promise.all(
         snapshot.docs.map(async (docSnapshot) => {
           const data = docSnapshot.data();
