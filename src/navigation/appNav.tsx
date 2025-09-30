@@ -35,10 +35,8 @@ import Edit from "../screens/main/userScreens/settings";
 import ChangeUsername from "../screens/main/userScreens/changeUsername";
 import ChangePassword from "../screens/main/userScreens/changePassword";
 import DeleteAccount from "../screens/main/userScreens/deleteAccount";
-import NotificationSettings from "../screens/main/userScreens/notificationSettings";
 
 // Legacy trip screens removed - using scrapbook instead
-import NotificationsScreen from "../screens/main/notificationsScreen/notifications";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -49,8 +47,6 @@ export type RootStackParamList = {
   AppNav: undefined;
   App: undefined;
   HomeMain: undefined;
-  Notifications: undefined;
-  NotificationSettings: undefined;
   Profile: undefined;
   Edit: undefined;
   ChangeUsername: undefined;
@@ -97,7 +93,11 @@ const ScrapbookStack: React.FC = () => {
 
 // MyTripsStack removed - using scrapbook instead
 
-const ProfileStack: React.FC = () => {
+interface ProfileStackProps {
+  setBypassAuth?: (value: boolean) => void;
+}
+
+const ProfileStack: React.FC<ProfileStackProps> = ({ setBypassAuth }) => {
   const { currentTheme } = useTheme();
 
   const screenOptions = ({
@@ -141,13 +141,14 @@ const ProfileStack: React.FC = () => {
     <RootStack.Navigator>
       <RootStack.Screen
         name="Profile"
-        component={Profile}
         options={({ navigation }) => ({
           ...profileScreenOptions({ navigation }),
           title: "",
           headerShown: false,
         })}
-      />
+      >
+        {(props) => <Profile {...props} setBypassAuth={setBypassAuth} />}
+      </RootStack.Screen>
       <RootStack.Screen
         name="Edit"
         component={Edit}
@@ -180,14 +181,6 @@ const ProfileStack: React.FC = () => {
           title: "Delete Account",
         })}
       />
-      <RootStack.Screen
-        name="NotificationSettings"
-        component={NotificationSettings}
-        options={({ navigation }) => ({
-          ...screenOptions({ navigation }),
-          title: "Notification Settings",
-        })}
-      />
     </RootStack.Navigator>
   );
 };
@@ -204,7 +197,11 @@ const getTabBarStyle = (route: any): ViewStyle | undefined => {
     : undefined;
 };
 
-const TabNavigator: React.FC = () => {
+interface TabNavigatorProps {
+  setBypassAuth?: (value: boolean) => void;
+}
+
+const TabNavigator: React.FC<TabNavigatorProps> = ({ setBypassAuth }) => {
   const { currentTheme } = useTheme();
   const { profilePicture } = useProfile();
 
@@ -283,7 +280,6 @@ const TabNavigator: React.FC = () => {
       {/* MyTrips tab removed - using scrapbook instead */}
       <Tab.Screen
         name="ProfileStack"
-        component={ProfileStack}
         options={({ route }) => ({
           tabBarStyle: {
             ...tabBarDefaultStyle,
@@ -319,12 +315,18 @@ const TabNavigator: React.FC = () => {
             </View>
           ),
         })}
-      />
+      >
+        {(props) => <ProfileStack {...props} setBypassAuth={setBypassAuth} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 };
 
-const AppNav = () => {
+interface AppNavProps {
+  setBypassAuth?: (value: boolean) => void;
+}
+
+const AppNav: React.FC<AppNavProps> = ({ setBypassAuth }) => {
   const { theme } = useTheme();
 
   return (
@@ -332,11 +334,11 @@ const AppNav = () => {
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <ProfileProvider>
         <RootStack.Navigator initialRouteName="App">
-          <RootStack.Screen
-            name="App"
-            component={TabNavigator}
-            options={{ headerShown: false }}
-          />
+          <RootStack.Screen name="App" options={{ headerShown: false }}>
+            {(props) => (
+              <TabNavigator {...props} setBypassAuth={setBypassAuth} />
+            )}
+          </RootStack.Screen>
         </RootStack.Navigator>
       </ProfileProvider>
     </>

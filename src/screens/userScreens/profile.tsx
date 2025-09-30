@@ -31,7 +31,11 @@ type ProfileScreenNavigationProp = NativeStackNavigationProp<
   "Profile"
 >;
 
-const Profile: React.FC = () => {
+interface ProfileProps {
+  setBypassAuth?: (value: boolean) => void;
+}
+
+const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
   // Context hooks for profile and theme data
   const { profilePicture, displayName, setProfilePicture, isLoading } =
     useProfile();
@@ -45,6 +49,9 @@ const Profile: React.FC = () => {
 
   const user = getAuth().currentUser;
   const navigation = useNavigation<ProfileScreenNavigationProp>();
+
+  // Check if user is in bypass mode (no authenticated user but bypassAuth is true)
+  const isBypassMode = !user && setBypassAuth;
 
   useEffect(() => {
     if (showPrivacy) {
@@ -242,6 +249,28 @@ const Profile: React.FC = () => {
           text: "OK",
           onPress: () => {
             FIREBASE_AUTH.signOut();
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
+  // Handle bypass sign out
+  const handleBypassSignOut = () => {
+    Alert.alert(
+      "Exit Testing Mode",
+      "Are you sure you want to exit testing mode and return to the welcome screen?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Exit",
+          style: "destructive",
+          onPress: () => {
+            setBypassAuth?.(false);
           },
         },
       ],
@@ -514,77 +543,6 @@ const Profile: React.FC = () => {
                   : "transparent",
               },
             ]}
-            onPress={() => {
-              // MyTrips removed - using scrapbook instead
-              console.log("MyTrips feature removed - using scrapbook instead");
-            }}
-          >
-            <View style={styles.optionContent}>
-              <Ionicons
-                name="airplane-outline"
-                size={24}
-                color={currentTheme.icon}
-              />
-              <Text
-                style={[
-                  styles.optionText,
-                  { color: currentTheme.textSecondary },
-                ]}
-              >
-                My Trips
-              </Text>
-            </View>
-            <MaterialIcons
-              name="chevron-right"
-              size={24}
-              color={currentTheme.icon}
-            />
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.settingOption,
-              pressed && styles.optionPressed,
-              {
-                backgroundColor: pressed
-                  ? currentTheme.inactive + "20"
-                  : "transparent",
-              },
-            ]}
-            onPress={() => navigation.navigate("NotificationSettings")}
-          >
-            <View style={styles.optionContent}>
-              <Ionicons
-                name="notifications-outline"
-                size={24}
-                color={currentTheme.icon}
-              />
-              <Text
-                style={[
-                  styles.optionText,
-                  { color: currentTheme.textSecondary },
-                ]}
-              >
-                Notifications
-              </Text>
-            </View>
-            <MaterialIcons
-              name="chevron-right"
-              size={24}
-              color={currentTheme.icon}
-            />
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.settingOption,
-              pressed && styles.optionPressed,
-              {
-                backgroundColor: pressed
-                  ? currentTheme.inactive + "20"
-                  : "transparent",
-              },
-            ]}
             onPress={handlePrivacyPress}
           >
             <View style={styles.optionContent}>
@@ -618,7 +576,7 @@ const Profile: React.FC = () => {
             styles.logoutButton,
             pressed && styles.buttonPressed,
           ]}
-          onPress={handleLogout}
+          onPress={isBypassMode ? handleBypassSignOut : handleLogout}
         >
           <Text
             style={[
@@ -626,7 +584,7 @@ const Profile: React.FC = () => {
               { color: currentTheme.textPrimary },
             ]}
           >
-            Sign out
+            {isBypassMode ? "Exit Testing Mode" : "Sign out"}
           </Text>
         </Pressable>
       </View>

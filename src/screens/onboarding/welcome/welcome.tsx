@@ -67,26 +67,26 @@ const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
 
   const facts = [
     {
-      title: "AI-Powered Travel Planning 🤖",
-      description: "Personalized travel plans created just for you",
+      title: "Capture Your Adventures 📸",
+      description: "Create beautiful trip scrapbooks with photos",
       image: require("../../../assets/popular-imgs/paris.jpg"),
       location: "Paris",
     },
     {
-      title: "Interactive Trip Planning 🗺️",
-      description: "Visualize your journey with interactive maps",
+      title: "Organize Your Journeys 🗂️",
+      description: "Keep all your travel memories organized",
       image: require("../../../assets/popular-imgs/dubai.jpg"),
       location: "Dubai",
     },
     {
-      title: "Smart Itineraries 📱",
-      description: "Day-by-day plans with local insights",
+      title: "Share Your Stories 📖",
+      description: "Document every excursion and experience",
       image: require("../../../assets/popular-imgs/tokyo.jpeg"),
       location: "Tokyo",
     },
     {
-      title: "Always Available 🌐",
-      description: "Access your trips even offline",
+      title: "Never Forget 🌟",
+      description: "Preserve your travel memories forever",
       image: require("../../../assets/popular-imgs/sydney.jpg"),
       location: "Sydney",
     },
@@ -324,8 +324,8 @@ const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
                 entering={FadeIn.delay(1000).duration(1000)}
                 style={styles.slogan}
               >
-                Dream. Discover.{" "}
-                <Text style={styles.exploreText}>Explore.</Text>
+                Capture. Organize.{" "}
+                <Text style={styles.exploreText}>Remember.</Text>
               </Animated.Text>
             </View>
 
@@ -347,14 +347,11 @@ const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
                     console.log("🧪 Bypassing login for testing...");
                     setBypassAuth?.(true);
                   }}
-                  style={[
-                    styles.continueButton,
-                    { backgroundColor: "#666", marginTop: 10 },
-                  ]}
+                  style={[styles.continueButton, { marginTop: 10 }]}
                 >
                   <Text
                     style={{
-                      color: "white",
+                      color: "grey",
                       textAlign: "center",
                       fontWeight: "600",
                     }}
@@ -646,7 +643,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   continueButton: {
-    backgroundColor: lightTheme.alternate,
     width: "80%",
   },
   termsContainer: {

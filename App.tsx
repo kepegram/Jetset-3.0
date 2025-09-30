@@ -10,7 +10,6 @@ import { ThemeProvider, useTheme } from "./src/context/themeContext";
 import { ScrapbookProvider } from "./src/context/scrapbookContext";
 import { Ionicons } from "@expo/vector-icons";
 import * as SplashScreen from "expo-splash-screen";
-import * as Notifications from "expo-notifications";
 import Welcome from "./src/screens/onboarding/welcome/welcome";
 import Login from "./src/screens/onboarding/userAuth/login";
 import SignUp from "./src/screens/onboarding/userAuth/signup";
@@ -20,7 +19,6 @@ import Terms from "./src/screens/onboarding/terms/terms";
 import Privacy from "./src/screens/onboarding/privacy/privacy";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import * as Font from "expo-font";
-import { registerForPushNotificationsAsync } from "./src/utils/notifications";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -33,16 +31,6 @@ export type RootStackParamList = {
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
-
-// Configure notifications behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    priority: Notifications.AndroidNotificationPriority.HIGH,
-  }),
-});
 
 // Configure splash screen to stay visible
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -60,39 +48,7 @@ const App: React.FC = () => {
   const [bypassAuth, setBypassAuth] = useState(false); // Testing bypass flag
   const { currentTheme } = useTheme();
 
-  const notificationListener = useRef<any>();
-  const responseListener = useRef<any>();
   const navigationRef = useRef<any>();
-
-  useEffect(() => {
-    // Set up notification listeners
-    notificationListener.current =
-      Notifications.addNotificationReceivedListener((notification) => {
-        console.log("Notification received:", notification);
-      });
-
-    responseListener.current =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log("Notification response:", response);
-        const data = response.notification.request.content.data;
-
-        // Handle notification tap
-        if (data.tripId) {
-          navigationRef.current?.navigate("TripDetails", {
-            trip: data.tripId,
-            photoRef: data.photoRef || "",
-            docId: data.tripId,
-          });
-        }
-      });
-
-    return () => {
-      Notifications.removeNotificationSubscription(
-        notificationListener.current
-      );
-      Notifications.removeNotificationSubscription(responseListener.current);
-    };
-  }, []);
 
   useEffect(() => {
     async function prepare() {
@@ -185,11 +141,11 @@ const App: React.FC = () => {
             <StatusBarWrapper />
             <Stack.Navigator initialRouteName="Welcome">
               {user || bypassAuth ? (
-                <Stack.Screen
-                  name="AppNav"
-                  component={AppNav}
-                  options={{ headerShown: false }}
-                />
+                <Stack.Screen name="AppNav" options={{ headerShown: false }}>
+                  {(props) => (
+                    <AppNav {...props} setBypassAuth={setBypassAuth} />
+                  )}
+                </Stack.Screen>
               ) : (
                 <>
                   <Stack.Screen name="Welcome" options={{ headerShown: false }}>

@@ -1,8 +1,8 @@
 # Jetset
 
-Jetset is an AI-powered travel app built with **React Native** and **Expo**, designed to make trip planning effortless. By analyzing users' travel preferences, the app delivers tailored destination suggestions and comprehensive itineraries. With its smart technology and user-focused approach, Jetset redefines the travel planning experience.
+Jetset is a modern travel scrapbook app built with **React Native** and **Expo**, designed to help travelers capture, organize, and preserve their travel memories. The app transforms your adventures into beautiful digital scrapbooks with photos, descriptions, and organized trip entries.
 
-The app leverages powerful APIs and a robust tech stack to provide precise global destination mapping, personalized travel plans, and seamless trip organization. Whether you're exploring new places or revisiting old favorites, Jetset is your perfect travel companion.
+With its intuitive interface and powerful organization features, Jetset makes it easy to document every moment of your journey. Whether you're exploring new destinations or revisiting old favorites, Jetset helps you create lasting memories that you can cherish forever.
 
 ---
 
@@ -10,33 +10,32 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
 
 ### Core Features
 
-- **AI-Powered Travel Planning**:
+- **Digital Travel Scrapbooks**:
 
-  - Generates efficient, personalized travel plans based on user preferences
-  - Smart destination recommendations using machine learning
-  - Adaptive itineraries based on travel style and group size
+  - Create beautiful trip scrapbooks with photos and descriptions
+  - Organize multiple excursions within each trip
+  - Add cover photos and trip metadata (dates, destinations)
+  - Preserve travel memories in a structured format
 
-- **Smart Trip Generation**:
+- **Photo Management**:
 
-  - Customized trip duration and activity planning
-  - Budget-aware recommendations
-  - Group size optimization (Solo, Couple, or Group travel)
-  - Activity level customization
+  - Upload multiple photos per excursion entry
+  - Full-screen photo gallery with swipe navigation
+  - Photo count indicators and visual previews
+  - Image compression and optimization
 
-- **Comprehensive Itineraries**:
+- **Trip Organization**:
 
-  - Day-by-day detailed travel plans
-  - Points of interest with descriptions
-  - Travel time estimates between locations
-  - Budget considerations and recommendations
+  - Create trips with start and end dates
+  - Add detailed excursion entries within trips
+  - Search and filter through your travel memories
+  - Grid view for easy browsing of all trips
 
-- **Smart Notifications**:
-  - Real-time push notifications for trip updates
-  - Trip reminders 24 hours before departure
-  - Interactive notification center with read/unread states
-  - Customizable notification preferences
-  - Travel alerts and security notifications
-  - Swipe-to-delete notification management
+- **Memory Preservation**:
+  - Detailed descriptions for each excursion
+  - Date-based organization and sorting
+  - Easy navigation between trips and entries
+  - Long-term storage of travel experiences
 
 ### User Experience
 
@@ -46,13 +45,20 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
   - Dark and light theme support
   - Intuitive navigation flow
   - Responsive design for all screen sizes
-  - Interactive notification badges and indicators
+  - Safe area handling for iOS devices
 
-- **Interactive Maps**:
-  - Visual trip planning interface
-  - Real-time location updates
-  - Interactive destination markers
-  - Route visualization
+- **Photo Gallery Experience**:
+
+  - Full-screen photo viewing with modal overlay
+  - Horizontal swipe navigation between photos
+  - Photo count indicators and visual cues
+  - Touch-friendly interface for easy browsing
+
+- **Search & Organization**:
+  - Real-time search through trip entries
+  - Filter by title and description content
+  - Empty state handling with helpful guidance
+  - Efficient list management for large collections
 
 ### Technical Features
 
@@ -61,28 +67,27 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
   - iOS and Android compatibility
   - Native performance optimization
   - Platform-specific UI adaptations
+  - Safe area handling for different device types
 
-- **Notification System**:
+- **Image Management**:
 
-  - Expo Notifications integration
-  - Firebase-backed notification storage
-  - Real-time notification updates
-  - Background notification handling
-  - Custom notification channels for Android
-  - Rich notification support for iOS
+  - Expo ImagePicker integration
+  - Image compression and optimization
+  - Multiple photo upload support
+  - Efficient image storage and retrieval
 
-- **Offline Capabilities**:
+- **Data Management**:
 
-  - Local data persistence
-  - Cached trip information
-  - Seamless online/offline transitions
+  - Firebase Firestore for data persistence
+  - Real-time data synchronization
+  - Offline data access capabilities
+  - Efficient state management with Context API
 
 - **Security**:
-  - Secure user authentication
+  - Secure user authentication with Firebase Auth
   - Encrypted data storage
   - Protected API communications
-  - Two-Factor Authentication (2FA)
-  - Rate limiting for security endpoints
+  - User session management
 
 ---
 
@@ -92,44 +97,33 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
 
 - **Authentication**:
   - Secure user registration and login
-  - Social media authentication
+  - Email/password authentication
+  - User session management
   - Password recovery
 - **Firestore**:
   - Real-time data synchronization
-  - User preferences storage
-  - Trip data persistence
+  - Trip and excursion data storage
+  - User profile management
   - Offline data access
 
-### 2. **Gemini API**
+### 2. **Expo Services**
 
-- AI-powered trip generation
-- Natural language processing for preferences
-- Smart itinerary optimization
-- Context-aware recommendations
+- **ImagePicker**:
+  - Photo selection from device gallery
+  - Camera integration for new photos
+  - Media library permissions
+- **ImageManipulator**:
+  - Image compression and optimization
+  - Resize and format conversion
+  - Quality adjustment for storage efficiency
 
-### 3. **Google Maps Platform**
+### 3. **React Native Safe Area Context**
 
-- **Maps API**:
-  - Interactive mapping
-  - Real-time location services
-  - Route optimization
-- **Places API**:
-  - Global destination database
-  - Point of interest details
-  - Photo references
-  - Place recommendations
-
-### 4. **Firebase Cloud Functions**
-
-- **Authentication Security**:
-  - Two-Factor Authentication (2FA) email delivery
-  - Verification code management
-  - Secure email templates with Zoho SMTP
-- **Serverless Functions**:
-  - User verification workflows
-  - Background data processing
-  - Scheduled maintenance tasks
-  - API proxying and rate limiting
+- **Safe Area Handling**:
+  - iOS notch and status bar support
+  - Android navigation bar handling
+  - Cross-platform safe area management
+  - Responsive layout adaptation
 
 ---
 
@@ -138,20 +132,18 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
 ### Frontend
 
 - **Framework**: React Native
-- **UI Kit**: React Native Paper
 - **Navigation**: React Navigation
-- **Maps**: React Native Maps
 - **Animations**: React Native Animated
-- **Notifications**: Expo Notifications
+- **Image Handling**: Expo ImagePicker & ImageManipulator
+- **Safe Areas**: React Native Safe Area Context
+- **Icons**: Expo Vector Icons (Ionicons)
 
 ### Backend Services
 
 - **Database**: Firebase Firestore
 - **Authentication**: Firebase Auth
 - **Storage**: Firebase Cloud Storage
-- **AI Services**: Google Gemini API
-- **Email Service**: Zoho Mail SMTP
-- **Serverless Backend**: Firebase Cloud Functions
+- **Real-time Updates**: Firebase Firestore listeners
 
 ### Development Tools
 
@@ -160,6 +152,7 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
 - **Package Management**: npm/yarn
 - **Code Quality**: TypeScript
 - **Styling**: StyleSheet API
+- **Development**: Expo CLI
 
 ---
 
@@ -169,22 +162,35 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
 
 - Stack Navigation for main flow
 - Tab Navigation for bottom menu
-- Modal Navigation for overlays
+- Modal Navigation for photo galleries
 
 ### Screens
 
-- Onboarding & Authentication
-- Home & Discovery
-- Trip Planning & Generation
-- Trip Details & Management
-- User Profile & Settings
+- **Onboarding & Authentication**:
+
+  - Welcome screen with app introduction
+  - Login and signup flows
+  - Bypass authentication for testing
+
+- **Scrapbook Management**:
+
+  - Home grid view of all trips
+  - Trip detail view with excursions
+  - Add trip and excursion forms
+  - Photo gallery modal
+
+- **User Profile & Settings**:
+  - User profile management
+  - Theme selection
+  - Account settings
 
 ### Custom Components
 
-- Themed UI elements
+- Themed UI elements with dark/light mode
 - Reusable buttons and cards
-- Loading animations
-- Custom map markers
+- Photo gallery with swipe navigation
+- Search and filter components
+- Safe area aware layouts
 
 ---
 
@@ -192,14 +198,14 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
 
 1. Clone the repository
 2. Install dependencies: `npm install`
-3. Set up Firebase Functions:
-   - Navigate to functions directory: `cd functions`
-   - Install dependencies: `npm install`
+3. Configure Firebase:
+   - Set up Firebase project
+   - Configure Firestore database
+   - Set up Firebase Authentication
+   - Add Firebase configuration files
 4. Configure environment variables:
    - Firebase configuration
-   - Google Maps API key
-   - Gemini API key
-   - Zoho Mail credentials for 2FA emails
+   - Firebase API keys
 5. Start the development server: `expo start`
 
 ---
@@ -208,46 +214,43 @@ The app leverages powerful APIs and a robust tech stack to provide precise globa
 
 The app supports both light and dark themes with:
 
-- Consistent color palette
-- Dynamic theme switching
+- Consistent color palette across all screens
+- Dynamic theme switching with context management
 - Custom fonts and typography
-- Responsive layouts
+- Responsive layouts for all device sizes
 - Animated theme transitions
+- Safe area aware design for iOS and Android
 
 ---
 
 ## 📋 Authentication Flows
 
-The app implements a secure multi-layer authentication system:
+The app implements a secure authentication system:
 
 - **Primary Authentication**:
 
-  - Email/password authentication
-  - Social media login (Google, Apple)
-  - Guest mode with limited features
-
-- **Two-Factor Authentication (2FA)**:
-
-  - Email-based verification codes
-  - Time-limited secure tokens (5 minutes)
-  - Styled email templates for verification
-  - Backend powered by Firebase Cloud Functions
+  - Email/password authentication with Firebase Auth
+  - User registration and login flows
+  - Password recovery functionality
+  - Bypass authentication for testing purposes
 
 - **Session Management**:
-  - Secure token storage
-  - Auto-renewal of expired tokens
-  - Forced re-authentication for sensitive operations
+  - Secure token storage with Firebase
+  - User session persistence
+  - Automatic re-authentication
+  - Profile context management
 
 ---
 
 ## 📈 Performance Optimization
 
-- **Lazy loading** of non-critical components
-- **Image optimization** for faster loading
+- **Image optimization** with compression and resizing
+- **Lazy loading** of photo galleries and large components
 - **Memoization** of expensive computations
-- **React Native Reanimated** for fluid animations
+- **React Native Animated** for smooth transitions
 - **Firestore offline persistence** for reliable data access
 - **Efficient state management** with Context API
+- **Optimized list rendering** with FlatList for large datasets
 
 ---
 
@@ -255,32 +258,33 @@ The app implements a secure multi-layer authentication system:
 
 - Support for screen readers
 - Scalable text for different font sizes
-- Adequate color contrast ratios
+- Adequate color contrast ratios in both themes
 - Touch target sizing for motor impairments
 - VoiceOver and TalkBack compatibility
+- Semantic labels for interactive elements
 
 ---
 
 ## 🧪 Testing & Quality Assurance
 
-- **Unit Testing**: Component and utility testing
-- **Integration Testing**: Service interaction testing
-- **End-to-End Testing**: User flow validation
 - **Manual Testing**: Real-device verification
-- **Performance Testing**: Load and stress testing
+- **Component Testing**: UI component validation
+- **Integration Testing**: Firebase service interaction testing
+- **User Flow Testing**: Complete scrapbook creation workflows
+- **Performance Testing**: Image loading and gallery performance
 
 ---
 
 ## 📊 Analytics & Monitoring
 
 - **User Engagement Tracking**:
-  - Screen navigation patterns
-  - Feature usage analytics
-  - Conversion funnels
+  - Trip creation patterns
+  - Photo upload frequency
+  - Search usage analytics
 - **Performance Monitoring**:
-  - Startup time measurement
-  - UI responsiveness tracking
-  - API call performance
+  - Image loading performance
+  - Gallery navigation responsiveness
+  - Firebase query performance
 - **Error Reporting**:
   - Real-time crash reporting
   - JavaScript error logging
@@ -304,4 +308,4 @@ The app implements a secure multi-layer authentication system:
 
 ---
 
-Start planning your travels today with Jetset, and experience the future of travel planning!
+Start documenting your travels today with Jetset, and create beautiful digital scrapbooks of your adventures!
