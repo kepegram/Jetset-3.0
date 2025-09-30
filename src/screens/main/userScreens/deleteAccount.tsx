@@ -26,7 +26,7 @@ import {
   signInWithCredential,
 } from "firebase/auth";
 import { useTheme } from "../../../context/themeContext";
-import * as Google from "expo-auth-session/providers/google";
+// Google auth removed
 
 const DeleteAccount: React.FC = () => {
   const { currentTheme } = useTheme();

@@ -28,7 +28,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 // Navigation prop type for type safety when navigating
 type ProfileScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  "Profile" | "MyTrips"
+  "Profile"
 >;
 
 const Profile: React.FC = () => {
@@ -514,9 +514,10 @@ const Profile: React.FC = () => {
                   : "transparent",
               },
             ]}
-            onPress={() =>
-              navigation.navigate("MyTrips", { screen: "MyTripsMain" })
-            }
+            onPress={() => {
+              // MyTrips removed - using scrapbook instead
+              console.log("MyTrips feature removed - using scrapbook instead");
+            }}
           >
             <View style={styles.optionContent}>
               <Ionicons

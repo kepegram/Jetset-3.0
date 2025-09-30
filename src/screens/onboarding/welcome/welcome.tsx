@@ -13,7 +13,8 @@ import {
   StatusBar,
   LayoutAnimation,
   Platform,
-  UIManager,
+  Keyboard,
+  KeyboardEvent,
 } from "react-native";
 import { MainButton } from "../../../components/ui/button";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
@@ -24,9 +25,7 @@ import Login from "../userAuth/login";
 import SignUp from "../userAuth/signup";
 import ForgotPassword from "../userAuth/forgotPassword";
 import Verification from "../userAuth/verification";
-import * as Google from "expo-auth-session/providers/google";
-import { GoogleAuthProvider } from "firebase/auth";
-import { signInWithCredential } from "firebase/auth";
+// Google auth removed - scrapbook app uses email/password + Apple only
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { useNavigation } from "@react-navigation/native";
 import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
@@ -40,7 +39,11 @@ type WelcomeScreenNavigationProp = NativeStackNavigationProp<
   "Welcome"
 >;
 
-const Welcome: React.FC = () => {
+interface WelcomeProps {
+  setBypassAuth?: (bypass: boolean) => void;
+}
+
+const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
@@ -54,16 +57,13 @@ const Welcome: React.FC = () => {
   const [opacityAnim] = useState(new RNAnimated.Value(0));
   const [scaleAnim] = useState(new RNAnimated.Value(1));
   const [translateAnim] = useState(new RNAnimated.Value(0));
+  const [keyboardOffset] = useState(new RNAnimated.Value(0));
   const [verificationData, setVerificationData] = useState<{
     email: string;
     tempUserId: string;
   } | null>(null);
 
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
-
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    iosClientId: process.env.EXPO_PUBLIC_IOS_CLIENT_ID,
-  });
 
   const facts = [
     {
@@ -100,61 +100,55 @@ const Welcome: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Google auth callback removed - using email/password + Apple only
+
   useEffect(() => {
-    if (response?.type === "success" && "params" in response) {
-      const { id_token } = response.params as { id_token: string };
+    const keyboardWillShow = (event: KeyboardEvent) => {
+      RNAnimated.parallel([
+        RNAnimated.timing(keyboardOffset, {
+          toValue: -event.endCoordinates.height,
+          duration: event.duration,
+          useNativeDriver: true,
+        }),
+        RNAnimated.spring(slideAnim, {
+          toValue: -event.endCoordinates.height,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 10,
+        }),
+      ]).start();
+    };
 
-      if (id_token) {
-        try {
-          const credential = GoogleAuthProvider.credential(id_token);
+    const keyboardWillHide = (event: KeyboardEvent) => {
+      RNAnimated.parallel([
+        RNAnimated.timing(keyboardOffset, {
+          toValue: 0,
+          duration: event.duration,
+          useNativeDriver: true,
+        }),
+        RNAnimated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 10,
+        }),
+      ]).start();
+    };
 
-          signInWithCredential(FIREBASE_AUTH, credential)
-            .then((userCredential) => {
-              const user = userCredential.user;
+    const keyboardDidShow = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      keyboardWillShow
+    );
+    const keyboardDidHide = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      keyboardWillHide
+    );
 
-              // Create/update user document in Firestore
-              const userRef = doc(FIREBASE_DB, "users", user.uid);
-              getDoc(userRef)
-                .then((docSnap) => {
-                  if (!docSnap.exists()) {
-                    return setDoc(userRef, {
-                      username: user.displayName || "User",
-                      email: user.email,
-                      createdAt: new Date().toISOString(),
-                      authProvider: "google",
-                      photoURL: user.photoURL || null,
-                      lastLoginAt: new Date().toISOString(),
-                    });
-                  } else {
-                    return updateDoc(userRef, {
-                      lastLoginAt: new Date().toISOString(),
-                    });
-                  }
-                })
-                .then(() => {
-                  // First animate the modal closing
-                  handleCloseAuthModal();
-                  // Wait for animation to complete before navigating
-                  setTimeout(() => {
-                    navigation.reset({
-                      index: 0,
-                      routes: [{ name: "AppNav" as const }],
-                    });
-                  }, 400); // Slightly longer than the animation duration to ensure smooth transition
-                })
-                .catch(() => {
-                  // Silent error handling
-                });
-            })
-            .catch(() => {
-              // Silent error handling
-            });
-        } catch (error) {
-          // Silent error handling
-        }
-      }
-    }
-  }, [response, navigation]);
+    return () => {
+      keyboardDidShow.remove();
+      keyboardDidHide.remove();
+    };
+  }, [keyboardOffset, slideAnim]);
 
   const handleTermsPress = () => {
     setShowTerms(true);
@@ -346,6 +340,28 @@ const Welcome: React.FC = () => {
                   style={styles.continueButton}
                   textColor="white"
                 />
+
+                {/* Testing bypass button */}
+                <TouchableOpacity
+                  onPress={() => {
+                    console.log("🧪 Bypassing login for testing...");
+                    setBypassAuth?.(true);
+                  }}
+                  style={[
+                    styles.continueButton,
+                    { backgroundColor: "#666", marginTop: 10 },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      color: "white",
+                      textAlign: "center",
+                      fontWeight: "600",
+                    }}
+                  >
+                    🧪 Bypass Login (Testing)
+                  </Text>
+                </TouchableOpacity>
               </Animated.View>
 
               <View style={styles.termsContainer}>
@@ -498,7 +514,6 @@ const Welcome: React.FC = () => {
             <View style={styles.authModalBody}>
               {authMode === "login" ? (
                 <Login
-                  promptAsync={promptAsync}
                   onSwitchToSignUp={() => handleSwitchAuthMode("signup")}
                   onAuthSuccess={handleAuthSuccess}
                   onSwitchToForgotPassword={() =>
@@ -507,7 +522,6 @@ const Welcome: React.FC = () => {
                 />
               ) : authMode === "signup" ? (
                 <SignUp
-                  promptAsync={promptAsync}
                   onSwitchToLogin={() => handleSwitchAuthMode("login")}
                   onAuthSuccess={handleAuthSuccess}
                   onStartVerification={(email, tempUserId) => {

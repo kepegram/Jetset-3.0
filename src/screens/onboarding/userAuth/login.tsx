@@ -17,7 +17,7 @@ import {
   signInWithCredential,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { AuthRequestPromptOptions, AuthSessionResult } from "expo-auth-session";
+// Google auth removed - using email/password + Apple only
 import { TextInput } from "react-native-gesture-handler";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { lightTheme as theme } from "../../../theme/theme";
@@ -27,16 +27,12 @@ import { doc } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface LoginProps {
-  promptAsync: (
-    options?: AuthRequestPromptOptions
-  ) => Promise<AuthSessionResult>;
   onSwitchToSignUp?: () => void;
   onAuthSuccess?: () => Promise<void>;
   onSwitchToForgotPassword?: () => void;
 }
 
 const Login: React.FC<LoginProps> = ({
-  promptAsync,
   onSwitchToSignUp,
   onAuthSuccess,
   onSwitchToForgotPassword,
@@ -113,18 +109,7 @@ const Login: React.FC<LoginProps> = ({
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      await promptAsync();
-    } catch (error) {
-      setError("Error signing in with Google. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Google login removed - not needed for scrapbook app
 
   const handleAppleSignIn = async () => {
     try {
@@ -181,21 +166,6 @@ const Login: React.FC<LoginProps> = ({
       >
         <View style={styles.formContainer}>
           <View style={styles.socialButtonsContainer}>
-            <TouchableOpacity
-              style={styles.socialButton}
-              onPress={() => {
-                console.log("Google button pressed");
-                handleGoogleLogin();
-              }}
-              activeOpacity={0.8}
-            >
-              <Image
-                source={require("../../../assets/app-imgs/google.png")}
-                style={styles.googleIcon}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.socialButton}
               onPress={handleAppleSignIn}

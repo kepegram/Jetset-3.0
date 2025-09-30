@@ -21,33 +21,24 @@ import {
 import { ProfileProvider, useProfile } from "../context/profileContext";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import { CreateTripContext, TripData } from "../context/createTripContext";
-import { RecommendedTripsProvider } from "../context/recommendedTripsContext";
+// Legacy contexts removed - using scrapbook context instead
 
-// Import all screens
-import Home from "../screens/main/homeScreen/home";
-import RecommendedTripDetails from "../screens/main/homeScreen/recommendedTripDetails";
+// Import scrapbook screens
+import HomeGrid from "../screens/scrapbook/HomeGrid";
+import AddTrip from "../screens/scrapbook/AddTrip";
+import TripDetail from "../screens/scrapbook/TripDetail";
+import AddExcursion from "../screens/scrapbook/AddExcursion";
+
+// Import profile screens
 import Profile from "../screens/main/userScreens/profile";
 import Edit from "../screens/main/userScreens/settings";
 import ChangeUsername from "../screens/main/userScreens/changeUsername";
 import ChangePassword from "../screens/main/userScreens/changePassword";
 import DeleteAccount from "../screens/main/userScreens/deleteAccount";
-import ReviewTrip from "../screens/main/tripScreens/buildTrip/reviewTrip";
-import GenerateTrip from "../screens/main/tripScreens/buildTrip/generateTrip";
-import TripDetails from "../screens/main/tripScreens/viewTrip/tripDetails";
-import MyTrips from "../screens/main/tripScreens/myTrips";
-import CurrentTripDetails from "../screens/main/tripScreens/viewTrip/currentTripDetails";
-import PastTripDetails from "../screens/main/tripScreens/viewTrip/pastTripDetails";
-import IteneraryDetail from "../screens/main/tripScreens/viewTrip/iteneraryDetail";
-import HotelDetail from "../screens/main/tripScreens/viewTrip/hotelDetail";
-import WhereTo from "../screens/main/tripScreens/buildTrip/whereTo";
-import ChooseDate from "../screens/main/tripScreens/buildTrip/chooseDate";
-import WhosGoing from "../screens/main/tripScreens/buildTrip/whosGoing";
-import MoreInfo from "../screens/main/tripScreens/buildTrip/moreInfo";
-import PopularDestinations from "../screens/main/homeScreen/popularDestinationsDetail";
-import AllTripsView from "../screens/main/tripScreens/viewTrip/allTripsView";
-import NotificationsScreen from "../screens/main/notificationsScreen/notifications";
 import NotificationSettings from "../screens/main/userScreens/notificationSettings";
+
+// Legacy trip screens removed - using scrapbook instead
+import NotificationsScreen from "../screens/main/notificationsScreen/notifications";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -58,55 +49,8 @@ export type RootStackParamList = {
   AppNav: undefined;
   App: undefined;
   HomeMain: undefined;
-  PopularDestinations: { destination: any };
-  RecommendedTripDetails: { trip: string; photoRef: string };
   Notifications: undefined;
   NotificationSettings: undefined;
-  MyTrips: { screen: string };
-  MyTripsMain: undefined;
-  WhereTo: undefined;
-  ManualTripBuilder: undefined;
-  ChoosePlaces: undefined;
-  ChooseDate: undefined;
-  WhosGoing: undefined;
-  MoreInfo: undefined;
-  ReviewTrip: undefined;
-  GenerateTrip: undefined;
-  TripDetails: { trip: string; photoRef: string; docId: string };
-  CurrentTripDetails: { trip: string; photoRef: string; docId: string };
-  PastTripDetails: { trip: string; photoRef: string; docId: string };
-  IteneraryDetail: {
-    place: {
-      placeName: string;
-      placeDetails: string;
-      timeToTravel?: string;
-      geoCoordinates?: {
-        latitude: number;
-        longitude: number;
-      };
-      placeExtendedDetails?: string;
-      placeUrl?: string;
-      photoRef?: string;
-      rating?: number;
-      price?: number;
-      isHotel?: boolean;
-    };
-  };
-  HotelDetail: {
-    hotel: {
-      hotelName: string;
-      rating: number;
-      price: number;
-      photoRef?: string;
-      description?: string;
-      amenities?: string[];
-      bookingUrl?: string;
-      geoCoordinates: {
-        latitude: number;
-        longitude: number;
-      };
-    };
-  };
   Profile: undefined;
   Edit: undefined;
   ChangeUsername: undefined;
@@ -118,286 +62,40 @@ export type RootStackParamList = {
     trips: string;
     type: "current" | "upcoming" | "past";
   };
+  // New scrapbook screens
+  TripDetail: { tripId: string };
+  AddTrip: undefined;
+  AddExcursion: { tripId: string };
 };
 
-const HomeStack: React.FC = () => {
+const ScrapbookStack: React.FC = () => {
   return (
     <RootStack.Navigator>
       <RootStack.Screen
         name="HomeMain"
-        component={Home}
+        component={HomeGrid}
         options={{ headerShown: false }}
       />
       <RootStack.Screen
-        name="Notifications"
-        component={NotificationsScreen}
+        name="TripDetail"
+        component={TripDetail}
         options={{ headerShown: false }}
       />
       <RootStack.Screen
-        name="PopularDestinations"
-        component={PopularDestinations}
+        name="AddTrip"
+        component={AddTrip}
         options={{ headerShown: false }}
       />
       <RootStack.Screen
-        name="RecommendedTripDetails"
-        component={RecommendedTripDetails}
-        options={{ headerShown: false }}
-      />
-      <RootStack.Screen
-        name="HotelDetail"
-        component={HotelDetail}
-        options={{ headerShown: false }}
-      />
-      <RootStack.Screen
-        name="IteneraryDetail"
-        component={IteneraryDetail}
+        name="AddExcursion"
+        component={AddExcursion}
         options={{ headerShown: false }}
       />
     </RootStack.Navigator>
   );
 };
 
-const MyTripsStack: React.FC = () => {
-  const { currentTheme } = useTheme();
-  const { setTripData } = useContext(CreateTripContext) || {};
-  const screens = [
-    "WhereTo",
-    //"ChoosePlaces",
-    "ChooseDate",
-    "WhosGoing",
-    "MoreInfo",
-    "ReviewTrip",
-    "GenerateTrip",
-  ];
-
-  const tripBuilderScreenOptions = ({
-    navigation,
-    route,
-  }: {
-    navigation: any;
-    route: any;
-  }): NativeStackNavigationOptions => {
-    const currentScreenIndex = screens.indexOf(route.name) + 1;
-    const totalScreens = screens.length;
-    const isFirstScreen = route.name === "WhereTo";
-    const currentScreen = route.name;
-    const previousScreen = screens[screens.indexOf(currentScreen) - 1];
-
-    return {
-      headerTransparent: true,
-      headerStyle: {
-        backgroundColor: "transparent",
-      },
-      contentStyle: {
-        backgroundColor: currentTheme.background,
-      },
-      headerShadowVisible: false,
-      animation: "slide_from_right",
-      headerLeft: () => (
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 5,
-            marginLeft: 8,
-          }}
-        >
-          <Pressable
-            onPress={() => {
-              if (isFirstScreen) {
-                navigation.navigate("MyTripsMain");
-              } else {
-                navigation.navigate(previousScreen);
-              }
-            }}
-            style={{ padding: 4 }}
-          >
-            <Ionicons
-              name="chevron-back"
-              size={26}
-              color={currentTheme.textPrimary}
-            />
-          </Pressable>
-          {!isFirstScreen && (
-            <Pressable
-              onPress={() => {
-                Alert.alert(
-                  "Reset Trip",
-                  "Are you sure you want to reset? All progress will be lost.",
-                  [
-                    {
-                      text: "Cancel",
-                      style: "cancel",
-                    },
-                    {
-                      text: "OK",
-                      onPress: () => {
-                        setTripData?.({});
-                        navigation.navigate("MyTripsMain");
-                      },
-                    },
-                  ]
-                );
-              }}
-              style={{ padding: 0 }}
-            >
-              <Ionicons
-                name="refresh"
-                size={24}
-                color={currentTheme.textPrimary}
-              />
-            </Pressable>
-          )}
-        </View>
-      ),
-      headerRight: () => (
-        <Text
-          style={{
-            color: currentTheme.textPrimary,
-            marginRight: 10,
-            fontSize: 20,
-            textAlign: "center",
-          }}
-        >
-          {`Step ${currentScreenIndex} of ${totalScreens}`}
-        </Text>
-      ),
-    };
-  };
-
-  return (
-    <RootStack.Navigator
-      screenOptions={{
-        animation: "slide_from_right",
-      }}
-    >
-      <RootStack.Screen
-        name="MyTripsMain"
-        component={MyTrips}
-        options={{ headerShown: false }}
-      />
-      <RootStack.Screen
-        name="AllTripsView"
-        component={AllTripsView}
-        options={{ headerShown: false }}
-      />
-      <RootStack.Screen
-        name="TripDetails"
-        component={TripDetails}
-        options={{ headerShown: false }}
-      />
-      <RootStack.Screen
-        name="PastTripDetails"
-        component={PastTripDetails}
-        options={{ headerShown: false }}
-      />
-      <RootStack.Screen
-        name="WhereTo"
-        component={WhereTo}
-        options={({ navigation, route }) => ({
-          ...tripBuilderScreenOptions({ navigation, route }),
-          title: "",
-        })}
-      />
-      {/* <RootStack.Screen
-        name="ManualTripBuilder"
-        component={ManualTripBuilder}
-        options={({ navigation }) => ({
-          headerTransparent: true,
-          headerStyle: {
-            backgroundColor: "transparent",
-          },
-          contentStyle: {
-            backgroundColor: currentTheme.background,
-          },
-          headerShadowVisible: false,
-          animation: "slide_from_right",
-          headerLeft: () => (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 5,
-                marginLeft: 8,
-              }}
-            >
-              <Pressable
-                onPress={() => navigation.goBack()}
-                style={{ padding: 4 }}
-              >
-                <Ionicons
-                  name="chevron-back"
-                  size={26}
-                  color={currentTheme.textPrimary}
-                />
-              </Pressable>
-            </View>
-          ),
-        })}
-      /> */}
-      {/* <RootStack.Screen
-        name="ChoosePlaces"
-        component={ChoosePlaces}
-        options={({ navigation, route }) => ({
-          ...tripBuilderScreenOptions({ navigation, route }),
-          title: "",
-        })}
-      /> */}
-      <RootStack.Screen
-        name="ChooseDate"
-        component={ChooseDate}
-        options={({ navigation, route }) => ({
-          ...tripBuilderScreenOptions({ navigation, route }),
-          title: "",
-        })}
-      />
-      <RootStack.Screen
-        name="WhosGoing"
-        component={WhosGoing}
-        options={({ navigation, route }) => ({
-          ...tripBuilderScreenOptions({ navigation, route }),
-          title: "",
-        })}
-      />
-      <RootStack.Screen
-        name="MoreInfo"
-        component={MoreInfo}
-        options={({ navigation, route }) => ({
-          ...tripBuilderScreenOptions({ navigation, route }),
-          title: "",
-        })}
-      />
-      <RootStack.Screen
-        name="ReviewTrip"
-        component={ReviewTrip}
-        options={({ navigation, route }) => ({
-          ...tripBuilderScreenOptions({ navigation, route }),
-          title: "",
-        })}
-      />
-      <RootStack.Screen
-        name="GenerateTrip"
-        component={GenerateTrip}
-        options={{ headerShown: false }}
-      />
-      <RootStack.Screen
-        name="CurrentTripDetails"
-        component={CurrentTripDetails}
-        options={{ headerShown: false }}
-      />
-      <RootStack.Screen
-        name="IteneraryDetail"
-        component={IteneraryDetail}
-        options={{ headerShown: false }}
-      />
-      <RootStack.Screen
-        name="HotelDetail"
-        component={HotelDetail}
-        options={{ headerShown: false }}
-      />
-    </RootStack.Navigator>
-  );
-};
+// MyTripsStack removed - using scrapbook instead
 
 const ProfileStack: React.FC = () => {
   const { currentTheme } = useTheme();
@@ -497,7 +195,7 @@ const ProfileStack: React.FC = () => {
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
-const HIDDEN_TAB_SCREENS = ["GenerateTrip"];
+const HIDDEN_TAB_SCREENS: string[] = [];
 
 const getTabBarStyle = (route: any): ViewStyle | undefined => {
   const routeName = getFocusedRouteNameFromRoute(route) ?? "Home";
@@ -564,7 +262,7 @@ const TabNavigator: React.FC = () => {
     >
       <Tab.Screen
         name="Home"
-        component={HomeStack}
+        component={ScrapbookStack}
         options={({ route }) => ({
           tabBarStyle: {
             ...tabBarDefaultStyle,
@@ -582,27 +280,7 @@ const TabNavigator: React.FC = () => {
           ),
         })}
       />
-      <Tab.Screen
-        name="MyTrips"
-        component={MyTripsStack}
-        options={({ route }) => ({
-          tabBarStyle: {
-            ...tabBarDefaultStyle,
-            backgroundColor: currentTheme.background,
-            ...getTabBarStyle(route),
-          } as ViewStyle,
-          headerShown: false,
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon
-              focused={focused}
-              color={color}
-              icon="space-dashboard"
-              size={32}
-              isMaterial={true}
-            />
-          ),
-        })}
-      />
+      {/* MyTrips tab removed - using scrapbook instead */}
       <Tab.Screen
         name="ProfileStack"
         component={ProfileStack}
@@ -647,24 +325,19 @@ const TabNavigator: React.FC = () => {
 };
 
 const AppNav = () => {
-  const [tripData, setTripData] = useState<TripData>({});
   const { theme } = useTheme();
 
   return (
     <>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
       <ProfileProvider>
-        <CreateTripContext.Provider value={{ tripData, setTripData }}>
-          <RecommendedTripsProvider>
-            <RootStack.Navigator initialRouteName="App">
-              <RootStack.Screen
-                name="App"
-                component={TabNavigator}
-                options={{ headerShown: false }}
-              />
-            </RootStack.Navigator>
-          </RecommendedTripsProvider>
-        </CreateTripContext.Provider>
+        <RootStack.Navigator initialRouteName="App">
+          <RootStack.Screen
+            name="App"
+            component={TabNavigator}
+            options={{ headerShown: false }}
+          />
+        </RootStack.Navigator>
       </ProfileProvider>
     </>
   );

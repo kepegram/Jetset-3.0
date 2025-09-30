@@ -2,20 +2,15 @@ import "react-native-get-random-values";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Pressable, Platform, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import {
-  User,
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithCredential,
-} from "firebase/auth";
+import { User, onAuthStateChanged } from "firebase/auth";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { FIREBASE_AUTH, FIREBASE_DB } from "./firebase.config";
 import { ThemeProvider, useTheme } from "./src/context/themeContext";
+import { ScrapbookProvider } from "./src/context/scrapbookContext";
 import { Ionicons } from "@expo/vector-icons";
 import * as SplashScreen from "expo-splash-screen";
 import * as Notifications from "expo-notifications";
-import * as Google from "expo-auth-session/providers/google";
 import Welcome from "./src/screens/onboarding/welcome/welcome";
 import Login from "./src/screens/onboarding/userAuth/login";
 import SignUp from "./src/screens/onboarding/userAuth/signup";
@@ -62,72 +57,12 @@ const StatusBarWrapper = () => {
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [appIsReady, setAppIsReady] = useState(false);
+  const [bypassAuth, setBypassAuth] = useState(false); // Testing bypass flag
   const { currentTheme } = useTheme();
 
   const notificationListener = useRef<any>();
   const responseListener = useRef<any>();
   const navigationRef = useRef<any>();
-
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    // @ts-ignore
-    iosClientId: process.env.EXPO_PUBLIC_IOS_CLIENT_ID,
-  });
-
-  useEffect(() => {
-    if (response?.type === "success" && "params" in response) {
-      const { id_token } = response.params as { id_token: string };
-
-      if (id_token) {
-        const credential = GoogleAuthProvider.credential(id_token);
-
-        signInWithCredential(FIREBASE_AUTH, credential)
-          .then((userCredential) => {
-            const user = userCredential.user;
-
-            // Force immediate user state update
-            setUser(user);
-
-            // Save user data to Firestore
-            const userRef = doc(FIREBASE_DB, "users", user.uid);
-            return getDoc(userRef).then((userDoc) => {
-              if (!userDoc.exists()) {
-                const userData = {
-                  username: user.displayName || "User",
-                  email: user.email,
-                  createdAt: new Date().toISOString(),
-                  authProvider: "google",
-                  photoURL: user.photoURL || null,
-                  lastLoginAt: new Date().toISOString(),
-                };
-
-                return setDoc(userRef, userData).then(() => {
-                  // Request notification permissions right after creating new user
-                  return registerForPushNotificationsAsync().then(
-                    () => undefined
-                  );
-                });
-              } else {
-                return setDoc(
-                  userRef,
-                  {
-                    lastLoginAt: new Date().toISOString(),
-                  },
-                  { merge: true }
-                ).then(() => {
-                  // Request notification permissions after successful login for existing users
-                  return registerForPushNotificationsAsync().then(
-                    () => undefined
-                  );
-                });
-              }
-            });
-          })
-          .catch((error) => {
-            // Silent error handling
-          });
-      }
-    }
-  }, [response]);
 
   useEffect(() => {
     // Set up notification listeners
@@ -245,53 +180,59 @@ const App: React.FC = () => {
   return (
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <ThemeProvider>
-        <NavigationContainer ref={navigationRef}>
-          <StatusBarWrapper />
-          <Stack.Navigator initialRouteName="Welcome">
-            {user ? (
-              <Stack.Screen
-                name="AppNav"
-                component={AppNav}
-                options={{ headerShown: false }}
-              />
-            ) : (
-              <>
+        <ScrapbookProvider>
+          <NavigationContainer ref={navigationRef}>
+            <StatusBarWrapper />
+            <Stack.Navigator initialRouteName="Welcome">
+              {user || bypassAuth ? (
                 <Stack.Screen
-                  name="Welcome"
-                  component={Welcome}
+                  name="AppNav"
+                  component={AppNav}
                   options={{ headerShown: false }}
                 />
-                <Stack.Screen name="Login" options={{ headerShown: false }}>
-                  {(props) => <Login {...props} promptAsync={promptAsync} />}
-                </Stack.Screen>
-                <Stack.Screen name="SignUp" options={{ headerShown: false }}>
-                  {(props) => <SignUp {...props} promptAsync={promptAsync} />}
-                </Stack.Screen>
-                <Stack.Screen
-                  name="ForgotPassword"
-                  component={ForgotPassword}
-                  options={screenOptions}
-                />
-                <Stack.Screen
-                  name="Terms"
-                  component={Terms}
-                  options={{
-                    title: "Terms & Conditions",
-                    headerShown: true,
-                  }}
-                />
-                <Stack.Screen
-                  name="Privacy"
-                  component={Privacy}
-                  options={{
-                    title: "Privacy Policy",
-                    headerShown: true,
-                  }}
-                />
-              </>
-            )}
-          </Stack.Navigator>
-        </NavigationContainer>
+              ) : (
+                <>
+                  <Stack.Screen name="Welcome" options={{ headerShown: false }}>
+                    {(props) => (
+                      <Welcome {...props} setBypassAuth={setBypassAuth} />
+                    )}
+                  </Stack.Screen>
+                  <Stack.Screen
+                    name="Login"
+                    component={Login}
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="SignUp"
+                    component={SignUp}
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="ForgotPassword"
+                    component={ForgotPassword}
+                    options={screenOptions}
+                  />
+                  <Stack.Screen
+                    name="Terms"
+                    component={Terms}
+                    options={{
+                      title: "Terms & Conditions",
+                      headerShown: true,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="Privacy"
+                    component={Privacy}
+                    options={{
+                      title: "Privacy Policy",
+                      headerShown: true,
+                    }}
+                  />
+                </>
+              )}
+            </Stack.Navigator>
+          </NavigationContainer>
+        </ScrapbookProvider>
       </ThemeProvider>
     </View>
   );
