@@ -8,13 +8,13 @@ import {
   Alert,
 } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../../navigation/appNav";
+import { RootStackParamList } from "@/src/navigation/appNav";
 import { useNavigation } from "@react-navigation/native";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getAuth, updateProfile } from "firebase/auth";
-import { FIREBASE_DB } from "../../../../firebase.config";
-import { CustomButton, AltButton } from "../../../components/ui/button";
-import { useTheme } from "../../../context/themeContext";
+import { FIREBASE_DB } from "@/firebase.config";
+import { CustomButton, AltButton } from "@/src/components/ui/button";
+import { useTheme } from "@/src/context/themeContext";
 
 // Navigation prop type for the ChangeUsername screen
 type ChangeUsernameScreenNavigationProp = NativeStackNavigationProp<

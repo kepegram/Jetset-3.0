@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
+import { FIREBASE_AUTH, FIREBASE_DB } from "@/firebase.config";
 import {
   deleteDoc,
   doc,
@@ -25,7 +25,7 @@ import {
   GoogleAuthProvider,
   signInWithCredential,
 } from "firebase/auth";
-import { useTheme } from "../../../context/themeContext";
+import { useTheme } from "@/src/context/themeContext";
 // Google auth removed
 
 const DeleteAccount: React.FC = () => {

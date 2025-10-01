@@ -7,7 +7,7 @@ import {
   TripModel,
   UpdateExcursionInput,
   UpdateTripInput,
-} from "../types/scrapbook";
+} from "@/src/types/scrapbook";
 
 const STORAGE_KEY = "scrapbook_state_v1";
 

@@ -5,18 +5,18 @@ import { StatusBar } from "expo-status-bar";
 import { User, onAuthStateChanged } from "firebase/auth";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { FIREBASE_AUTH, FIREBASE_DB } from "./firebase.config";
-import { ThemeProvider, useTheme } from "./src/context/themeContext";
-import { ScrapbookProvider } from "./src/context/scrapbookContext";
+import { FIREBASE_AUTH, FIREBASE_DB } from "@/firebase.config";
+import { ThemeProvider, useTheme } from "@/src/context/themeContext";
+import { ScrapbookProvider } from "@/src/context/scrapbookContext";
 import { Ionicons } from "@expo/vector-icons";
 import * as SplashScreen from "expo-splash-screen";
-import Welcome from "./src/screens/onboarding/welcome/welcome";
-import Login from "./src/screens/onboarding/userAuth/login";
-import SignUp from "./src/screens/onboarding/userAuth/signup";
-import ForgotPassword from "./src/screens/onboarding/userAuth/forgotPassword";
-import AppNav from "./src/navigation/appNav";
-import Terms from "./src/screens/onboarding/terms/terms";
-import Privacy from "./src/screens/onboarding/privacy/privacy";
+import Welcome from "@/src/screens/onboarding/welcome/welcome";
+import Login from "@/src/screens/onboarding/userAuth/login";
+import SignUp from "@/src/screens/onboarding/userAuth/signup";
+import ForgotPassword from "@/src/screens/onboarding/userAuth/forgotPassword";
+import AppNav from "@/src/navigation/appNav";
+import Terms from "@/src/screens/onboarding/terms/terms";
+import Privacy from "@/src/screens/onboarding/privacy/privacy";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import * as Font from "expo-font";
 
@@ -71,8 +71,6 @@ const App: React.FC = () => {
                   authProvider: "google",
                   photoURL: user.photoURL || null,
                 });
-                // Request notification permissions right after creating new user
-                await registerForPushNotificationsAsync();
               }
 
               setUser(user);

@@ -6,8 +6,12 @@ import {
   getDocs,
   setDoc,
 } from "firebase/firestore";
-import { FIREBASE_DB } from "../../firebase.config";
-import { ExcursionModel, ScrapbookState, TripModel } from "../types/scrapbook";
+import { FIREBASE_DB } from "@/firebase.config";
+import {
+  ExcursionModel,
+  ScrapbookState,
+  TripModel,
+} from "@/src/types/scrapbook";
 
 export async function pullFromFirestore(
   userId: string
@@ -61,4 +65,3 @@ export async function deleteTripRemote(
   const tripRef = doc(FIREBASE_DB, `users/${userId}/trips/${tripId}`);
   await deleteDoc(tripRef);
 }
-

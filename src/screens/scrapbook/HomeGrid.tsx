@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import { useScrapbook } from "../../context/scrapbookContext";
-import { useTheme } from "../../context/themeContext";
+import { useScrapbook } from "@/src/context/scrapbookContext";
+import { useTheme } from "@/src/context/themeContext";
 import { Ionicons } from "@expo/vector-icons";
 
 const HomeGrid: React.FC = () => {

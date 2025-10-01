@@ -1,9 +1,15 @@
 const { getDefaultConfig } = require("@expo/metro-config");
+const path = require("path");
 
 const defaultConfig = getDefaultConfig(__dirname);
 
 // Add CJS extension for compatibility
 defaultConfig.resolver.assetExts.push("cjs");
+
+// Configure path alias
+defaultConfig.resolver.alias = {
+  "@": path.resolve(__dirname, "."),
+};
 
 // Optimize Metro Bundler configuration
 defaultConfig.transformer.minifierConfig = {

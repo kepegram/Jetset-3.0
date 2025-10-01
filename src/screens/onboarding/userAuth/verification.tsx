@@ -8,9 +8,9 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
-import { lightTheme as theme } from "../../../theme/theme";
-import { MainButton } from "../../../components/ui/button";
-import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
+import { lightTheme as theme } from "@/src/theme/theme";
+import { MainButton } from "@/src/components/ui/button";
+import { FIREBASE_AUTH, FIREBASE_DB } from "@/firebase.config";
 import { doc, getDoc, deleteDoc, setDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";

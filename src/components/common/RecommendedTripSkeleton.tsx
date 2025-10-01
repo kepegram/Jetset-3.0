@@ -7,7 +7,7 @@ import {
   Text,
   Platform,
 } from "react-native";
-import { useTheme } from "../../context/themeContext";
+import { useTheme } from "@/src/context/themeContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 

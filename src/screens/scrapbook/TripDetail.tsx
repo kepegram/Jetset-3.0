@@ -18,8 +18,8 @@ import {
   useNavigation,
   useFocusEffect,
 } from "@react-navigation/native";
-import { useScrapbook } from "../../context/scrapbookContext";
-import { useTheme } from "../../context/themeContext";
+import { useScrapbook } from "@/src/context/scrapbookContext";
+import { useTheme } from "@/src/context/themeContext";
 import { Ionicons } from "@expo/vector-icons";
 
 const TripDetail: React.FC = () => {

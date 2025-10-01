@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, ActivityIndicator, View, Pressable } from "react-native";
 import WebView from "react-native-webview";
-import { lightTheme } from "../../../theme/theme";
+import { lightTheme } from "@/src/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 
 interface TermsProps {

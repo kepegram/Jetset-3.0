@@ -12,15 +12,21 @@ import {
   Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
-import { OAuthProvider, signInWithCredential } from "firebase/auth";
-// Google auth removed - using email/password + Apple only
+import { FIREBASE_AUTH, FIREBASE_DB } from "@/firebase.config";
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
+import {
+  OAuthProvider,
+  signInWithCredential,
+  GoogleAuthProvider,
+} from "firebase/auth";
+// Use Expo public env vars via process.env (no @env needed)
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { doc, setDoc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
-import { lightTheme as theme } from "../../../theme/theme";
-import { MainButton } from "../../../components/ui/button";
+import { lightTheme as theme } from "@/src/theme/theme";
+import { MainButton } from "@/src/components/ui/button";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { RootStackParamList } from "../../../../App";
+import { RootStackParamList } from "@/App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import {
@@ -49,6 +55,71 @@ const SignUp: React.FC<SignUpProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  WebBrowser.maybeCompleteAuthSession();
+  const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
+    iosClientId: process.env.EXPO_PUBLIC_IOS_CLIENT_ID,
+    androidClientId: process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID,
+  });
+
+  useEffect(() => {
+    const signInWithGoogleResponse = async () => {
+      if (googleResponse?.type === "success") {
+        try {
+          const idToken = googleResponse.authentication?.idToken;
+          if (!idToken) {
+            setError("Google authentication failed. Please try again.");
+            return;
+          }
+          const credential = GoogleAuthProvider.credential(idToken);
+          const authResult = await signInWithCredential(auth, credential);
+
+          await AsyncStorage.multiSet([
+            ["userId", authResult.user.uid],
+            ["userEmail", authResult.user.email || ""],
+            [
+              "userName",
+              authResult.user.displayName ||
+                (authResult.user.email
+                  ? authResult.user.email.split("@")[0]
+                  : "User"),
+            ],
+          ]);
+
+          const userRef = doc(FIREBASE_DB, "users", authResult.user.uid);
+          await setDoc(
+            userRef,
+            {
+              username:
+                authResult.user.displayName ||
+                (authResult.user.email
+                  ? authResult.user.email.split("@")[0]
+                  : "User"),
+              email: authResult.user.email,
+              createdAt: new Date().toISOString(),
+              lastLoginAt: new Date().toISOString(),
+              provider: "google",
+            },
+            { merge: true }
+          );
+
+          if (onAuthSuccess) {
+            await onAuthSuccess();
+          }
+        } catch (e: any) {
+          console.error("Google Sign-In Error:", e);
+          setError("Error authenticating with Google, please try again.");
+        }
+      }
+    };
+    signInWithGoogleResponse();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [googleResponse]);
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+    await promptGoogle();
+  };
+
   const [emailError, setEmailError] = useState<string | null>(null);
   const [showVerification, setShowVerification] = useState(false);
   const [tempUserId, setTempUserId] = useState<string>("");
@@ -481,6 +552,14 @@ const SignUp: React.FC<SignUpProps> = ({
               activeOpacity={0.8}
             >
               <FontAwesome name="apple" size={32} color="#000" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={handleGoogleSignIn}
+              activeOpacity={0.8}
+              disabled={!googleRequest}
+            >
+              <FontAwesome name="google" size={28} color="#DB4437" />
             </TouchableOpacity>
           </View>
 

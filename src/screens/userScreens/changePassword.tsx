@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { AltButton, CustomButton } from "../../../components/ui/button";
+import { AltButton, CustomButton } from "@/src/components/ui/button";
 import {
   getAuth,
   EmailAuthProvider,
@@ -16,11 +16,11 @@ import {
   updatePassword,
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { FIREBASE_DB } from "../../../../firebase.config";
+import { FIREBASE_DB } from "@/firebase.config";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../../navigation/appNav";
+import { RootStackParamList } from "@/src/navigation/appNav";
 import { useNavigation } from "@react-navigation/native";
-import { useTheme } from "../../../context/themeContext";
+import { useTheme } from "@/src/context/themeContext";
 
 // Navigation prop type for the ChangePassword screen
 type ChangePasswordScreenNavigationProp = NativeStackNavigationProp<

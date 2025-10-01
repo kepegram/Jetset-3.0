@@ -16,21 +16,21 @@ import {
   Keyboard,
   KeyboardEvent,
 } from "react-native";
-import { MainButton } from "../../../components/ui/button";
+import { MainButton } from "@/src/components/ui/button";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { lightTheme } from "../../../theme/theme";
-import Terms from "../terms/terms";
-import Privacy from "../privacy/privacy";
-import Login from "../userAuth/login";
-import SignUp from "../userAuth/signup";
-import ForgotPassword from "../userAuth/forgotPassword";
-import Verification from "../userAuth/verification";
+import { lightTheme } from "@/src/theme/theme";
+import Terms from "@/src/screens/onboarding/terms/terms";
+import Privacy from "@/src/screens/onboarding/privacy/privacy";
+import Login from "@/src/screens/onboarding/userAuth/login";
+import SignUp from "@/src/screens/onboarding/userAuth/signup";
+import ForgotPassword from "@/src/screens/onboarding/userAuth/forgotPassword";
+import Verification from "@/src/screens/onboarding/userAuth/verification";
 // Google auth removed - scrapbook app uses email/password + Apple only
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { useNavigation } from "@react-navigation/native";
-import { FIREBASE_AUTH, FIREBASE_DB } from "../../../../firebase.config";
+import { FIREBASE_AUTH, FIREBASE_DB } from "@/firebase.config";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../../../App";
+import { RootStackParamList } from "@/App";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 // Define the navigation prop type
@@ -69,25 +69,25 @@ const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
     {
       title: "Capture Your Adventures 📸",
       description: "Create beautiful trip scrapbooks with photos",
-      image: require("../../../assets/popular-imgs/paris.jpg"),
+      image: require("../../../assets/imgs/paris.jpg"),
       location: "Paris",
     },
     {
       title: "Organize Your Journeys 🗂️",
       description: "Keep all your travel memories organized",
-      image: require("../../../assets/popular-imgs/dubai.jpg"),
+      image: require("../../../assets/imgs/dubai.jpg"),
       location: "Dubai",
     },
     {
       title: "Share Your Stories 📖",
       description: "Document every excursion and experience",
-      image: require("../../../assets/popular-imgs/tokyo.jpeg"),
+      image: require("../../../assets/imgs/tokyo.jpg"),
       location: "Tokyo",
     },
     {
       title: "Never Forget 🌟",
       description: "Preserve your travel memories forever",
-      image: require("../../../assets/popular-imgs/sydney.jpg"),
+      image: require("../../../assets/imgs/sydney.jpg"),
       location: "Sydney",
     },
   ];
@@ -313,27 +313,16 @@ const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
                 source={require("../../../assets/icons/adaptive-icon.png")}
                 style={styles.logo}
               />
-              <Animated.Text
-                entering={FadeIn.delay(500).duration(1000)}
-                style={styles.appName}
-              >
-                Jetset
-              </Animated.Text>
+              <Text style={styles.appName}>Jetset</Text>
 
-              <Animated.Text
-                entering={FadeIn.delay(1000).duration(1000)}
-                style={styles.slogan}
-              >
+              <Text style={styles.slogan}>
                 Capture. Organize.{" "}
                 <Text style={styles.exploreText}>Remember.</Text>
-              </Animated.Text>
+              </Text>
             </View>
 
             <View style={styles.bottomSection}>
-              <Animated.View
-                entering={FadeIn.delay(1500).duration(1000)}
-                style={styles.buttonContainer}
-              >
+              <View style={styles.buttonContainer}>
                 <MainButton
                   onPress={handleAuthPress}
                   buttonText="Continue"
@@ -359,7 +348,7 @@ const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
                     🧪 Bypass Login (Testing)
                   </Text>
                 </TouchableOpacity>
-              </Animated.View>
+              </View>
 
               <View style={styles.termsContainer}>
                 <Text style={styles.termsText}>

@@ -30,11 +30,11 @@ import TripDetail from "../screens/scrapbook/TripDetail";
 import AddExcursion from "../screens/scrapbook/AddExcursion";
 
 // Import profile screens
-import Profile from "../screens/main/userScreens/profile";
-import Edit from "../screens/main/userScreens/settings";
-import ChangeUsername from "../screens/main/userScreens/changeUsername";
-import ChangePassword from "../screens/main/userScreens/changePassword";
-import DeleteAccount from "../screens/main/userScreens/deleteAccount";
+import Profile from "../screens/userScreens/profile";
+import Edit from "../screens/userScreens/settings";
+import ChangeUsername from "../screens/userScreens/changeUsername";
+import ChangePassword from "../screens/userScreens/changePassword";
+import DeleteAccount from "../screens/userScreens/deleteAccount";
 
 // Legacy trip screens removed - using scrapbook instead
 

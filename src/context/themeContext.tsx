@@ -6,10 +6,10 @@ import React, {
   ReactNode,
 } from "react";
 import { Appearance } from "react-native";
-import { FIREBASE_DB } from "../../firebase.config";
+import { FIREBASE_DB } from "@/firebase.config";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { lightTheme, darkTheme } from "../theme/theme";
+import { lightTheme, darkTheme } from "@/src/theme/theme";
 
 // Define the possible theme values
 export type Theme = "light" | "dark";

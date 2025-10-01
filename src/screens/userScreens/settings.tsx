@@ -9,12 +9,12 @@ import {
 } from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../../navigation/appNav";
+import { RootStackParamList } from "@/src/navigation/appNav";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { doc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { FIREBASE_DB } from "../../../../firebase.config";
-import { useTheme } from "../../../context/themeContext";
+import { FIREBASE_DB } from "@/firebase.config";
+import { useTheme } from "@/src/context/themeContext";
 
 // Navigation prop type for the Edit screen
 type EditScreenNavigationProp = NativeStackNavigationProp<

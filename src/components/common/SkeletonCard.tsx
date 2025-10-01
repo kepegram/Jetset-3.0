@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, Animated } from "react-native";
-import { useTheme } from "../../context/themeContext";
+import { useTheme } from "@/src/context/themeContext";
 import { LinearGradient } from "expo-linear-gradient";
 
 interface SkeletonCardProps {

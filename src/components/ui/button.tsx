@@ -10,7 +10,7 @@ import {
   View,
   PressableProps,
 } from "react-native";
-import { useTheme } from "../../context/themeContext";
+import { useTheme } from "@/src/context/themeContext";
 
 type ButtonProps = {
   testID?: string;

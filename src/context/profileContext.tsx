@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getAuth, User } from "firebase/auth";
-import { FIREBASE_DB } from "../../firebase.config";
+import { FIREBASE_DB } from "@/firebase.config";
 
 // Enhanced interface to include more user data
 interface ProfileContextType {

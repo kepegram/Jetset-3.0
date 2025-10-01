@@ -7,7 +7,7 @@ import React, {
   useState,
 } from "react";
 import { User } from "firebase/auth";
-import { FIREBASE_AUTH } from "../../firebase.config";
+import { FIREBASE_AUTH } from "@/firebase.config";
 import {
   CreateExcursionInput,
   CreateTripInput,
@@ -16,9 +16,12 @@ import {
   TripModel,
   UpdateExcursionInput,
   UpdateTripInput,
-} from "../types/scrapbook";
-import * as local from "../services/localScrapbookStorage";
-import { pullFromFirestore, pushToFirestore } from "../services/firestoreSync";
+} from "@/src/types/scrapbook";
+import * as local from "@/src/services/localScrapbookStorage";
+import {
+  pullFromFirestore,
+  pushToFirestore,
+} from "@/src/services/firestoreSync";
 
 type ScrapbookContextValue = {
   state: ScrapbookState;
@@ -195,4 +198,3 @@ export function useScrapbook() {
     throw new Error("useScrapbook must be used within ScrapbookProvider");
   return ctx;
 }
-

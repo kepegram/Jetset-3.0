@@ -15,14 +15,14 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../../navigation/appNav";
-import { useProfile } from "../../../context/profileContext";
-import { FIREBASE_DB, FIREBASE_AUTH } from "../../../../firebase.config";
-import { useTheme } from "../../../context/themeContext";
+import { RootStackParamList } from "@/src/navigation/appNav";
+import { useProfile } from "@/src/context/profileContext";
+import { FIREBASE_DB, FIREBASE_AUTH } from "@/firebase.config";
+import { useTheme } from "@/src/context/themeContext";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Privacy from "../../onboarding/privacy/privacy";
+import Privacy from "@/src/screens/onboarding/privacy/privacy";
 import * as ImageManipulator from "expo-image-manipulator";
 
 // Navigation prop type for type safety when navigating
