@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useScrapbook } from "@/src/context/scrapbookContext";
-import { useTheme } from "@/src/context/themeContext";
+import { lightTheme } from "@/src/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 
 const AddExcursion: React.FC = () => {
@@ -21,7 +21,7 @@ const AddExcursion: React.FC = () => {
   const navigation = useNavigation<any>();
   const { tripId } = route.params as { tripId: string };
   const { createExcursion } = useScrapbook();
-  const { currentTheme } = useTheme();
+  const currentTheme = lightTheme;
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [photoUris, setPhotoUris] = useState<string[]>([]);
@@ -69,7 +69,15 @@ const AddExcursion: React.FC = () => {
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: currentTheme.background }]}
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            currentTheme.background === "#FFFFFF"
+              ? "#F8F5F0"
+              : currentTheme.background,
+        },
+      ]}
       edges={["top"]}
     >
       <View style={styles.header}>
@@ -100,6 +108,11 @@ const AddExcursion: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.form}>
+          {/* Decorative tape elements */}
+          <View style={[styles.decorativeTape, styles.tape1]} />
+          <View style={[styles.decorativeTape, styles.tape2]} />
+          <View style={[styles.decorativeTape, styles.tape3]} />
+
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: currentTheme.textPrimary }]}>
               Title *
@@ -246,6 +259,34 @@ const styles = StyleSheet.create({
   form: {
     padding: 20,
     paddingTop: 10,
+    position: "relative",
+  },
+  decorativeTape: {
+    position: "absolute",
+    height: 30,
+    backgroundColor: "rgba(255, 220, 150, 0.7)",
+    borderRadius: 2,
+    zIndex: 1,
+  },
+  tape1: {
+    width: 70,
+    top: 50,
+    right: 25,
+    transform: [{ rotate: "-20deg" }],
+  },
+  tape2: {
+    width: 80,
+    top: 250,
+    left: 15,
+    backgroundColor: "rgba(200, 230, 255, 0.7)",
+    transform: [{ rotate: "15deg" }],
+  },
+  tape3: {
+    width: 60,
+    top: 420,
+    right: 30,
+    backgroundColor: "rgba(255, 200, 200, 0.6)",
+    transform: [{ rotate: "-10deg" }],
   },
   inputGroup: {
     marginBottom: 20,
@@ -256,19 +297,37 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 12,
+    borderWidth: 2,
+    borderRadius: 8,
     padding: 16,
     fontSize: 16,
     fontWeight: "500",
+    backgroundColor: "#FAFAFA",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   textArea: {
-    borderWidth: 1,
-    borderRadius: 12,
+    borderWidth: 2,
+    borderRadius: 8,
     padding: 16,
     fontSize: 16,
     fontWeight: "500",
     minHeight: 100,
+    backgroundColor: "#FAFAFA",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   photoGrid: {
     flexDirection: "row",
@@ -280,12 +339,23 @@ const styles = StyleSheet.create({
     position: "relative",
     width: 80,
     height: 80,
+    transform: [{ rotate: "-2deg" }],
   },
   photoPreview: {
     width: "100%",
     height: "100%",
-    borderRadius: 8,
+    borderRadius: 4,
     resizeMode: "cover",
+    borderWidth: 2,
+    borderColor: "#FFF",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   removePhotoButton: {
     position: "absolute",
@@ -295,13 +365,22 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   photoPicker: {
-    borderWidth: 1,
-    borderRadius: 12,
+    borderWidth: 2,
+    borderRadius: 8,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+    backgroundColor: "#FAFAFA",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   photoPickerPressed: {
     opacity: 0.8,
@@ -318,16 +397,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 30,
+    backgroundColor: "#FF6B6B",
+    borderWidth: 2,
+    borderColor: "#FFF",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 6,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   saveButtonPressed: {
     opacity: 0.8,
@@ -335,8 +417,8 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: "white",
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 17,
+    fontWeight: "700",
     marginLeft: 8,
   },
 });

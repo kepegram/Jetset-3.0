@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { AltButton, CustomButton } from "@/src/components/ui/button";
+import { AltButton, CustomButton } from "@/src/components/button";
 import {
   getAuth,
   EmailAuthProvider,
@@ -20,7 +20,7 @@ import { FIREBASE_DB } from "@/firebase.config";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/src/navigation/appNav";
 import { useNavigation } from "@react-navigation/native";
-import { useTheme } from "@/src/context/themeContext";
+import { lightTheme } from "@/src/theme/theme";
 
 // Navigation prop type for the ChangePassword screen
 type ChangePasswordScreenNavigationProp = NativeStackNavigationProp<
@@ -29,7 +29,7 @@ type ChangePasswordScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 const ChangePassword: React.FC = () => {
-  const { currentTheme } = useTheme();
+  const currentTheme = lightTheme;
   // State for managing form inputs and visibility
   const [email, setEmail] = useState<string | null>("");
   const [password, setPassword] = useState<string>("");

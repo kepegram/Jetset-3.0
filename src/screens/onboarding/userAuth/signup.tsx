@@ -24,7 +24,7 @@ import {
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { doc, setDoc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { lightTheme as theme } from "@/src/theme/theme";
-import { MainButton } from "@/src/components/ui/button";
+import { MainButton } from "@/src/components/button";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { RootStackParamList } from "@/App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -704,7 +704,7 @@ const SignUp: React.FC<SignUpProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#F8F5F0",
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -724,19 +724,22 @@ const styles = StyleSheet.create({
   socialButton: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 25,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 16,
     padding: 16,
     width: 130,
     height: 66,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 6,
+    borderWidth: 2,
+    borderColor: "#E8E8E8",
+    transform: [{ rotate: "1deg" }],
   },
   dividerContainer: {
     flexDirection: "row",
@@ -763,13 +766,21 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f8f9fa",
-    borderRadius: 25,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 16,
     marginBottom: 4,
     paddingHorizontal: 15,
-    borderWidth: 1,
-    borderColor: "#e9ecef",
+    borderWidth: 2,
+    borderColor: "#E8E8E8",
     height: 52,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   inputWrapperError: {
     borderColor: theme.error,
@@ -849,14 +860,22 @@ const styles = StyleSheet.create({
   codeInput: {
     width: 55,
     height: 75,
-    borderWidth: 1.5,
-    borderRadius: 16,
+    borderWidth: 2,
+    borderRadius: 12,
     textAlign: "center",
     fontSize: 22,
     fontWeight: "600",
-    backgroundColor: "#f8f9fa",
-    borderColor: "#e9ecef",
+    backgroundColor: "#FAFAFA",
+    borderColor: "#E8E8E8",
     color: theme.textPrimary,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   codeInputFilled: {
     borderColor: theme.alternate,

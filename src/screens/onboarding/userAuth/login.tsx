@@ -24,7 +24,7 @@ import {
 import { TextInput } from "react-native-gesture-handler";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { lightTheme as theme } from "@/src/theme/theme";
-import { MainButton } from "@/src/components/ui/button";
+import { MainButton } from "@/src/components/button";
 import { setDoc } from "firebase/firestore";
 import { doc } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -340,7 +340,7 @@ const Login: React.FC<LoginProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#F8F5F0",
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -360,19 +360,22 @@ const styles = StyleSheet.create({
   socialButton: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 25,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 16,
     padding: 16,
     width: 130,
     height: 66,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 6,
+    borderWidth: 2,
+    borderColor: "#E8E8E8",
+    transform: [{ rotate: "-1deg" }],
   },
   googleIcon: {
     width: 28,
@@ -402,13 +405,21 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f8f9fa",
-    borderRadius: 25,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 16,
     marginBottom: 4,
     paddingHorizontal: 15,
-    borderWidth: 1,
-    borderColor: "#e9ecef",
+    borderWidth: 2,
+    borderColor: "#E8E8E8",
     height: 52,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   inputIcon: {
     marginRight: 10,

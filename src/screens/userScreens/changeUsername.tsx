@@ -13,8 +13,8 @@ import { useNavigation } from "@react-navigation/native";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getAuth, updateProfile } from "firebase/auth";
 import { FIREBASE_DB } from "@/firebase.config";
-import { CustomButton, AltButton } from "@/src/components/ui/button";
-import { useTheme } from "@/src/context/themeContext";
+import { CustomButton, AltButton } from "@/src/components/button";
+import { lightTheme } from "@/src/theme/theme";
 
 // Navigation prop type for the ChangeUsername screen
 type ChangeUsernameScreenNavigationProp = NativeStackNavigationProp<
@@ -27,7 +27,7 @@ const USERNAME_MIN_LENGTH = 3;
 const USERNAME_MAX_LENGTH = 20;
 
 const ChangeUsername: React.FC = () => {
-  const { currentTheme } = useTheme();
+  const currentTheme = lightTheme;
   const navigation = useNavigation<ChangeUsernameScreenNavigationProp>();
   const [userName, setUserName] = useState<string | null>("");
   const [showConfirmation, setShowConfirmation] = useState(false);

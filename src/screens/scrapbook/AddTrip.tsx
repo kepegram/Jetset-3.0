@@ -13,18 +13,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { useScrapbook } from "@/src/context/scrapbookContext";
-import { useTheme } from "@/src/context/themeContext";
+import { lightTheme } from "@/src/theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 
 const AddTrip: React.FC = () => {
   const { createTrip } = useScrapbook();
   const navigation = useNavigation<any>();
-  const { currentTheme } = useTheme();
+  const currentTheme = lightTheme;
   const [name, setName] = useState("");
   const [destination, setDestination] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [coverPhotoUri, setCoverPhotoUri] = useState<string | undefined>();
+  const [startDateError, setStartDateError] = useState(false);
+  const [endDateError, setEndDateError] = useState(false);
 
   const pickImage = async () => {
     const permissionResult =
@@ -68,6 +70,50 @@ const AddTrip: React.FC = () => {
     const [month, day, year] = dateString.split("-").map(Number);
     const date = new Date(year, month - 1, day);
     return date.toISOString();
+  };
+
+  const formatDateInput = (input: string): string => {
+    // Remove all non-numeric characters
+    const numbers = input.replace(/\D/g, "");
+
+    // Limit to 8 digits (MMDDYYYY)
+    const limitedNumbers = numbers.slice(0, 8);
+
+    // Format based on length
+    if (limitedNumbers.length <= 2) {
+      return limitedNumbers;
+    } else if (limitedNumbers.length <= 4) {
+      return `${limitedNumbers.slice(0, 2)}-${limitedNumbers.slice(2)}`;
+    } else {
+      return `${limitedNumbers.slice(0, 2)}-${limitedNumbers.slice(
+        2,
+        4
+      )}-${limitedNumbers.slice(4)}`;
+    }
+  };
+
+  const handleStartDateChange = (text: string) => {
+    const formatted = formatDateInput(text);
+    setStartDate(formatted);
+
+    // Validate the formatted date
+    if (formatted.length === 10) {
+      setStartDateError(!validateDateFormat(formatted));
+    } else {
+      setStartDateError(false);
+    }
+  };
+
+  const handleEndDateChange = (text: string) => {
+    const formatted = formatDateInput(text);
+    setEndDate(formatted);
+
+    // Validate the formatted date
+    if (formatted.length === 10) {
+      setEndDateError(!validateDateFormat(formatted));
+    } else {
+      setEndDateError(false);
+    }
   };
 
   const handleSave = async () => {
@@ -121,7 +167,15 @@ const AddTrip: React.FC = () => {
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: currentTheme.background }]}
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            currentTheme.background === "#FFFFFF"
+              ? "#F8F5F0"
+              : currentTheme.background,
+        },
+      ]}
       edges={["top"]}
     >
       <View style={styles.header}>
@@ -152,6 +206,10 @@ const AddTrip: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.form}>
+          {/* Decorative tape elements */}
+          <View style={[styles.decorativeTape, styles.tape1]} />
+          <View style={[styles.decorativeTape, styles.tape2]} />
+
           <View style={styles.inputGroup}>
             <Text style={[styles.label, { color: currentTheme.textPrimary }]}>
               Trip Name *
@@ -201,12 +259,16 @@ const AddTrip: React.FC = () => {
                 placeholder="MM-DD-YYYY (e.g., 12-25-2024)"
                 placeholderTextColor={currentTheme.textSecondary}
                 value={startDate}
-                onChangeText={setStartDate}
+                onChangeText={handleStartDateChange}
+                keyboardType="numeric"
+                maxLength={10}
                 style={[
                   styles.input,
                   {
                     color: currentTheme.textPrimary,
-                    borderColor: currentTheme.inactive,
+                    borderColor: startDateError
+                      ? currentTheme.error
+                      : currentTheme.inactive,
                     backgroundColor: currentTheme.accentBackground,
                   },
                 ]}
@@ -221,12 +283,16 @@ const AddTrip: React.FC = () => {
                 placeholder="MM-DD-YYYY (e.g., 12-30-2024)"
                 placeholderTextColor={currentTheme.textSecondary}
                 value={endDate}
-                onChangeText={setEndDate}
+                onChangeText={handleEndDateChange}
+                keyboardType="numeric"
+                maxLength={10}
                 style={[
                   styles.input,
                   {
                     color: currentTheme.textPrimary,
-                    borderColor: currentTheme.inactive,
+                    borderColor: endDateError
+                      ? currentTheme.error
+                      : currentTheme.inactive,
                     backgroundColor: currentTheme.accentBackground,
                   },
                 ]}
@@ -249,6 +315,9 @@ const AddTrip: React.FC = () => {
                 pressed && styles.imagePickerPressed,
               ]}
             >
+              {/* Corner tape decoration */}
+              <View style={styles.cornerTape} />
+
               {coverPhotoUri ? (
                 <View style={styles.imagePreview}>
                   <Image
@@ -333,6 +402,27 @@ const styles = StyleSheet.create({
   form: {
     padding: 20,
     paddingTop: 10,
+    position: "relative",
+  },
+  decorativeTape: {
+    position: "absolute",
+    height: 30,
+    backgroundColor: "rgba(255, 220, 150, 0.7)",
+    borderRadius: 2,
+    zIndex: 1,
+  },
+  tape1: {
+    width: 80,
+    top: 60,
+    right: 30,
+    transform: [{ rotate: "-15deg" }],
+  },
+  tape2: {
+    width: 70,
+    top: 380,
+    left: 20,
+    backgroundColor: "rgba(200, 230, 255, 0.7)",
+    transform: [{ rotate: "12deg" }],
   },
   inputGroup: {
     marginBottom: 20,
@@ -343,11 +433,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 12,
+    borderWidth: 2,
+    borderRadius: 8,
     padding: 16,
     fontSize: 16,
     fontWeight: "500",
+    backgroundColor: "#FAFAFA",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   dateRow: {
     flexDirection: "row",
@@ -357,10 +456,31 @@ const styles = StyleSheet.create({
     width: "48%",
   },
   imagePicker: {
-    borderWidth: 1,
-    borderRadius: 12,
-    height: 120,
-    overflow: "hidden",
+    borderWidth: 2,
+    borderRadius: 8,
+    height: 160,
+    overflow: "visible",
+    backgroundColor: "#FAFAFA",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+    position: "relative",
+  },
+  cornerTape: {
+    position: "absolute",
+    top: -8,
+    right: 20,
+    width: 60,
+    height: 24,
+    backgroundColor: "rgba(255, 220, 150, 0.7)",
+    borderRadius: 2,
+    transform: [{ rotate: "-45deg" }],
+    zIndex: 10,
   },
   imagePickerPressed: {
     opacity: 0.8,
@@ -369,6 +489,8 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     position: "relative",
+    overflow: "hidden",
+    borderRadius: 6,
   },
   previewImage: {
     width: "100%",
@@ -411,25 +533,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 30,
+    backgroundColor: "#FF6B6B",
+    borderWidth: 2,
+    borderColor: "#FFF",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 6,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   saveButtonPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.98 }],
+    opacity: 0.9,
+    transform: [{ scale: 0.96 }],
   },
   saveButtonText: {
     color: "white",
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 17,
+    fontWeight: "700",
     marginLeft: 8,
   },
 });

@@ -10,7 +10,7 @@ import {
   View,
   PressableProps,
 } from "react-native";
-import { useTheme } from "@/src/context/themeContext";
+import { lightTheme } from "@/src/theme/theme";
 
 type ButtonProps = {
   testID?: string;
@@ -32,7 +32,7 @@ const CustomButton: React.FC<ButtonProps> = ({
   children,
   disabled,
 }) => {
-  const { currentTheme } = useTheme();
+  const currentTheme = lightTheme;
 
   return (
     <Pressable
@@ -55,7 +55,7 @@ const CustomButton: React.FC<ButtonProps> = ({
 };
 
 const AltButton: React.FC<ButtonProps> = ({ buttonText, onPress }) => {
-  const { currentTheme } = useTheme();
+  const currentTheme = lightTheme;
 
   return (
     <Pressable
@@ -86,7 +86,7 @@ const MainButton: React.FC<ButtonProps> = ({
   activeOpacity,
   ...pressableProps
 }) => {
-  const { currentTheme } = useTheme();
+  const currentTheme = lightTheme;
 
   return (
     <Pressable

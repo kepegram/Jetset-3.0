@@ -25,11 +25,11 @@ import {
   GoogleAuthProvider,
   signInWithCredential,
 } from "firebase/auth";
-import { useTheme } from "@/src/context/themeContext";
+import { lightTheme } from "@/src/theme/theme";
 // Google auth removed
 
 const DeleteAccount: React.FC = () => {
-  const { currentTheme } = useTheme();
+  const currentTheme = lightTheme;
   // Get current user at component level
   const currentUser = FIREBASE_AUTH.currentUser;
   // State for tracking user's deletion reason and credentials

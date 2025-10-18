@@ -1,12 +1,5 @@
 import React, { useState, useCallback } from "react";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  SafeAreaView,
-  Switch,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View, SafeAreaView } from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/src/navigation/appNav";
@@ -14,7 +7,7 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { doc, getDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { FIREBASE_DB } from "@/firebase.config";
-import { useTheme } from "@/src/context/themeContext";
+import { lightTheme } from "@/src/theme/theme";
 
 // Navigation prop type for the Edit screen
 type EditScreenNavigationProp = NativeStackNavigationProp<
@@ -23,7 +16,7 @@ type EditScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 const Edit: React.FC = () => {
-  const { currentTheme, theme, setTheme } = useTheme();
+  const currentTheme = lightTheme;
   const navigation = useNavigation<EditScreenNavigationProp>();
   const [userName, setUserName] = useState<string | null>("");
   const [isThirdPartyAuth, setIsThirdPartyAuth] = useState(false);
@@ -59,9 +52,7 @@ const Edit: React.FC = () => {
   );
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: currentTheme.background }]}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: "#F8F5F0" }]}>
       {/* Account Settings Section */}
       <View style={styles.formContainer}>
         <View style={styles.securitySection}>
@@ -160,40 +151,6 @@ const Edit: React.FC = () => {
               />
             </Pressable>
           )}
-
-          {/* Dark Mode Toggle */}
-          <View
-            style={[
-              styles.securityOption,
-              {
-                backgroundColor: "transparent",
-              },
-            ]}
-          >
-            <View style={styles.optionContent}>
-              <Ionicons
-                name={theme === "dark" ? "moon-outline" : "sunny-outline"}
-                size={24}
-                color={currentTheme.icon}
-              />
-              <View style={styles.optionTextContainer}>
-                <Text
-                  style={[
-                    styles.optionLabel,
-                    { color: currentTheme.textPrimary },
-                  ]}
-                >
-                  Dark Mode
-                </Text>
-              </View>
-            </View>
-            <Switch
-              value={theme === "dark"}
-              onValueChange={(value) => setTheme(value ? "dark" : "light")}
-              trackColor={{ false: "#767577", true: currentTheme.alternate }}
-              thumbColor={"#f4f3f4"}
-            />
-          </View>
         </View>
 
         {/* Delete Account Button */}

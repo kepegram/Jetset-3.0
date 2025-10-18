@@ -16,7 +16,7 @@ import {
   Keyboard,
   KeyboardEvent,
 } from "react-native";
-import { MainButton } from "@/src/components/ui/button";
+import { MainButton } from "@/src/components/button";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { lightTheme } from "@/src/theme/theme";
 import Terms from "@/src/screens/onboarding/terms/terms";
@@ -285,17 +285,31 @@ const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
                   exiting={FadeOut.duration(800)}
                   style={styles.factContainer}
                 >
-                  <ImageBackground
-                    source={facts[activeIndex].image}
-                    style={styles.factImage}
-                    imageStyle={styles.factImageStyle}
-                  >
-                    <View style={styles.locationContainer}>
-                      <Text style={styles.locationText}>
-                        {facts[activeIndex].location}
-                      </Text>
-                    </View>
-                  </ImageBackground>
+                  <View style={styles.polaroidWrapper}>
+                    {/* Washi tape effect */}
+                    <View
+                      style={[
+                        styles.tapeEffect,
+                        {
+                          backgroundColor: "rgba(255, 220, 150, 0.7)",
+                          top: -10,
+                          right: 30,
+                          transform: [{ rotate: "-45deg" }],
+                        },
+                      ]}
+                    />
+                    <ImageBackground
+                      source={facts[activeIndex].image}
+                      style={styles.factImage}
+                      imageStyle={styles.factImageStyle}
+                    >
+                      <View style={styles.locationContainer}>
+                        <Text style={styles.locationText}>
+                          {facts[activeIndex].location}
+                        </Text>
+                      </View>
+                    </ImageBackground>
+                  </View>
                   <View style={styles.factContent}>
                     <Text style={styles.factTitle}>
                       {facts[activeIndex].title}
@@ -541,19 +555,20 @@ export default Welcome;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: "#F8F5F0",
   },
   blackBackground: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#000",
+    backgroundColor: "#F8F5F0",
   },
   contentContainer: {
     flex: 1,
-    backgroundColor: lightTheme.background,
+    backgroundColor: "#F8F5F0",
   },
   backgroundImage: {
     flex: 1,
     resizeMode: "cover",
+    backgroundColor: "#F8F5F0",
   },
   slide: {
     flex: 1,
@@ -601,30 +616,68 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     width: "100%",
   },
+  polaroidWrapper: {
+    position: "relative",
+    width: "100%",
+  },
+  tapeEffect: {
+    position: "absolute",
+    width: 70,
+    height: 26,
+    zIndex: 10,
+    borderRadius: 2,
+  },
   factImage: {
     width: "100%",
-    height: 200,
-    borderRadius: 20,
-    marginBottom: 16,
+    height: 220,
+    borderRadius: 4,
+    marginBottom: 20,
     justifyContent: "flex-end",
+    backgroundColor: "#FAFAFA",
+    padding: 14,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
+    transform: [{ rotate: "-2deg" }],
   },
   factImageStyle: {
-    borderRadius: 20,
+    borderRadius: 2,
   },
   factContent: {
-    padding: 8,
+    padding: 16,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+    transform: [{ rotate: "1deg" }],
   },
   factTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: lightTheme.textPrimary,
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#333",
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   factDescription: {
-    fontSize: 16,
-    color: lightTheme.textSecondary,
+    fontSize: 15,
+    color: "#666",
     textAlign: "center",
+    fontWeight: "500",
   },
   buttonContainer: {
     width: "100%",
@@ -633,6 +686,20 @@ const styles = StyleSheet.create({
   },
   continueButton: {
     width: "80%",
+    backgroundColor: "#FF6B6B",
+    borderRadius: 30,
+    paddingVertical: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 10,
+    borderWidth: 2,
+    borderColor: "#FFF",
+    transform: [{ rotate: "-1deg" }],
   },
   termsContainer: {
     alignItems: "center",
@@ -658,17 +725,27 @@ const styles = StyleSheet.create({
   },
   locationContainer: {
     position: "absolute",
-    bottom: 16,
-    left: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    bottom: 10,
+    left: 10,
+    backgroundColor: "#FF6B6B",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#FFF",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   locationText: {
-    color: lightTheme.textPrimary,
+    color: "#FFF",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   logo: {
     width: 80,
@@ -681,18 +758,20 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: "100%",
-    backgroundColor: lightTheme.background,
+    backgroundColor: "#FAFAFA",
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: -2,
+      height: -4,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+    borderWidth: 2,
+    borderColor: "#E8E8E8",
   },
   loginModalContent: {
     height: Dimensions.get("window").height * 0.5,

@@ -6,7 +6,6 @@ import { User, onAuthStateChanged } from "firebase/auth";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { FIREBASE_AUTH, FIREBASE_DB } from "@/firebase.config";
-import { ThemeProvider, useTheme } from "@/src/context/themeContext";
 import { ScrapbookProvider } from "@/src/context/scrapbookContext";
 import { Ionicons } from "@expo/vector-icons";
 import * as SplashScreen from "expo-splash-screen";
@@ -38,15 +37,13 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 });
 
 const StatusBarWrapper = () => {
-  const { theme } = useTheme();
-  return <StatusBar style={theme === "dark" ? "light" : "dark"} />;
+  return <StatusBar style="dark" />;
 };
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [appIsReady, setAppIsReady] = useState(false);
   const [bypassAuth, setBypassAuth] = useState(false); // Testing bypass flag
-  const { currentTheme } = useTheme();
 
   const navigationRef = useRef<any>();
 
@@ -109,7 +106,7 @@ const App: React.FC = () => {
 
   const screenOptions = ({ navigation }: any) => ({
     headerStyle: {
-      backgroundColor: currentTheme.background,
+      backgroundColor: "#F8F5F0",
       borderBottomWidth: 0,
       shadowColor: "transparent",
       elevation: 0,
@@ -119,7 +116,7 @@ const App: React.FC = () => {
         <Ionicons
           name="arrow-back"
           size={28}
-          color={currentTheme.textPrimary}
+          color="#000000"
           style={{ marginLeft: 15 }}
         />
       </Pressable>
@@ -133,61 +130,57 @@ const App: React.FC = () => {
 
   return (
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <ThemeProvider>
-        <ScrapbookProvider>
-          <NavigationContainer ref={navigationRef}>
-            <StatusBarWrapper />
-            <Stack.Navigator initialRouteName="Welcome">
-              {user || bypassAuth ? (
-                <Stack.Screen name="AppNav" options={{ headerShown: false }}>
+      <ScrapbookProvider>
+        <NavigationContainer ref={navigationRef}>
+          <StatusBarWrapper />
+          <Stack.Navigator initialRouteName="Welcome">
+            {user || bypassAuth ? (
+              <Stack.Screen name="AppNav" options={{ headerShown: false }}>
+                {(props) => <AppNav {...props} setBypassAuth={setBypassAuth} />}
+              </Stack.Screen>
+            ) : (
+              <>
+                <Stack.Screen name="Welcome" options={{ headerShown: false }}>
                   {(props) => (
-                    <AppNav {...props} setBypassAuth={setBypassAuth} />
+                    <Welcome {...props} setBypassAuth={setBypassAuth} />
                   )}
                 </Stack.Screen>
-              ) : (
-                <>
-                  <Stack.Screen name="Welcome" options={{ headerShown: false }}>
-                    {(props) => (
-                      <Welcome {...props} setBypassAuth={setBypassAuth} />
-                    )}
-                  </Stack.Screen>
-                  <Stack.Screen
-                    name="Login"
-                    component={Login}
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="SignUp"
-                    component={SignUp}
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="ForgotPassword"
-                    component={ForgotPassword}
-                    options={screenOptions}
-                  />
-                  <Stack.Screen
-                    name="Terms"
-                    component={Terms}
-                    options={{
-                      title: "Terms & Conditions",
-                      headerShown: true,
-                    }}
-                  />
-                  <Stack.Screen
-                    name="Privacy"
-                    component={Privacy}
-                    options={{
-                      title: "Privacy Policy",
-                      headerShown: true,
-                    }}
-                  />
-                </>
-              )}
-            </Stack.Navigator>
-          </NavigationContainer>
-        </ScrapbookProvider>
-      </ThemeProvider>
+                <Stack.Screen
+                  name="Login"
+                  component={Login}
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="SignUp"
+                  component={SignUp}
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="ForgotPassword"
+                  component={ForgotPassword}
+                  options={screenOptions}
+                />
+                <Stack.Screen
+                  name="Terms"
+                  component={Terms}
+                  options={{
+                    title: "Terms & Conditions",
+                    headerShown: true,
+                  }}
+                />
+                <Stack.Screen
+                  name="Privacy"
+                  component={Privacy}
+                  options={{
+                    title: "Privacy Policy",
+                    headerShown: true,
+                  }}
+                />
+              </>
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </ScrapbookProvider>
     </View>
   );
 };

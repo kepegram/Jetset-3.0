@@ -18,7 +18,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/src/navigation/appNav";
 import { useProfile } from "@/src/context/profileContext";
 import { FIREBASE_DB, FIREBASE_AUTH } from "@/firebase.config";
-import { useTheme } from "@/src/context/themeContext";
+import { lightTheme } from "@/src/theme/theme";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -36,10 +36,10 @@ interface ProfileProps {
 }
 
 const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
-  // Context hooks for profile and theme data
+  // Context hooks for profile data
   const { profilePicture, displayName, setProfilePicture, isLoading } =
     useProfile();
-  const { currentTheme, setTheme } = useTheme();
+  const currentTheme = lightTheme;
   const [userName, setUserName] = useState<string | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
@@ -311,7 +311,15 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
 
   return (
     <View
-      style={[styles.container, { backgroundColor: currentTheme.background }]}
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            currentTheme.background === "#FFFFFF"
+              ? "#F8F5F0"
+              : currentTheme.background,
+        },
+      ]}
     >
       {/* Add Modal component */}
       <Modal
@@ -451,6 +459,10 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
       </Modal>
 
       <View style={styles.profileContainer}>
+        {/* Decorative tape elements */}
+        <View style={[styles.decorativeTape, styles.tape1]} />
+        <View style={[styles.decorativeTape, styles.tape2]} />
+
         <View style={styles.userInfoContainer}>
           <Text style={[styles.userName, { color: currentTheme.textPrimary }]}>
             {displayName || userName}
@@ -458,6 +470,9 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
         </View>
 
         <View style={styles.profileImageContainer}>
+          {/* Corner tape on profile picture */}
+          <View style={styles.profileTape} />
+
           <Pressable
             onPress={handleProfilePress}
             style={styles.profilePictureBackground}
@@ -498,30 +513,27 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
 
       {/* Settings Section */}
       <View style={styles.settingsContainer}>
+        {/* Decorative tape */}
+        <View style={[styles.decorativeTape, styles.tape3]} />
+
         <View style={styles.optionsContainer}>
           <Pressable
             style={({ pressed }) => [
               styles.settingOption,
               pressed && styles.optionPressed,
-              {
-                backgroundColor: pressed
-                  ? currentTheme.inactive + "20"
-                  : "transparent",
-              },
             ]}
             onPress={() => navigation.navigate("Edit")}
           >
             <View style={styles.optionContent}>
-              <Ionicons
-                name="person-circle-outline"
-                size={24}
-                color={currentTheme.icon}
-              />
+              <View style={styles.iconCircle}>
+                <Ionicons
+                  name="person-circle-outline"
+                  size={24}
+                  color="#FF6B6B"
+                />
+              </View>
               <Text
-                style={[
-                  styles.optionText,
-                  { color: currentTheme.textSecondary },
-                ]}
+                style={[styles.optionText, { color: currentTheme.textPrimary }]}
               >
                 Manage Account
               </Text>
@@ -537,25 +549,15 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
             style={({ pressed }) => [
               styles.settingOption,
               pressed && styles.optionPressed,
-              {
-                backgroundColor: pressed
-                  ? currentTheme.inactive + "20"
-                  : "transparent",
-              },
             ]}
             onPress={handlePrivacyPress}
           >
             <View style={styles.optionContent}>
-              <Ionicons
-                name="shield-outline"
-                size={24}
-                color={currentTheme.icon}
-              />
+              <View style={styles.iconCircle}>
+                <Ionicons name="shield-outline" size={24} color="#FF6B6B" />
+              </View>
               <Text
-                style={[
-                  styles.optionText,
-                  { color: currentTheme.textSecondary },
-                ]}
+                style={[styles.optionText, { color: currentTheme.textPrimary }]}
               >
                 Security & Privacy
               </Text>
@@ -578,11 +580,13 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
           ]}
           onPress={isBypassMode ? handleBypassSignOut : handleLogout}
         >
+          <Ionicons
+            name="log-out-outline"
+            size={20}
+            color={currentTheme.error}
+          />
           <Text
-            style={[
-              styles.logoutButtonText,
-              { color: currentTheme.textPrimary },
-            ]}
+            style={[styles.logoutButtonText, { color: currentTheme.error }]}
           >
             {isBypassMode ? "Exit Testing Mode" : "Sign out"}
           </Text>
@@ -602,6 +606,45 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     marginTop: 80,
+    position: "relative",
+  },
+  decorativeTape: {
+    position: "absolute",
+    height: 30,
+    backgroundColor: "rgba(255, 220, 150, 0.7)",
+    borderRadius: 2,
+    zIndex: 1,
+  },
+  tape1: {
+    width: 70,
+    top: 20,
+    right: 40,
+    transform: [{ rotate: "-15deg" }],
+  },
+  tape2: {
+    width: 60,
+    top: 20,
+    left: 40,
+    backgroundColor: "rgba(200, 230, 255, 0.7)",
+    transform: [{ rotate: "12deg" }],
+  },
+  tape3: {
+    width: 80,
+    top: -10,
+    right: 50,
+    backgroundColor: "rgba(255, 200, 200, 0.6)",
+    transform: [{ rotate: "-8deg" }],
+  },
+  profileTape: {
+    position: "absolute",
+    top: -10,
+    right: 10,
+    width: 50,
+    height: 22,
+    backgroundColor: "rgba(255, 220, 150, 0.7)",
+    borderRadius: 2,
+    transform: [{ rotate: "-45deg" }],
+    zIndex: 10,
   },
   userInfoContainer: {
     marginBottom: 20,
@@ -615,22 +658,26 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 6,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    position: "relative",
   },
   profilePictureBackground: {
     width: 130,
     height: 130,
     borderRadius: 65,
     position: "relative",
+    borderWidth: 3,
+    borderColor: "#FFF",
+    backgroundColor: "#FFF",
   },
   profilePicture: {
     width: "100%",
     height: "100%",
-    borderRadius: 65,
+    borderRadius: 62,
   },
   editIconContainer: {
     position: "absolute",
@@ -656,43 +703,81 @@ const styles = StyleSheet.create({
     width: "90%",
     alignSelf: "center",
     marginTop: 20,
+    position: "relative",
   },
   optionsContainer: {
     marginTop: 10,
-    borderRadius: 15,
-    overflow: "hidden",
+    gap: 12,
   },
   settingOption: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 15,
-    paddingHorizontal: 15,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#E8E8E8",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
   },
   optionContent: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 12,
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#FFE5E5",
+    justifyContent: "center",
+    alignItems: "center",
   },
   optionPressed: {
     opacity: 0.8,
+    transform: [{ scale: 0.98 }],
   },
   optionText: {
-    fontSize: 18,
-    marginLeft: 15,
+    fontSize: 17,
+    fontWeight: "600",
   },
   logoutContainer: {
     alignItems: "center",
     width: "100%",
+    marginBottom: 20,
   },
   logoutButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 25,
-    width: "90%",
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 30,
+    borderRadius: 12,
+    width: "90%",
+    backgroundColor: "#FAFAFA",
+    borderWidth: 2,
+    borderColor: "#E8E8E8",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   buttonPressed: {
     opacity: 0.8,
+    transform: [{ scale: 0.98 }],
   },
   logoutButtonText: {
     fontSize: 16,

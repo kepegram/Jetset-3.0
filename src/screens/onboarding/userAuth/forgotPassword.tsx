@@ -11,7 +11,7 @@ import React, { useState } from "react";
 import { FIREBASE_AUTH } from "@/firebase.config";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { lightTheme as theme } from "@/src/theme/theme";
-import { MainButton } from "@/src/components/ui/button";
+import { MainButton } from "@/src/components/button";
 import { Ionicons } from "@expo/vector-icons";
 
 const ForgotPassword: React.FC = () => {

@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { lightTheme as theme } from "@/src/theme/theme";
-import { MainButton } from "@/src/components/ui/button";
+import { MainButton } from "@/src/components/button";
 import { FIREBASE_AUTH, FIREBASE_DB } from "@/firebase.config";
 import { doc, getDoc, deleteDoc, setDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";

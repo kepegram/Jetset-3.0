@@ -8,7 +8,7 @@ import {
   Platform,
   ViewStyle,
 } from "react-native";
-import { useTheme } from "../context/themeContext";
+import { lightTheme } from "../theme/theme";
 import {
   createNativeStackNavigator,
   NativeStackNavigationOptions,
@@ -98,7 +98,7 @@ interface ProfileStackProps {
 }
 
 const ProfileStack: React.FC<ProfileStackProps> = ({ setBypassAuth }) => {
-  const { currentTheme } = useTheme();
+  const currentTheme = lightTheme;
 
   const screenOptions = ({
     navigation,
@@ -202,14 +202,22 @@ interface TabNavigatorProps {
 }
 
 const TabNavigator: React.FC<TabNavigatorProps> = ({ setBypassAuth }) => {
-  const { currentTheme } = useTheme();
+  const currentTheme = lightTheme;
   const { profilePicture } = useProfile();
 
   const tabBarDefaultStyle: ViewStyle = {
-    height: Platform.OS === "ios" ? 85 : 65,
-    paddingBottom: Platform.OS === "ios" ? 25 : 10,
-    paddingTop: 10,
+    height: Platform.OS === "ios" ? 90 : 70,
+    paddingBottom: Platform.OS === "ios" ? 28 : 12,
+    paddingTop: 12,
     borderTopWidth: 0,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 10,
   };
 
   const TabIcon = ({
@@ -228,19 +236,34 @@ const TabNavigator: React.FC<TabNavigatorProps> = ({ setBypassAuth }) => {
     return (
       <View
         style={{
-          padding: 8,
-          borderRadius: 12,
-          backgroundColor: focused
-            ? currentTheme.alternateLight20
-            : "transparent",
+          padding: 10,
+          borderRadius: 20,
+          backgroundColor: focused ? "#FFE5E5" : "transparent",
+          borderWidth: focused ? 2 : 0,
+          borderColor: focused ? "#FF6B6B" : "transparent",
+          transform: focused
+            ? [{ scale: 1.1 }, { rotate: "-3deg" }]
+            : [{ scale: 1 }],
+          shadowColor: focused ? "#FF6B6B" : "transparent",
+          shadowOffset: {
+            width: 0,
+            height: 4,
+          },
+          shadowOpacity: focused ? 0.3 : 0,
+          shadowRadius: 6,
+          elevation: focused ? 4 : 0,
         }}
       >
         {isMaterial ? (
-          <MaterialIcons name={icon as any} color={color} size={size} />
+          <MaterialIcons
+            name={icon as any}
+            color={focused ? "#FF6B6B" : color}
+            size={size}
+          />
         ) : (
           <Ionicons
             name={icon as keyof typeof Ionicons.glyphMap}
-            color={color}
+            color={focused ? "#FF6B6B" : color}
             size={size}
           />
         )}
@@ -263,7 +286,10 @@ const TabNavigator: React.FC<TabNavigatorProps> = ({ setBypassAuth }) => {
         options={({ route }) => ({
           tabBarStyle: {
             ...tabBarDefaultStyle,
-            backgroundColor: currentTheme.background,
+            backgroundColor:
+              currentTheme.background === "#FFFFFF"
+                ? "#FAFAFA"
+                : currentTheme.background,
             ...getTabBarStyle(route),
           } as ViewStyle,
           tabBarIcon: ({ color, focused }) => (
@@ -283,17 +309,31 @@ const TabNavigator: React.FC<TabNavigatorProps> = ({ setBypassAuth }) => {
         options={({ route }) => ({
           tabBarStyle: {
             ...tabBarDefaultStyle,
-            backgroundColor: currentTheme.background,
+            backgroundColor:
+              currentTheme.background === "#FFFFFF"
+                ? "#FAFAFA"
+                : currentTheme.background,
             ...getTabBarStyle(route),
           } as ViewStyle,
           tabBarIcon: ({ focused, color }) => (
             <View
               style={{
-                padding: 4,
-                borderRadius: 24,
-                backgroundColor: focused
-                  ? currentTheme.alternateLight20
-                  : "transparent",
+                padding: 10,
+                borderRadius: 20,
+                backgroundColor: focused ? "#FFE5E5" : "transparent",
+                borderWidth: focused ? 2 : 0,
+                borderColor: focused ? "#FF6B6B" : "transparent",
+                transform: focused
+                  ? [{ scale: 1.1 }, { rotate: "2deg" }]
+                  : [{ scale: 1 }],
+                shadowColor: focused ? "#FF6B6B" : "transparent",
+                shadowOffset: {
+                  width: 0,
+                  height: 4,
+                },
+                shadowOpacity: focused ? 0.3 : 0,
+                shadowRadius: 6,
+                elevation: focused ? 4 : 0,
               }}
             >
               {profilePicture ? (
@@ -303,14 +343,16 @@ const TabNavigator: React.FC<TabNavigatorProps> = ({ setBypassAuth }) => {
                     width: 32,
                     height: 32,
                     borderRadius: 16,
-                    borderColor: focused
-                      ? currentTheme.alternate
-                      : "transparent",
+                    borderColor: focused ? "#FF6B6B" : "#DDD",
                     borderWidth: 2,
                   }}
                 />
               ) : (
-                <Ionicons name="person-circle" size={38} color={color} />
+                <Ionicons
+                  name="person-circle"
+                  size={36}
+                  color={focused ? "#FF6B6B" : color}
+                />
               )}
             </View>
           ),
@@ -327,11 +369,9 @@ interface AppNavProps {
 }
 
 const AppNav: React.FC<AppNavProps> = ({ setBypassAuth }) => {
-  const { theme } = useTheme();
-
   return (
     <>
-      <StatusBar style={theme === "dark" ? "light" : "dark"} />
+      <StatusBar style="dark" />
       <ProfileProvider>
         <RootStack.Navigator initialRouteName="App">
           <RootStack.Screen name="App" options={{ headerShown: false }}>
