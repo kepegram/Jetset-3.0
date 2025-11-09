@@ -19,9 +19,23 @@ const HomeGrid: React.FC = () => {
   const navigation = useNavigation<any>();
   const currentTheme = lightTheme;
 
+  const sortedTrips = React.useMemo(() => {
+    return [...state.trips].sort((a, b) => {
+      const dateA = new Date(a.startDate);
+      const dateB = new Date(b.startDate);
+
+      const yearA = dateA.getFullYear();
+      const yearB = dateB.getFullYear();
+      if (yearA !== yearB) {
+        return yearA - yearB;
+      }
+
+      return dateA.getMonth() - dateB.getMonth();
+    });
+  }, [state.trips]);
+
   const renderItem = useCallback(
     ({ item, index }: any) => {
-      // Alternate rotation for scrapbook effect
       const rotation =
         index % 4 === 0 ? -2 : index % 4 === 1 ? 1.5 : index % 4 === 2 ? -1 : 2;
 
@@ -36,9 +50,7 @@ const HomeGrid: React.FC = () => {
           ]}
           onPress={() => navigation.navigate("TripDetail", { tripId: item.id })}
         >
-          {/* Polaroid-style card */}
           <View style={[styles.polaroidCard, { backgroundColor: "#FAFAFA" }]}>
-            {/* Tape effect */}
             <View
               style={[
                 styles.tape,
@@ -49,7 +61,6 @@ const HomeGrid: React.FC = () => {
               ]}
             />
 
-            {/* Photo area */}
             <View style={styles.photoFrame}>
               {item.coverPhotoUri ? (
                 <Image
@@ -72,7 +83,6 @@ const HomeGrid: React.FC = () => {
               )}
             </View>
 
-            {/* Handwritten-style caption */}
             <View style={styles.captionArea}>
               <Text style={styles.tripName} numberOfLines={1}>
                 {item.name}
@@ -105,7 +115,7 @@ const HomeGrid: React.FC = () => {
       edges={["top"]}
     >
       <FlatList
-        data={state.trips}
+        data={sortedTrips}
         numColumns={2}
         keyExtractor={(t) => t.id}
         renderItem={renderItem}
@@ -114,7 +124,6 @@ const HomeGrid: React.FC = () => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            {/* Background grid preview */}
             <View style={styles.gridPreview}>
               <View style={styles.gridRow}>
                 <View
@@ -161,7 +170,6 @@ const HomeGrid: React.FC = () => {
             </View>
 
             <View style={styles.emptyContent}>
-              {/* Decorative background elements */}
               <View style={styles.decorativeElements}>
                 <View
                   style={[
@@ -186,7 +194,6 @@ const HomeGrid: React.FC = () => {
                 />
               </View>
 
-              {/* Main illustration */}
               <View style={styles.illustrationContainer}>
                 <View
                   style={[
@@ -222,14 +229,12 @@ const HomeGrid: React.FC = () => {
                 </View>
               </View>
 
-              {/* Main heading */}
               <Text
                 style={[styles.emptyTitle, { color: currentTheme.textPrimary }]}
               >
                 Your Adventure Awaits! ✈️
               </Text>
 
-              {/* Subtitle */}
               <Text
                 style={[
                   styles.emptySubtitle,
@@ -240,7 +245,6 @@ const HomeGrid: React.FC = () => {
                 that last forever
               </Text>
 
-              {/* Feature highlights */}
               <View style={styles.featureList}>
                 <View style={styles.featureItem}>
                   <Ionicons
@@ -289,7 +293,6 @@ const HomeGrid: React.FC = () => {
                 </View>
               </View>
 
-              {/* Call to action */}
               <Pressable
                 onPress={() => navigation.navigate("AddTrip")}
                 style={({ pressed }) => [
@@ -306,8 +309,7 @@ const HomeGrid: React.FC = () => {
         )}
       />
 
-      {/* Add Trip Button - Scrapbook Style (only show when trips exist) */}
-      {state.trips.length > 0 && (
+      {sortedTrips.length > 0 && (
         <Pressable
           onPress={() => navigation.navigate("AddTrip")}
           style={({ pressed }) => [
@@ -331,7 +333,7 @@ const HomeGrid: React.FC = () => {
 export default HomeGrid;
 
 const { width } = Dimensions.get("window");
-const cardWidth = (width - 48) / 2; // Account for padding and gap
+const cardWidth = (width - 48) / 2;
 
 const styles = StyleSheet.create({
   container: {

@@ -26,13 +26,10 @@ import {
   signInWithCredential,
 } from "firebase/auth";
 import { lightTheme } from "@/src/theme/theme";
-// Google auth removed
 
 const DeleteAccount: React.FC = () => {
   const currentTheme = lightTheme;
-  // Get current user at component level
   const currentUser = FIREBASE_AUTH.currentUser;
-  // State for tracking user's deletion reason and credentials
   const [selectedReason, setSelectedReason] = useState<string>("");
   const [otherReason, setOtherReason] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -40,7 +37,6 @@ const DeleteAccount: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Predefined list of reasons for account deletion
   const reasons = [
     "Switching to another app",
     "Privacy concerns",
@@ -72,15 +68,13 @@ const DeleteAccount: React.FC = () => {
     try {
       let isAuthenticated = false;
 
-      // For Google auth, skip reauthentication
       if (
         user.providerData.some(
           (provider) => provider.providerId === "google.com"
         )
       ) {
-        isAuthenticated = true; // Skip reauthentication for Google users
+        isAuthenticated = true;
       } else {
-        // Only email/password users need to reauthenticate
         if (!password) {
           setError("Please enter your password.");
           setLoading(false);
@@ -97,7 +91,6 @@ const DeleteAccount: React.FC = () => {
         return;
       }
 
-      // Show final confirmation dialog
       Alert.alert(
         "Confirm Deletion",
         "Are you sure you want to delete your account? This action cannot be undone.",
@@ -110,10 +103,8 @@ const DeleteAccount: React.FC = () => {
               try {
                 const userId = user.uid;
 
-                // Delete user data from Firestore
                 await deleteDoc(doc(FIREBASE_DB, "users", userId));
 
-                // Log deletion reason
                 await setDoc(doc(FIREBASE_DB, "accountDeletions", userId), {
                   reason: reasonToSubmit,
                   deletedAt: new Date().toISOString(),
@@ -121,7 +112,6 @@ const DeleteAccount: React.FC = () => {
                   authProvider: user.providerData[0]?.providerId || "unknown",
                 });
 
-                // Delete the user account
                 await user.delete();
                 Alert.alert(
                   "Account Deleted",

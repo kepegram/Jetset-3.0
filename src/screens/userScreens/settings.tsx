@@ -9,7 +9,6 @@ import { getAuth } from "firebase/auth";
 import { FIREBASE_DB } from "@/firebase.config";
 import { lightTheme } from "@/src/theme/theme";
 
-// Navigation prop type for the Edit screen
 type EditScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "Edit"
@@ -21,14 +20,12 @@ const Edit: React.FC = () => {
   const [userName, setUserName] = useState<string | null>("");
   const [isThirdPartyAuth, setIsThirdPartyAuth] = useState(false);
 
-  // Replace the useEffect with useFocusEffect
   useFocusEffect(
     useCallback(() => {
       const fetchUserData = async () => {
         const user = getAuth().currentUser;
         if (user) {
           try {
-            // Check if user is authenticated with Google or Apple
             const isOAuthUser = user.providerData.some(
               (provider) =>
                 provider.providerId === "google.com" ||
@@ -53,7 +50,6 @@ const Edit: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: "#F8F5F0" }]}>
-      {/* Account Settings Section */}
       <View style={styles.formContainer}>
         <View style={styles.securitySection}>
           <Text
@@ -62,7 +58,6 @@ const Edit: React.FC = () => {
             Account Settings
           </Text>
 
-          {/* Username Option */}
           <Pressable
             style={({ pressed }) => [
               styles.securityOption,
@@ -106,7 +101,6 @@ const Edit: React.FC = () => {
             />
           </Pressable>
 
-          {/* Password Option - only show for email/password users */}
           {!isThirdPartyAuth && (
             <Pressable
               style={({ pressed }) => [
@@ -153,7 +147,6 @@ const Edit: React.FC = () => {
           )}
         </View>
 
-        {/* Delete Account Button */}
         <Pressable
           style={({ pressed }) => [
             styles.deleteButton,

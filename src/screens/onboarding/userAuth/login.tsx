@@ -20,7 +20,6 @@ import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
 } from "firebase/auth";
-// Use Expo public env vars via process.env (no @env needed)
 import { TextInput } from "react-native-gesture-handler";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { lightTheme as theme } from "@/src/theme/theme";
@@ -103,7 +102,6 @@ const Login: React.FC<LoginProps> = ({
       }
     };
     signInWithGoogleResponse();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [googleResponse]);
 
   const handleGoogleSignIn = async () => {
@@ -160,7 +158,6 @@ const Login: React.FC<LoginProps> = ({
         ["userName", userCredential.user.displayName || email.split("@")[0]],
       ]);
 
-      // Wait for modal animation before navigation
       if (onAuthSuccess) {
         await onAuthSuccess();
       }
@@ -175,8 +172,6 @@ const Login: React.FC<LoginProps> = ({
       setLoading(false);
     }
   };
-
-  // Google login removed - not needed for scrapbook app
 
   const handleAppleSignIn = async () => {
     try {

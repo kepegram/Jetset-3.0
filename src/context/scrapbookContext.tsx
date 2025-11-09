@@ -68,24 +68,22 @@ export const ScrapbookProvider: React.FC<{ children: React.ReactNode }> = ({
     setState(next);
     await (
       await import("../services/localScrapbookStorage")
-    ).loadState; // keep bundle split minimal; noop
+    ).loadState;
     await (
       await import("../services/localScrapbookStorage")
-    ).loadState; // no-op
+    ).loadState;
     await (
       await import("../services/localScrapbookStorage")
-    ).loadState; // no-op
+    ).loadState;
     await (
       await import("../services/localScrapbookStorage")
-    ).loadState; // no-op
+    ).loadState;
     await (
       await import("../services/localScrapbookStorage")
-    ).loadState; // no-op
-    // save using module function to avoid cycle
+    ).loadState;
     await ((AsyncFunction) => AsyncFunction)(async () => {});
   }, []);
 
-  // direct calls to storage for simplicity
   const createTripFn = useCallback(async (input: CreateTripInput) => {
     const created = await local.createTrip(input);
     const s = await local.loadState();
@@ -152,7 +150,6 @@ export const ScrapbookProvider: React.FC<{ children: React.ReactNode }> = ({
     await pushToFirestore(uid, localState);
     const remote = await pullFromFirestore(uid);
     setState(remote);
-    // persist remote snapshot
     await (
       await import("@react-native-async-storage/async-storage")
     ).default.setItem("scrapbook_state_v1", JSON.stringify(remote));

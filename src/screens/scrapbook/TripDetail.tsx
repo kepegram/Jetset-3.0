@@ -7,8 +7,6 @@ import {
   StyleSheet,
   Dimensions,
   Alert,
-  Modal,
-  ScrollView,
   StatusBar,
   FlatList,
 } from "react-native";
@@ -32,8 +30,6 @@ const TripDetail: React.FC = () => {
   const { tripId } = route.params as { tripId: string };
   const trip = state.trips.find((t) => t.id === tripId);
   const [excursions, setExcursions] = useState<any[]>([]);
-  const [selectedExcursion, setSelectedExcursion] = useState<any>(null);
-  const [galleryVisible, setGalleryVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
@@ -41,7 +37,6 @@ const TripDetail: React.FC = () => {
     listExcursions(tripId).then(setExcursions);
   }, [tripId, listExcursions]);
 
-  // Set status bar to dark content
   useFocusEffect(
     React.useCallback(() => {
       StatusBar.setBarStyle("dark-content");
@@ -51,7 +46,6 @@ const TripDetail: React.FC = () => {
     }, [])
   );
 
-  // Refresh excursions when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       listExcursions(tripId).then(setExcursions);
@@ -86,11 +80,9 @@ const TripDetail: React.FC = () => {
   if (!trip) return null;
 
   const openGallery = (excursion: any) => {
-    setSelectedExcursion(excursion);
-    setGalleryVisible(true);
+    navigation.navigate("MemoryDetail", { excursion });
   };
 
-  // Create pages array: cover page + excursion pages
   const pages = [
     { type: "cover", data: trip },
     ...excursions.map((excursion) => ({ type: "excursion", data: excursion })),
@@ -99,20 +91,16 @@ const TripDetail: React.FC = () => {
   const renderCoverPage = () => (
     <View style={styles.page}>
       <View style={styles.bookCover}>
-        {/* Book spine decoration */}
         <View style={styles.bookSpine}>
           <View style={styles.spineDecoration} />
           <View style={styles.spineDecoration} />
           <View style={styles.spineDecoration} />
         </View>
 
-        {/* Cover content */}
         <View style={styles.coverContent}>
-          {/* Decorative corner tapes */}
           <View style={[styles.cornerTape, styles.topLeftTape]} />
           <View style={[styles.cornerTape, styles.topRightTape]} />
 
-          {/* Cover photo */}
           <View style={styles.coverPhotoFrame}>
             {trip.coverPhotoUri ? (
               <Image
@@ -130,7 +118,6 @@ const TripDetail: React.FC = () => {
             )}
           </View>
 
-          {/* Trip title */}
           <View style={styles.coverTitleArea}>
             <Text style={styles.coverTitle}>{trip.name}</Text>
             <View style={styles.coverMetaRow}>
@@ -156,11 +143,9 @@ const TripDetail: React.FC = () => {
             </View>
           </View>
 
-          {/* Decorative corner tapes bottom */}
           <View style={[styles.cornerTape, styles.bottomLeftTape]} />
           <View style={[styles.cornerTape, styles.bottomRightTape]} />
 
-          {/* Page curl indicator */}
           <View style={styles.pageCurlHint}>
             <Ionicons name="chevron-forward" size={24} color="#999" />
             <Text style={styles.pageCurlText}>Swipe to view memories</Text>
@@ -176,10 +161,8 @@ const TripDetail: React.FC = () => {
     return (
       <View style={styles.page}>
         <View style={styles.scrapbookPage}>
-          {/* Page number */}
           <Text style={styles.pageNumber}>{index + 1}</Text>
 
-          {/* Decorative tape at top */}
           <View
             style={[
               styles.pageTape,
@@ -195,12 +178,10 @@ const TripDetail: React.FC = () => {
             ]}
           />
 
-          {/* Main content area */}
           <Pressable
             style={styles.memoryCard}
             onPress={() => openGallery(excursion)}
           >
-            {/* Polaroid-style photo */}
             {excursion.photoUris && excursion.photoUris.length > 0 && (
               <View
                 style={[
@@ -233,7 +214,6 @@ const TripDetail: React.FC = () => {
               </View>
             )}
 
-            {/* Memory title and description */}
             <View style={styles.memoryContent}>
               <Text style={styles.memoryTitle}>{excursion.title}</Text>
               {excursion.description && (
@@ -246,7 +226,6 @@ const TripDetail: React.FC = () => {
             </View>
           </Pressable>
 
-          {/* Decorative elements */}
           <View style={styles.pageDecoration}>
             <View
               style={[
@@ -298,7 +277,6 @@ const TripDetail: React.FC = () => {
     >
       <StatusBar barStyle="dark-content" animated />
 
-      {/* Top Navigation Bar */}
       <View style={styles.topBar}>
         <Pressable
           style={styles.topBarButton}
@@ -342,7 +320,6 @@ const TripDetail: React.FC = () => {
         </Pressable>
       </View>
 
-      {/* Horizontal Scrolling Scrapbook */}
       <FlatList
         ref={flatListRef}
         data={pages}
@@ -359,7 +336,6 @@ const TripDetail: React.FC = () => {
         contentContainerStyle={styles.pagesContainer}
       />
 
-      {/* Add Memory Button - Only show on cover or last page */}
       {(currentPage === 0 || currentPage === pages.length - 1) && (
         <Pressable
           onPress={() => navigation.navigate("AddExcursion", { tripId })}
@@ -377,152 +353,6 @@ const TripDetail: React.FC = () => {
           <Text style={styles.addButtonText}>Add Memory</Text>
         </Pressable>
       )}
-
-      {/* Photo Gallery Modal - Scrapbook Style */}
-      <Modal
-        visible={galleryVisible}
-        transparent={false}
-        animationType="slide"
-        onRequestClose={() => setGalleryVisible(false)}
-      >
-        <SafeAreaView
-          style={[
-            styles.galleryContainer,
-            {
-              backgroundColor:
-                currentTheme.background === "#FFFFFF"
-                  ? "#F8F5F0"
-                  : currentTheme.background,
-            },
-          ]}
-          edges={["top", "bottom"]}
-        >
-          <StatusBar barStyle="dark-content" animated />
-
-          {/* Gallery Header */}
-          <View style={styles.galleryHeader}>
-            <Pressable
-              style={styles.galleryCloseButton}
-              onPress={() => setGalleryVisible(false)}
-            >
-              <Ionicons
-                name="chevron-back"
-                size={28}
-                color={currentTheme.textPrimary}
-              />
-            </Pressable>
-            <View style={styles.galleryHeaderContent}>
-              <Text
-                style={[
-                  styles.galleryTitle,
-                  { color: currentTheme.textPrimary },
-                ]}
-                numberOfLines={1}
-              >
-                {selectedExcursion?.title}
-              </Text>
-              {selectedExcursion?.photoUris?.length > 1 && (
-                <Text style={styles.galleryPhotoCount}>
-                  {selectedExcursion.photoUris.length} photos
-                </Text>
-              )}
-            </View>
-            <View style={{ width: 44 }} />
-          </View>
-
-          {/* Photo Gallery with Polaroid Style */}
-          <FlatList
-            data={selectedExcursion?.photoUris || []}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item, index) => `photo-${index}`}
-            renderItem={({ item, index }) => (
-              <View style={styles.galleryPhotoPage}>
-                {/* Decorative tape */}
-                <View
-                  style={[
-                    styles.galleryTape,
-                    {
-                      backgroundColor:
-                        index % 3 === 0
-                          ? "rgba(255, 220, 150, 0.7)"
-                          : index % 3 === 1
-                          ? "rgba(200, 230, 255, 0.7)"
-                          : "rgba(255, 200, 200, 0.7)",
-                      transform: [
-                        { rotate: index % 2 === 0 ? "-45deg" : "45deg" },
-                      ],
-                    },
-                  ]}
-                />
-
-                {/* Large Polaroid */}
-                <View
-                  style={[
-                    styles.galleryPolaroid,
-                    {
-                      transform: [
-                        {
-                          rotate:
-                            index % 3 === 0
-                              ? "-1deg"
-                              : index % 3 === 1
-                              ? "0.5deg"
-                              : "-0.5deg",
-                        },
-                      ],
-                    },
-                  ]}
-                >
-                  <View style={styles.galleryPolaroidInner}>
-                    <Image
-                      source={{ uri: item }}
-                      style={styles.galleryImage}
-                      resizeMode="cover"
-                    />
-                  </View>
-                  <View style={styles.galleryPolaroidCaption}>
-                    <Text style={styles.galleryPolaroidText}>
-                      Photo {index + 1} of {selectedExcursion?.photoUris.length}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            )}
-            snapToInterval={SCREEN_WIDTH}
-            decelerationRate="fast"
-            snapToAlignment="center"
-          />
-
-          {/* Description Area */}
-          {selectedExcursion?.description && (
-            <View style={styles.galleryDescriptionContainer}>
-              <View style={styles.galleryDescriptionBox}>
-                <Ionicons
-                  name="create-outline"
-                  size={20}
-                  color="#FF6B6B"
-                  style={styles.galleryDescriptionIcon}
-                />
-                <ScrollView
-                  showsVerticalScrollIndicator={false}
-                  style={styles.galleryDescriptionScroll}
-                >
-                  <Text
-                    style={[
-                      styles.galleryDescription,
-                      { color: currentTheme.textSecondary },
-                    ]}
-                  >
-                    {selectedExcursion.description}
-                  </Text>
-                </ScrollView>
-              </View>
-            </View>
-          )}
-        </SafeAreaView>
-      </Modal>
     </SafeAreaView>
   );
 };
@@ -573,7 +403,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  // Cover Page Styles
   bookCover: {
     width: SCREEN_WIDTH - 60,
     height: SCREEN_HEIGHT - 200,
@@ -726,7 +555,6 @@ const styles = StyleSheet.create({
     color: "#999",
     fontStyle: "italic",
   },
-  // Scrapbook Page Styles
   scrapbookPage: {
     width: SCREEN_WIDTH - 60,
     height: SCREEN_HEIGHT - 200,
@@ -858,7 +686,6 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 2,
   },
-  // Add Button
   addButton: {
     position: "absolute",
     bottom: 32,
@@ -884,121 +711,5 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginLeft: 8,
     fontSize: 16,
-  },
-  // Gallery Modal Styles
-  galleryContainer: {
-    flex: 1,
-  },
-  galleryHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0, 0, 0, 0.05)",
-  },
-  galleryCloseButton: {
-    padding: 8,
-    width: 44,
-  },
-  galleryHeaderContent: {
-    flex: 1,
-    alignItems: "center",
-    gap: 4,
-  },
-  galleryTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  galleryPhotoCount: {
-    fontSize: 13,
-    color: "#999",
-    fontWeight: "500",
-  },
-  galleryPhotoPage: {
-    width: SCREEN_WIDTH,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 20,
-    position: "relative",
-  },
-  galleryTape: {
-    position: "absolute",
-    top: 40,
-    width: 80,
-    height: 30,
-    borderRadius: 2,
-    zIndex: 10,
-  },
-  galleryPolaroid: {
-    backgroundColor: "#FFF",
-    padding: 16,
-    paddingBottom: 50,
-    borderRadius: 4,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: "#E8E8E8",
-  },
-  galleryPolaroidInner: {
-    width: SCREEN_WIDTH - 100,
-    aspectRatio: 4 / 5,
-    backgroundColor: "#F5F5F5",
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  galleryImage: {
-    width: "100%",
-    height: "100%",
-  },
-  galleryPolaroidCaption: {
-    marginTop: 12,
-    alignItems: "center",
-  },
-  galleryPolaroidText: {
-    fontSize: 14,
-    color: "#999",
-    fontStyle: "italic",
-    fontWeight: "500",
-  },
-  galleryDescriptionContainer: {
-    padding: 20,
-    paddingTop: 12,
-  },
-  galleryDescriptionBox: {
-    backgroundColor: "#FFF",
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: "#E8E8E8",
-    borderLeftWidth: 4,
-    borderLeftColor: "#FF6B6B",
-    maxHeight: 120,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  galleryDescriptionIcon: {
-    marginBottom: 8,
-  },
-  galleryDescriptionScroll: {
-    maxHeight: 80,
-  },
-  galleryDescription: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontFamily: "System",
   },
 });

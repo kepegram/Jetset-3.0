@@ -4,16 +4,15 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getAuth, User } from "firebase/auth";
 import { FIREBASE_DB } from "@/firebase.config";
 
-// Enhanced interface to include more user data
 interface ProfileContextType {
   profilePicture: string;
   setProfilePicture: (uri: string) => void;
   displayName: string;
-  setDisplayName: (name: string) => Promise<void>; // Make async
+  setDisplayName: (name: string) => Promise<void>;
   isLoading: boolean;
-  email: string | null; // Add email
-  authProvider: string | null; // Add auth provider info
-  refreshUserData: () => Promise<void>; // Add refresh function
+  email: string | null;
+  authProvider: string | null;
+  refreshUserData: () => Promise<void>;
 }
 
 export const ProfileContext = createContext<ProfileContextType | undefined>(
@@ -37,24 +36,20 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({
       const user = getAuth().currentUser;
 
       if (user) {
-        // Get auth provider
         const provider = user.providerData[0]?.providerId || "unknown";
         setAuthProvider(provider);
         setEmail(user.email);
 
-        // Load from Firestore first
         const userDocRef = doc(FIREBASE_DB, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
           const data = userDoc.data();
-          // Set display name
           if (data.username) {
             setDisplayNameState(data.username);
             await AsyncStorage.setItem("displayName", data.username);
           }
 
-          // Handle profile picture - prioritize Firestore data if it exists
           if (
             data.profilePicture &&
             data.profilePicture !==
@@ -63,10 +58,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({
             setProfilePictureState(data.profilePicture);
             await AsyncStorage.setItem("profilePicture", data.profilePicture);
           } else if (provider === "google.com" && user.photoURL) {
-            // If no custom profile picture, use Google photo
             setProfilePictureState(user.photoURL);
             await AsyncStorage.setItem("profilePicture", user.photoURL);
-            // Update Firestore with Google photo
             await setDoc(
               userDocRef,
               { profilePicture: user.photoURL },
@@ -74,7 +67,6 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({
             );
           }
         } else {
-          // If no Firestore document exists, create one with Google data
           if (provider === "google.com") {
             const userData = {
               username: user.displayName || "User",
@@ -135,7 +127,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     } catch (error) {
       console.error("Failed to set display name:", error);
-      throw error; // Propagate error to handle in UI
+      throw error;
     }
   };
 

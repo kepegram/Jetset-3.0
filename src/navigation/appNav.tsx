@@ -21,22 +21,19 @@ import {
 import { ProfileProvider, useProfile } from "../context/profileContext";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-// Legacy contexts removed - using scrapbook context instead
 
-// Import scrapbook screens
 import HomeGrid from "../screens/scrapbook/HomeGrid";
 import AddTrip from "../screens/scrapbook/AddTrip";
 import TripDetail from "../screens/scrapbook/TripDetail";
 import AddExcursion from "../screens/scrapbook/AddExcursion";
+import MemoryDetail from "../screens/scrapbook/MemoryDetail";
+import WorldMap from "../screens/scrapbook/WorldMap";
 
-// Import profile screens
 import Profile from "../screens/userScreens/profile";
 import Edit from "../screens/userScreens/settings";
 import ChangeUsername from "../screens/userScreens/changeUsername";
 import ChangePassword from "../screens/userScreens/changePassword";
 import DeleteAccount from "../screens/userScreens/deleteAccount";
-
-// Legacy trip screens removed - using scrapbook instead
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -58,10 +55,10 @@ export type RootStackParamList = {
     trips: string;
     type: "current" | "upcoming" | "past";
   };
-  // New scrapbook screens
   TripDetail: { tripId: string };
   AddTrip: undefined;
   AddExcursion: { tripId: string };
+  MemoryDetail: { excursion: any };
 };
 
 const ScrapbookStack: React.FC = () => {
@@ -87,11 +84,14 @@ const ScrapbookStack: React.FC = () => {
         component={AddExcursion}
         options={{ headerShown: false }}
       />
+      <RootStack.Screen
+        name="MemoryDetail"
+        component={MemoryDetail}
+        options={{ headerShown: false }}
+      />
     </RootStack.Navigator>
   );
 };
-
-// MyTripsStack removed - using scrapbook instead
 
 interface ProfileStackProps {
   setBypassAuth?: (value: boolean) => void;
@@ -303,7 +303,28 @@ const TabNavigator: React.FC<TabNavigatorProps> = ({ setBypassAuth }) => {
           ),
         })}
       />
-      {/* MyTrips tab removed - using scrapbook instead */}
+      <Tab.Screen
+        name="WorldMap"
+        component={WorldMap}
+        options={({ route }) => ({
+          tabBarStyle: {
+            ...tabBarDefaultStyle,
+            backgroundColor:
+              currentTheme.background === "#FFFFFF"
+                ? "#FAFAFA"
+                : currentTheme.background,
+            ...getTabBarStyle(route),
+          } as ViewStyle,
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              focused={focused}
+              color={color}
+              icon="map"
+              size={32}
+            />
+          ),
+        })}
+      />
       <Tab.Screen
         name="ProfileStack"
         options={({ route }) => ({

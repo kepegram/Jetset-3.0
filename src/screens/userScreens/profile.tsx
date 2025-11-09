@@ -25,7 +25,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Privacy from "@/src/screens/onboarding/privacy/privacy";
 import * as ImageManipulator from "expo-image-manipulator";
 
-// Navigation prop type for type safety when navigating
 type ProfileScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "Profile"
@@ -36,7 +35,6 @@ interface ProfileProps {
 }
 
 const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
-  // Context hooks for profile data
   const { profilePicture, displayName, setProfilePicture, isLoading } =
     useProfile();
   const currentTheme = lightTheme;
@@ -50,7 +48,6 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
   const user = getAuth().currentUser;
   const navigation = useNavigation<ProfileScreenNavigationProp>();
 
-  // Check if user is in bypass mode (no authenticated user but bypassAuth is true)
   const isBypassMode = !user && setBypassAuth;
 
   useEffect(() => {
@@ -100,22 +97,6 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
     });
   };
 
-  // Function to compress image
-  const compressImage = async (uri: string) => {
-    try {
-      const manipResult = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: 800 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      return manipResult.uri;
-    } catch (error) {
-      console.error("Error compressing image:", error);
-      throw error;
-    }
-  };
-
-  // Handle profile picture selection and upload
   const handlePickImage = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -144,7 +125,6 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
             throw new Error("User not authenticated");
           }
 
-          // Compress the image
           const compressedResult = await ImageManipulator.manipulateAsync(
             result.assets[0].uri,
             [{ resize: { width: 800 } }],
@@ -155,17 +135,14 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
             }
           );
 
-          // Create data URL from base64
           const dataUrl = `data:image/jpeg;base64,${compressedResult.base64}`;
 
-          // Update Firestore with the data URL
           await setDoc(
             doc(FIREBASE_DB, "users", user.uid),
             { profilePicture: dataUrl },
             { merge: true }
           );
 
-          // Update local storage and state
           await AsyncStorage.setItem("profilePicture", dataUrl);
           setProfilePicture(dataUrl);
 
@@ -187,7 +164,6 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
     }
   };
 
-  // Handle profile picture removal
   const handleRemoveProfilePicture = () => {
     Alert.alert(
       "Remove Profile Picture",
@@ -207,11 +183,9 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
             try {
               setIsUploadingImage(true);
 
-              // Update state and storage
               setProfilePicture(defaultPfp);
               await AsyncStorage.removeItem("profilePicture");
 
-              // Update Firestore
               if (user) {
                 await setDoc(
                   doc(FIREBASE_DB, "users", user.uid),
@@ -235,7 +209,6 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
     );
   };
 
-  // Handle user logout with confirmation
   const handleLogout = () => {
     Alert.alert(
       "Confirm Logout",
@@ -256,7 +229,6 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
     );
   };
 
-  // Handle bypass sign out
   const handleBypassSignOut = () => {
     Alert.alert(
       "Exit Testing Mode",
@@ -278,7 +250,6 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
     );
   };
 
-  // Fetch user data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       const fetchUserData = async () => {
@@ -299,12 +270,10 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
     }, [])
   );
 
-  // Add this function to handle profile picture press
   const handleProfilePress = () => {
     setIsModalVisible(true);
   };
 
-  // Update the privacy press handler
   const handlePrivacyPress = () => {
     setShowPrivacy(true);
   };
@@ -321,7 +290,6 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
         },
       ]}
     >
-      {/* Add Modal component */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -349,7 +317,6 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
               </Pressable>
             </View>
 
-            {/* Profile picture container */}
             <View style={styles.modalImageWrapper}>
               <View
                 style={[
@@ -428,7 +395,6 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
         </Pressable>
       </Modal>
 
-      {/* Update the Privacy Modal */}
       <Modal
         visible={showPrivacy}
         transparent={true}
@@ -459,7 +425,6 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
       </Modal>
 
       <View style={styles.profileContainer}>
-        {/* Decorative tape elements */}
         <View style={[styles.decorativeTape, styles.tape1]} />
         <View style={[styles.decorativeTape, styles.tape2]} />
 
@@ -470,7 +435,6 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
         </View>
 
         <View style={styles.profileImageContainer}>
-          {/* Corner tape on profile picture */}
           <View style={styles.profileTape} />
 
           <Pressable
@@ -511,9 +475,7 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
         </View>
       </View>
 
-      {/* Settings Section */}
       <View style={styles.settingsContainer}>
-        {/* Decorative tape */}
         <View style={[styles.decorativeTape, styles.tape3]} />
 
         <View style={styles.optionsContainer}>
@@ -571,7 +533,6 @@ const Profile: React.FC<ProfileProps> = ({ setBypassAuth }) => {
         </View>
       </View>
 
-      {/* Logout Button */}
       <View style={styles.logoutContainer}>
         <Pressable
           style={({ pressed }) => [

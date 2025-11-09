@@ -25,8 +25,8 @@ const AddTrip: React.FC = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [coverPhotoUri, setCoverPhotoUri] = useState<string | undefined>();
-  const [startDateError, setStartDateError] = useState(false);
-  const [endDateError, setEndDateError] = useState(false);
+  const [startDateError, setStartDateError] = useState<string | null>(null);
+  const [endDateError, setEndDateError] = useState<string | null>(null);
 
   const pickImage = async () => {
     const permissionResult =
@@ -48,38 +48,61 @@ const AddTrip: React.FC = () => {
     if (!res.canceled) setCoverPhotoUri(res.assets[0].uri);
   };
 
-  const validateDateFormat = (dateString: string): boolean => {
-    // Check if date matches MM-DD-YYYY format
-    const dateRegex = /^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])-\d{4}$/;
-    if (!dateRegex.test(dateString)) {
-      return false;
+  const validateDateFormat = (dateString: string, checkFutureDate: boolean = true): { valid: boolean; error?: string } => {
+    const basicFormatRegex = /^\d{2}-\d{2}-\d{4}$/;
+    if (!basicFormatRegex.test(dateString)) {
+      return { valid: false, error: "Use MM-DD-YYYY format" };
     }
 
-    // Check if it's a valid date
-    const [month, day, year] = dateString.split("-").map(Number);
+    const [monthStr, dayStr, yearStr] = dateString.split("-");
+    const month = parseInt(monthStr, 10);
+    const day = parseInt(dayStr, 10);
+    const year = parseInt(yearStr, 10);
+
+    if (month < 1 || month > 12) {
+      return { valid: false, error: "Invalid month" };
+    }
+
+    if (year < 1900 || year > 2100) {
+      return { valid: false, error: "Year must be 1900-2100" };
+    }
+
     const date = new Date(year, month - 1, day);
-    return (
+    const isValidDate = (
       date.getFullYear() === year &&
       date.getMonth() === month - 1 &&
       date.getDate() === day
     );
+
+    if (!isValidDate) {
+      return { valid: false, error: "Invalid date" };
+    }
+
+    if (checkFutureDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const inputDate = new Date(year, month - 1, day);
+      inputDate.setHours(0, 0, 0, 0);
+      
+      if (inputDate > today) {
+        return { valid: false, error: "Must be today or past" };
+      }
+    }
+
+    return { valid: true };
   };
 
   const formatDateForStorage = (dateString: string): string => {
-    // Convert MM-DD-YYYY to ISO string for storage
     const [month, day, year] = dateString.split("-").map(Number);
     const date = new Date(year, month - 1, day);
     return date.toISOString();
   };
 
   const formatDateInput = (input: string): string => {
-    // Remove all non-numeric characters
     const numbers = input.replace(/\D/g, "");
 
-    // Limit to 8 digits (MMDDYYYY)
     const limitedNumbers = numbers.slice(0, 8);
 
-    // Format based on length
     if (limitedNumbers.length <= 2) {
       return limitedNumbers;
     } else if (limitedNumbers.length <= 4) {
@@ -96,11 +119,26 @@ const AddTrip: React.FC = () => {
     const formatted = formatDateInput(text);
     setStartDate(formatted);
 
-    // Validate the formatted date
     if (formatted.length === 10) {
-      setStartDateError(!validateDateFormat(formatted));
+      const validation = validateDateFormat(formatted, true);
+      if (!validation.valid) {
+        setStartDateError(validation.error || "Invalid date");
+      } else {
+        setStartDateError(null);
+        
+        if (endDate.length === 10) {
+          const startDateObj = new Date(formatDateForStorage(formatted));
+          const endDateObj = new Date(formatDateForStorage(endDate));
+          if (endDateObj <= startDateObj) {
+            setEndDateError("Must be after start date");
+          } else {
+            const endValidation = validateDateFormat(endDate, true);
+            setEndDateError(endValidation.valid ? null : endValidation.error || "Invalid date");
+          }
+        }
+      }
     } else {
-      setStartDateError(false);
+      setStartDateError(null);
     }
   };
 
@@ -108,11 +146,25 @@ const AddTrip: React.FC = () => {
     const formatted = formatDateInput(text);
     setEndDate(formatted);
 
-    // Validate the formatted date
     if (formatted.length === 10) {
-      setEndDateError(!validateDateFormat(formatted));
+      const validation = validateDateFormat(formatted, true);
+      if (!validation.valid) {
+        setEndDateError(validation.error || "Invalid date");
+      } else {
+        if (startDate.length === 10) {
+          const startDateObj = new Date(formatDateForStorage(startDate));
+          const endDateObj = new Date(formatDateForStorage(formatted));
+          if (endDateObj <= startDateObj) {
+            setEndDateError("Must be after start date");
+          } else {
+            setEndDateError(null);
+          }
+        } else {
+          setEndDateError(null);
+        }
+      }
     } else {
-      setEndDateError(false);
+      setEndDateError(null);
     }
   };
 
@@ -122,34 +174,40 @@ const AddTrip: React.FC = () => {
       return;
     }
 
-    // Validate date formats
-    if (!validateDateFormat(startDate)) {
+    const startValidation = validateDateFormat(startDate, true);
+    if (!startValidation.valid) {
+      setStartDateError(startValidation.error || "Invalid date");
       Alert.alert(
-        "Invalid Date Format",
-        "Start date must be in MM-DD-YYYY format (e.g., 12-25-2024)."
+        "Invalid Start Date",
+        startValidation.error || "Start date must be in MM-DD-YYYY format (e.g., 12-25-2024)."
       );
       return;
     }
 
-    if (!validateDateFormat(endDate)) {
+    const endValidation = validateDateFormat(endDate, true);
+    if (!endValidation.valid) {
+      setEndDateError(endValidation.error || "Invalid date");
       Alert.alert(
-        "Invalid Date Format",
-        "End date must be in MM-DD-YYYY format (e.g., 12-25-2024)."
+        "Invalid End Date",
+        endValidation.error || "End date must be in MM-DD-YYYY format (e.g., 12-25-2024)."
       );
       return;
     }
 
-    // Check if end date is after start date
     const startDateObj = new Date(formatDateForStorage(startDate));
     const endDateObj = new Date(formatDateForStorage(endDate));
 
     if (endDateObj <= startDateObj) {
+      setEndDateError("Must be after start date");
       Alert.alert(
         "Invalid Date Range",
         "End date must be after the start date."
       );
       return;
     }
+
+    setStartDateError(null);
+    setEndDateError(null);
 
     try {
       await createTrip({
@@ -206,7 +264,6 @@ const AddTrip: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.form}>
-          {/* Decorative tape elements */}
           <View style={[styles.decorativeTape, styles.tape1]} />
           <View style={[styles.decorativeTape, styles.tape2]} />
 
@@ -235,7 +292,7 @@ const AddTrip: React.FC = () => {
               Destination *
             </Text>
             <TextInput
-              placeholder="Where are you going?"
+              placeholder="Where are you going? (e.g., Paris, France)"
               placeholderTextColor={currentTheme.textSecondary}
               value={destination}
               onChangeText={setDestination}
@@ -273,6 +330,13 @@ const AddTrip: React.FC = () => {
                   },
                 ]}
               />
+              <View style={styles.errorContainer}>
+                {startDateError && (
+                  <Text style={[styles.errorText, { color: currentTheme.error }]}>
+                    {startDateError}
+                  </Text>
+                )}
+              </View>
             </View>
 
             <View style={[styles.inputGroup, styles.halfWidth]}>
@@ -297,6 +361,13 @@ const AddTrip: React.FC = () => {
                   },
                 ]}
               />
+              <View style={styles.errorContainer}>
+                {endDateError && (
+                  <Text style={[styles.errorText, { color: currentTheme.error }]}>
+                    {endDateError}
+                  </Text>
+                )}
+              </View>
             </View>
           </View>
 
@@ -315,7 +386,6 @@ const AddTrip: React.FC = () => {
                 pressed && styles.imagePickerPressed,
               ]}
             >
-              {/* Corner tape decoration */}
               <View style={styles.cornerTape} />
 
               {coverPhotoUri ? (
@@ -556,5 +626,14 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "700",
     marginLeft: 8,
+  },
+  errorContainer: {
+    height: 20,
+    marginTop: 4,
+    justifyContent: "flex-start",
+  },
+  errorText: {
+    fontSize: 12,
+    fontWeight: "500",
   },
 });

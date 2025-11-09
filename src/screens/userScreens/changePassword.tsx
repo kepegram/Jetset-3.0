@@ -22,7 +22,6 @@ import { RootStackParamList } from "@/src/navigation/appNav";
 import { useNavigation } from "@react-navigation/native";
 import { lightTheme } from "@/src/theme/theme";
 
-// Navigation prop type for the ChangePassword screen
 type ChangePasswordScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "ChangePassword"
@@ -30,7 +29,6 @@ type ChangePasswordScreenNavigationProp = NativeStackNavigationProp<
 
 const ChangePassword: React.FC = () => {
   const currentTheme = lightTheme;
-  // State for managing form inputs and visibility
   const [email, setEmail] = useState<string | null>("");
   const [password, setPassword] = useState<string>("");
   const [newPassword, setNewPassword] = useState<string>("");
@@ -39,7 +37,6 @@ const ChangePassword: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigation = useNavigation<ChangePasswordScreenNavigationProp>();
 
-  // Fetch user email on component mount
   useEffect(() => {
     const fetchUserData = async () => {
       const user = getAuth().currentUser;
@@ -59,12 +56,9 @@ const ChangePassword: React.FC = () => {
     fetchUserData();
   }, []);
 
-  // Handle password update
   const handleSave = async () => {
-    // Reset error message
     setErrorMessage(null);
 
-    // Validation checks
     if (!password) {
       setErrorMessage("Please enter your current password");
       return;
@@ -90,19 +84,15 @@ const ChangePassword: React.FC = () => {
     const user = getAuth().currentUser;
     if (user && email) {
       try {
-        // Re-authenticate user with current password
         const credential = EmailAuthProvider.credential(email, password);
         await reauthenticateWithCredential(user, credential);
 
-        // Update to new password
         await updatePassword(user, newPassword);
 
-        // Show success alert
         alert("Password updated successfully!");
         navigation.navigate("Profile");
       } catch (error: any) {
         console.error("Error updating password:", error);
-        // Handle specific Firebase error codes
         if (error.code === "auth/wrong-password") {
           setErrorMessage("Current password is incorrect");
         } else if (error.code === "auth/too-many-requests") {
@@ -120,7 +110,6 @@ const ChangePassword: React.FC = () => {
     }
   };
 
-  // Handle canceling password change
   const handleCancel = () => {
     navigation.navigate("Profile");
   };
@@ -130,7 +119,6 @@ const ChangePassword: React.FC = () => {
       style={[styles.container, { backgroundColor: currentTheme.background }]}
     >
       <View style={styles.contentContainer}>
-        {/* Current password input */}
         <View style={styles.formContainer}>
           <Text
             style={[styles.inputLabel, { color: currentTheme.textPrimary }]}
@@ -155,7 +143,6 @@ const ChangePassword: React.FC = () => {
               secureTextEntry={oldPasswordHidden}
               onChangeText={setPassword}
             />
-            {/* Updated eye icon style to match signup.tsx */}
             <Pressable
               style={styles.eyeIcon}
               onPress={() => setOldPasswordHidden(!oldPasswordHidden)}
@@ -169,7 +156,6 @@ const ChangePassword: React.FC = () => {
             </Pressable>
           </View>
 
-          {/* New password input */}
           <Text
             style={[styles.inputLabel, { color: currentTheme.textPrimary }]}
           >
@@ -193,7 +179,6 @@ const ChangePassword: React.FC = () => {
               secureTextEntry={newPasswordHidden}
               onChangeText={setNewPassword}
             />
-            {/* Updated eye icon style to match signup.tsx */}
             <Pressable
               style={styles.eyeIcon}
               onPress={() => setNewPasswordHidden(!newPasswordHidden)}
@@ -207,7 +192,6 @@ const ChangePassword: React.FC = () => {
             </Pressable>
           </View>
 
-          {/* Error message placed below both password inputs */}
           {errorMessage && (
             <Text style={[styles.errorText, { color: currentTheme.error }]}>
               {errorMessage}
@@ -215,7 +199,6 @@ const ChangePassword: React.FC = () => {
           )}
         </View>
 
-        {/* Action buttons */}
         <View style={styles.buttonContainer}>
           <CustomButton onPress={handleCancel} buttonText="Cancel" />
           <AltButton onPress={handleSave} buttonText="Save" />

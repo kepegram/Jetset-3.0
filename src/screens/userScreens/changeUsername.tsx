@@ -16,13 +16,11 @@ import { FIREBASE_DB } from "@/firebase.config";
 import { CustomButton, AltButton } from "@/src/components/button";
 import { lightTheme } from "@/src/theme/theme";
 
-// Navigation prop type for the ChangeUsername screen
 type ChangeUsernameScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "ChangeUsername"
 >;
 
-// Constants for username validation
 const USERNAME_MIN_LENGTH = 3;
 const USERNAME_MAX_LENGTH = 20;
 
@@ -33,7 +31,6 @@ const ChangeUsername: React.FC = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Fetch current username on component mount
   useEffect(() => {
     const fetchUserData = async () => {
       const user = getAuth().currentUser;
@@ -53,7 +50,6 @@ const ChangeUsername: React.FC = () => {
     fetchUserData();
   }, []);
 
-  // Username validation function
   const validateUsername = (username: string) => {
     if (!username || username.length < USERNAME_MIN_LENGTH) {
       return `Username must be at least ${USERNAME_MIN_LENGTH} characters`;
@@ -61,22 +57,18 @@ const ChangeUsername: React.FC = () => {
     if (username.length > USERNAME_MAX_LENGTH) {
       return `Username cannot exceed ${USERNAME_MAX_LENGTH} characters`;
     }
-    // Only allow letters, numbers, and underscores
     if (!/^[a-zA-Z0-9_]+$/.test(username)) {
       return "Username can only contain letters, numbers, and underscores";
     }
     return null;
   };
 
-  // Handle text input change with validation
   const handleUsernameChange = (text: string) => {
-    // Limit to max length
     const trimmedText = text.slice(0, USERNAME_MAX_LENGTH);
     setUserName(trimmedText);
     setErrorMessage(null);
   };
 
-  // Handle saving the new username
   const handleSave = async () => {
     if (!userName) {
       setErrorMessage("Please enter a username");
@@ -92,7 +84,6 @@ const ChangeUsername: React.FC = () => {
     const user = getAuth().currentUser;
     if (user) {
       try {
-        // Update both Firestore and Auth display name
         await Promise.all([
           setDoc(
             doc(FIREBASE_DB, "users", user.uid),
@@ -111,7 +102,6 @@ const ChangeUsername: React.FC = () => {
     }
   };
 
-  // Handle canceling the username change
   const handleCancel = () => {
     navigation.navigate("Edit");
   };
@@ -134,7 +124,6 @@ const ChangeUsername: React.FC = () => {
           </View>
         )}
 
-        {/* Username input form */}
         <View style={styles.formContainer}>
           <Text
             style={[styles.inputLabel, { color: currentTheme.textPrimary }]}
@@ -166,7 +155,6 @@ const ChangeUsername: React.FC = () => {
           {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
         </View>
 
-        {/* Action buttons */}
         <View style={styles.buttonContainer}>
           <CustomButton onPress={handleCancel} buttonText="Cancel" />
           <AltButton onPress={handleSave} buttonText="Save" />

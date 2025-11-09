@@ -20,7 +20,6 @@ import {
   signInWithCredential,
   GoogleAuthProvider,
 } from "firebase/auth";
-// Use Expo public env vars via process.env (no @env needed)
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { doc, setDoc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { lightTheme as theme } from "@/src/theme/theme";
@@ -112,7 +111,6 @@ const SignUp: React.FC<SignUpProps> = ({
       }
     };
     signInWithGoogleResponse();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [googleResponse]);
 
   const handleGoogleSignIn = async () => {
@@ -215,14 +213,12 @@ const SignUp: React.FC<SignUpProps> = ({
       }
 
       if (data.code === verificationCode.join("")) {
-        // Create the user in Firebase Auth
         const userCredential = await createUserWithEmailAndPassword(
           FIREBASE_AUTH,
           data.email,
           data.password
         );
 
-        // Create a new user document
         const userDocRef = doc(FIREBASE_DB, "users", userCredential.user.uid);
         await setDoc(userDocRef, {
           email: data.email.toLowerCase(),
@@ -232,14 +228,12 @@ const SignUp: React.FC<SignUpProps> = ({
           lastLoginAt: new Date().toISOString(),
         });
 
-        // Store essential user data in AsyncStorage
         await AsyncStorage.multiSet([
           ["userId", userCredential.user.uid],
           ["userEmail", data.email.toLowerCase()],
           ["userName", getDisplayName(data.email)],
         ]);
 
-        // Clean up verification document
         await deleteDoc(verificationRef);
 
         if (onAuthSuccess) {
@@ -340,7 +334,6 @@ const SignUp: React.FC<SignUpProps> = ({
     }
 
     try {
-      // First, check if email already exists in Firebase Auth
       const methods = await fetchSignInMethodsForEmail(auth, email);
       if (methods.length > 0) {
         Alert.alert("Error", "An account with this email already exists");
@@ -366,7 +359,6 @@ const SignUp: React.FC<SignUpProps> = ({
         expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       });
 
-      // Wait for the email to be sent (check for emailSent field)
       let attempts = 0;
       const maxAttempts = 10;
       while (attempts < maxAttempts) {
@@ -402,8 +394,6 @@ const SignUp: React.FC<SignUpProps> = ({
       setLoading(false);
     }
   };
-
-  // Google sign-up removed - not needed for scrapbook app
 
   const handleAppleSignIn = async () => {
     try {

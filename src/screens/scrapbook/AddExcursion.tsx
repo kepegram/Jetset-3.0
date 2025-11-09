@@ -108,7 +108,6 @@ const AddExcursion: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.form}>
-          {/* Decorative tape elements */}
           <View style={[styles.decorativeTape, styles.tape1]} />
           <View style={[styles.decorativeTape, styles.tape2]} />
           <View style={[styles.decorativeTape, styles.tape3]} />

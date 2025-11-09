@@ -1,4 +1,4 @@
-export type TimestampString = string; // ISO string
+export type TimestampString = string;
 
 export interface TripModel {
   id: string;
@@ -8,6 +8,8 @@ export interface TripModel {
   endDate: TimestampString;
   coverPhotoUri?: string | null;
   createdAt: TimestampString;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface ExcursionModel {
@@ -32,4 +34,3 @@ export type CreateExcursionInput = Omit<ExcursionModel, "id" | "createdAt">;
 export type UpdateExcursionInput = Partial<
   Omit<ExcursionModel, "id" | "tripId" | "createdAt">
 >;
-

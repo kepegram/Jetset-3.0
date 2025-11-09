@@ -3,13 +3,11 @@ export type TripStatus = "upcoming" | "current" | "past";
 export interface TripData {
   startDate: string;
   endDate: string;
-  // Add other trip data fields as needed
-  [key: string]: any; // Allow for additional fields
+  [key: string]: any;
 }
 
 export interface TripPlan {
-  // Add trip plan fields as needed
-  [key: string]: any; // Allow for additional fields
+  [key: string]: any;
 }
 
 export interface Trip {
@@ -17,7 +15,7 @@ export interface Trip {
   docId: string;
   tripData: TripData;
   tripPlan: TripPlan;
-  subcollection: string; // Changed from TripStatus to string to match existing code
+  subcollection: string;
 }
 
 export interface TripState {

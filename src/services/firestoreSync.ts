@@ -42,8 +42,6 @@ export async function pushToFirestore(
   userId: string,
   state: ScrapbookState
 ): Promise<void> {
-  // naive two-way: overwrite remote with local snapshot for now
-  // Upserts trips and excursions; does not delete remote extras.
   for (const trip of state.trips) {
     const tripRef = doc(FIREBASE_DB, `users/${userId}/trips/${trip.id}`);
     await setDoc(tripRef, { ...trip, id: undefined }, { merge: true });

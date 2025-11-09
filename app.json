@@ -60,7 +60,12 @@
       "url": "https://u.expo.dev/cf7b3e9e-07c0-457e-b3b0-d4179b54b637"
     },
     "android": {
-      "package": "com.kpegra1.jetset"
+      "package": "com.kpegra1.jetset",
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+        }
+      }
     }
   }
 }

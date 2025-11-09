@@ -116,14 +116,12 @@ const Verification: React.FC<VerificationProps> = ({
       }
 
       if (data.code === verificationCode.join("")) {
-        // Create the user in Firebase Auth
         const userCredential = await createUserWithEmailAndPassword(
           FIREBASE_AUTH,
           data.email,
           data.password
         );
 
-        // Create a new user document
         const userDocRef = doc(FIREBASE_DB, "users", userCredential.user.uid);
         await setDoc(userDocRef, {
           email: data.email.toLowerCase(),
@@ -133,14 +131,12 @@ const Verification: React.FC<VerificationProps> = ({
           lastLoginAt: new Date().toISOString(),
         });
 
-        // Store essential user data in AsyncStorage
         await AsyncStorage.multiSet([
           ["userId", userCredential.user.uid],
           ["userEmail", data.email.toLowerCase()],
           ["userName", getDisplayName(data.email)],
         ]);
 
-        // Clean up verification document
         await deleteDoc(verificationRef);
 
         if (onAuthSuccess) {

@@ -25,15 +25,11 @@ import Login from "@/src/screens/onboarding/userAuth/login";
 import SignUp from "@/src/screens/onboarding/userAuth/signup";
 import ForgotPassword from "@/src/screens/onboarding/userAuth/forgotPassword";
 import Verification from "@/src/screens/onboarding/userAuth/verification";
-// Google auth removed - scrapbook app uses email/password + Apple only
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { useNavigation } from "@react-navigation/native";
-import { FIREBASE_AUTH, FIREBASE_DB } from "@/firebase.config";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/App";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-// Define the navigation prop type
 type WelcomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "Welcome"
@@ -99,8 +95,6 @@ const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
 
     return () => clearInterval(interval);
   }, []);
-
-  // Google auth callback removed - using email/password + Apple only
 
   useEffect(() => {
     const keyboardWillShow = (event: KeyboardEvent) => {
@@ -226,7 +220,6 @@ const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
   const handleSwitchAuthMode = (
     mode: "login" | "signup" | "forgotPassword" | "verification"
   ) => {
-    // Configure animation
     LayoutAnimation.configureNext({
       duration: 300,
       update: {
@@ -246,7 +239,6 @@ const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
     }, 400);
   };
 
-  // Add cleanup effect for status bar
   useEffect(() => {
     return () => {
       StatusBar.setBarStyle("dark-content");
@@ -286,7 +278,6 @@ const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
                   style={styles.factContainer}
                 >
                   <View style={styles.polaroidWrapper}>
-                    {/* Washi tape effect */}
                     <View
                       style={[
                         styles.tapeEffect,
@@ -344,7 +335,6 @@ const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
                   textColor="white"
                 />
 
-                {/* Testing bypass button */}
                 <TouchableOpacity
                   onPress={() => {
                     console.log("🧪 Bypassing login for testing...");
@@ -387,7 +377,6 @@ const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
         </View>
       </RNAnimated.View>
 
-      {/* Terms and Privacy Modals */}
       <Modal
         visible={showTerms}
         animationType="slide"
@@ -416,7 +405,6 @@ const Welcome: React.FC<WelcomeProps> = ({ setBypassAuth }) => {
         </View>
       </Modal>
 
-      {/* Auth Modal */}
       <Modal
         visible={showAuthModal}
         animationType="none"
